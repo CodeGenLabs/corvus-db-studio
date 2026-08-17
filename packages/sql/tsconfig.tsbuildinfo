@@ -1,1 +1,1 @@
-{"root":["./src/builder.ts","./src/ddl.ts","./src/dialect.ts","./src/import-parser.ts","./src/index.ts","./src/split.ts","./src/sql.ts"],"version":"5.9.3"}
+{"root":["./src/builder.ts","./src/ddl.ts","./src/dialect.ts","./src/format.ts","./src/import-parser.ts","./src/index.ts","./src/split.ts","./src/sql.ts"],"version":"5.9.3"}

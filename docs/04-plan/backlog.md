@@ -289,8 +289,8 @@ T-110 · [W2] FormView
 T-111 · [W4] Foreign-key data selection
 T-112 · [W4] Table Profile (lưu filter/sort/cột/độ rộng)
 T-113 · [W2] Sửa nhiều cell cùng lúc
-T-114 · [W2] data.count chính xác (tuỳ chọn) + estimateRowCount mặc định
-T-115 · [W1] SqlPreviewDialog dùng chung
+[DONE] T-114 · [W2] data.count chính xác (tuỳ chọn) + estimateRowCount mặc định
+[DONE] T-115 · [W1] SqlPreviewDialog dùng chung
 T-116 · [W1] ConflictDialog (mine ↔ theirs ↔ overwrite/skip)
 T-117 · [W2] Định dạng date/time theo setting
 T-118 · [W2] Cell editor lớn (panel/dialog) cho memo/json/xml/hex/image
@@ -310,7 +310,7 @@ T-043 · [W1] Bảng phím tắt editor
 [DONE] T-047 · [W1] Huỷ query (Esc / nút Stop) ≤ 200 ms
 T-048 · [W1] Guard read-only + cảnh báo DELETE/UPDATE không WHERE
 T-049 · [W1] Query history: ghi + tìm kiếm + panel
-T-120 · [W2] query.format / minify + tuỳ chọn
+[DONE] T-120 · [W2] query.format / minify + tuỳ chọn
 T-121 · [W2] Find/Replace trong editor (regex, whole word, match case)
 T-122 · [W2] Folding, brace highlight, word wrap, zoom
 T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
@@ -334,7 +334,7 @@ T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 T-146 · [W2] IndexTab, ForeignKeyTab, CheckTab, OptionTab
 T-147 · [W3] TriggerTab + editor body
 [DONE] T-148 · [W2] ddl.previewTable / applyTable + PreviewStore
-T-149 · [W2] DropObjectDialog (gõ tên + hiện dependencies)
+[DONE] T-149 · [W2] DropObjectDialog (gõ tên + hiện dependencies)
 T-150 · [W2] ViewDesigner
 T-151 · [W3] RoutineDesigner (tham số, body, security, determinism)
 T-152 · [W3] ddl.maintain theo capability

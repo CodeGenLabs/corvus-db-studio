@@ -33,6 +33,8 @@ export { ConnectionDialog } from './components/dialogs/ConnectionDialog'
 export { SettingsDialog } from './components/dialogs/SettingsDialog'
 export { UpdatesDialog } from './components/dialogs/UpdatesDialog'
 export { UsersDialog } from './components/dialogs/UsersDialog'
+export { SqlPreviewDialog } from './components/dialogs/SqlPreviewDialog'
+export { DropObjectDialog } from './components/dialogs/DropObjectDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'
