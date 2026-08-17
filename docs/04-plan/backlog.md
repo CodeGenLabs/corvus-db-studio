@@ -379,7 +379,7 @@ T-265 · [W3] Copy/Delete mode qua preview
 # E-013 · Backup / Restore (SPEC-10)  `[W3]`
 
 ```
-T-320 · [W3] Định dạng file backup + header metadata + file .meta checksum
+[DONE] T-320 · [W3] Định dạng file backup + header metadata + file .meta checksum
 T-321 · [W3] Backup job: thứ tự object, index/FK ở cuối, stream ra file
 T-322 · [W3] Nén gzip/zstd + verify sau khi ghi
 T-323 · [W3] backup.list đọc header (không đọc cả file)
@@ -387,7 +387,7 @@ T-324 · [W3] restore.preview: willDrop + currentRows + compatibility
 T-325 · [W3] Restore job: đọc stream, splitStatements, transaction nếu có
 T-326 · [W3] Extract SQL từ file backup
 T-327 · [W5] Wrapper mysqldump/pg_dump khi có sẵn
-T-328 · [W3] BackupView nối logic thật + BackupHistoryGrid
+[DONE] T-328 · [W3] BackupView nối logic thật + BackupHistoryGrid
 T-329 · [W3] RestoreWizard
 T-330 · [W3] Xử lý DISK_FULL, BACKUP_CORRUPT, RESTORE_PARTIAL
 ```
@@ -395,14 +395,14 @@ T-330 · [W3] Xử lý DISK_FULL, BACKUP_CORRUPT, RESTORE_PARTIAL
 # E-014 · Query Builder & Diagram  `[W4]`
 
 ```
-T-200 · [W4] QueryModel + buildSelect(model, dialect) + golden 30 case/dialect
+[DONE] T-200 · [W4] QueryModel + buildSelect(model, dialect) + golden 30 case/dialect
 T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 T-202 · [W4] BuilderCanvas + TableNode + JoinEdge
 T-203 · [W4] ClauseTabs: FROM/SELECT/WHERE/GROUP BY/HAVING/ORDER BY
 T-204 · [W4] Join tự sinh theo FK + đổi loại join
 T-205 · [W4] Subquery trong FROM và WHERE
 T-206 · [W4] SqlPreviewPane realtime + cảnh báo ghi đè
-T-220 · [W4] ErView: introspect toàn schema + layout + render
+[DONE] T-220 · [W4] ErView: introspect toàn schema + layout + render
 T-221 · [W4] Lưu vị trí node theo (connection, schema)
 T-222 · [W4] Ngưỡng 150 bảng → dialog chọn tập bảng
 T-223 · [W4] Tạo/sửa/xoá FK từ canvas (qua preview-token)
@@ -412,9 +412,9 @@ T-224 · [W4] Export PNG/SVG
 # E-015 · Automation (SPEC-11)  `[W5]`
 
 ```
-T-350 · [W5] batch_job + schedule + job_run schema + CRUD methods
+[DONE] T-350 · [W5] batch_job + schedule + job_run schema + CRUD methods
 T-351 · [W5] Batch job runner (tuần tự, continueOnError, huỷ)
-T-352 · [W5] Scheduler (node-cron) + timezone + hot reload
+[DONE] T-352 · [W5] Scheduler (node-cron) + timezone + hot reload
 T-353 · [W5] Leader election qua schedule_lock (web nhiều instance)
 T-354 · [W5] Bỏ qua lần bắn chồng + ghi log
 T-355 · [W5] Notify: SMTP (nodemailer) + webhook HMAC + sendTest
@@ -428,9 +428,9 @@ T-360 · [W5] Xoay vòng lịch sử chạy
 # E-016 · Server Security (SPEC-12)  `[W5]`
 
 ```
-T-380 · [W5] SecurityProvider interface + privilegeCatalog
+[DONE] T-380 · [W5] SecurityProvider interface + privilegeCatalog
 T-381 · [W5] Hiện thực cho PG / MySQL / MSSQL
-T-382 · [W5] security.users / .roles / .privileges
+[DONE] T-382 · [W5] security.users / .roles / .privileges
 T-383 · [W5] previewUser / applyUser (mật khẩu che khi hiển thị + comment giải thích)
 T-384 · [W5] previewGrant / applyGrant
 T-385 · [W5] UsersDialog nối logic thật
@@ -444,10 +444,10 @@ T-390 · [W5] security-password-leak.test.ts
 # E-017 · Monitoring (SPEC-13 monitor)  `[W5]`
 
 ```
-T-400 · [W5] monitor.processes (stream, interval, đánh dấu dòng thay đổi)
-T-401 · [W5] monitor.killProcess qua preview
-T-402 · [W5] monitor.variables + previewSetVariable
-T-403 · [W5] monitor.status + highlight chỉ số thay đổi
+[DONE] T-400 · [W5] monitor.processes (stream, interval, đánh dấu dòng thay đổi)
+[DONE] T-401 · [W5] monitor.killProcess qua preview
+[DONE] T-402 · [W5] monitor.variables + previewSetVariable
+[DONE] T-403 · [W5] monitor.status + highlight chỉ số thay đổi
 T-404 · [W5] ServerMonitorView + auto refresh + huỷ stream khi rời view
 T-405 · [W4] search.findInSchema (job, data + structure, 4 mode)
 ```
@@ -455,11 +455,11 @@ T-405 · [W4] search.findInSchema (job, data + structure, 4 mode)
 # E-018 · Multi-user web  `[W5]`
 
 ```
-T-410 · [W5] AuthContext: SingleUserAuth + MultiUserAuth
+[DONE] T-410 · [W5] AuthContext: SingleUserAuth + MultiUserAuth
 T-411 · [W5] Local account (argon2id) + OIDC
 T-412 · [W5] RBAC 5 role + connection ACL
 T-413 · [W5] Cookie + CSRF + session xoay 8 giờ
-T-414 · [W5] audit_log + ghi theo mức khai báo trong contract
+[DONE] T-414 · [W5] audit_log + ghi theo mức khai báo trong contract
 T-415 · [W5] LoginView + xử lý session hết hạn
 T-416 · [W5] Quản lý user Corvus (admin UI)
 ```
@@ -467,11 +467,11 @@ T-416 · [W5] Quản lý user Corvus (admin UI)
 # E-019 · Shell & Settings (SPEC-15)  `[W0-W6]`
 
 ```
-T-470 · [W2] TabManager + useTabStore: tab thật có state riêng
+[DONE] T-470 · [W2] TabManager + useTabStore: tab thật có state riêng
 T-471 · [W2] Khôi phục tab sau khởi động (3 chế độ onStartup)
 T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo namespace
         ✅ CI fail khi thiếu khoá ở bất kỳ ngôn ngữ nào
-T-473 · [W2] Settings đầy đủ 7 mục + DEFAULT_CONFIG một chỗ duy nhất
+[DONE] T-473 · [W2] Settings đầy đủ 7 mục + DEFAULT_CONFIG một chỗ duy nhất
 T-474 · [W2] CommandPalette: fuzzy search + nguồn thật (workspace.paletteSearch)
 T-475 · [W2] Pane maximize/restore
 T-476 · [W6] Focus mode
