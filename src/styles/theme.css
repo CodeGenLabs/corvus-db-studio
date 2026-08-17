@@ -1,0 +1,183 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #b9b6ae;
+  overflow: hidden;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hi);
+  text-decoration: underline;
+}
+
+[data-theme] {
+  --bg: #efeee9;
+  --pane: #ffffff;
+  --pane2: #f7f6f2;
+  --titlebar: #e6e4de;
+  --border: #dcd9d1;
+  --border-strong: #c4c0b6;
+  --text: #1c1e1f;
+  --text2: #5e6361;
+  --text3: #8f938e;
+  --accent: #0e6c60;
+  --accent-hi: #0a4f46;
+  --accent-soft: #dfece9;
+  --sel: #e2efec;
+  --on-accent: #ffffff;
+  --coral: #b9502c;
+  --green: #2c7549;
+  --amber: #9c7207;
+  --red: #a93526;
+  --row-alt: #fbfaf7;
+  --grid-line: #e8e5df;
+  --shadow: 0 18px 50px rgba(30, 28, 24, 0.28);
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+[data-theme='dark'] {
+  --bg: #15181a;
+  --pane: #1b1e20;
+  --pane2: #212528;
+  --titlebar: #1f2325;
+  --border: #2a2e31;
+  --border-strong: #3a4044;
+  --text: #e5e7e5;
+  --text2: #9fa5a3;
+  --text3: #6d7472;
+  --accent: #3cb6a2;
+  --accent-hi: #66d3c0;
+  --accent-soft: #113a34;
+  --sel: #16342f;
+  --on-accent: #06231f;
+  --coral: #e08b62;
+  --green: #63b483;
+  --amber: #d0a63f;
+  --red: #d9705f;
+  --row-alt: #1e2224;
+  --grid-line: #272b2e;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+[data-theme] ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 6px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+[data-theme] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-mono='plex'] {
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+[data-mono='mplus'] {
+  --mono: 'M PLUS 1 Code', 'IBM Plex Mono', monospace;
+}
+[data-mono='noto'] {
+  --mono: 'Noto Sans Mono', 'IBM Plex Mono', monospace;
+}
+[data-mono='jb'] {
+  --mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+}
+[data-mono='system'] {
+  --mono: ui-monospace, 'SFMono-Regular', 'BIZ UDGothic', 'MS Gothic', monospace;
+}
+
+@keyframes growBar {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pop-in {
+  animation: popIn 0.1s ease-out;
+}
+
+.pop-in-slow {
+  animation: popIn 0.16s ease-out;
+}
+
+/*
+ * Hover utilities.
+ * The design expresses hover through `style-hover` next to inline styles, so the
+ * rules below need `!important` to beat the inline declaration they override.
+ */
+.hv-accent:hover {
+  color: var(--accent) !important;
+}
+.hv-accent-border:hover {
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+.hv-border-accent:hover {
+  border-color: var(--accent) !important;
+}
+.hv-accent-soft:hover {
+  background: var(--accent-soft) !important;
+  color: var(--accent) !important;
+}
+.hv-accent-soft-bg:hover {
+  background: var(--accent-soft) !important;
+}
+.hv-accent-bg:hover {
+  background: var(--accent) !important;
+}
+.hv-row:hover {
+  background: var(--row-alt) !important;
+}
+.hv-pane:hover {
+  background: var(--pane) !important;
+}
+.hv-pane2:hover {
+  background: var(--pane2) !important;
+}
+.hv-text:hover {
+  color: var(--text) !important;
+}
+.hv-red:hover {
+  color: var(--red) !important;
+}
+.hv-red-pane:hover {
+  color: var(--red) !important;
+  background: var(--pane) !important;
+}
+.hv-close:hover {
+  background: #c42b1c !important;
+  color: #fff !important;
+}

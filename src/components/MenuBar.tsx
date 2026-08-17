@@ -1,0 +1,240 @@
+import { SearchIcon } from './SearchIcon'
+import { useStudio } from '../store/studio'
+import type { MenuKey } from '../types'
+
+type MenuEntry = '-' | [label: string, hint: string, action: (() => void) | null, checked?: boolean]
+
+export function MenuBar() {
+  const { s, set, t, tr } = useStudio()
+  const view = s.view
+
+  const menus: { key: MenuKey; label: string; items: MenuEntry[] }[] = [
+    {
+      key: 'file',
+      label: t.mFile,
+      items: [
+        [tr('Kết nối mới…', 'New connection…'), '⌘⇧N', () => set({ showConn: true })],
+        [tr('Truy vấn mới', 'New query'), '⌘N', () => set({ view: 'sql' })],
+        [tr('Mở gần đây', 'Open recent'), '▸', null],
+        '-',
+        [tr('Nhập dữ liệu…', 'Import wizard…'), '', () => set({ view: 'jobs' })],
+        [tr('Xuất dữ liệu…', 'Export wizard…'), '', () => set({ view: 'jobs' })],
+        '-',
+        [tr('In…', 'Print…'), '⌘P', null],
+        [tr('Đóng tab', 'Close tab'), '⌘W', null],
+      ],
+    },
+    {
+      key: 'edit',
+      label: t.mEdit,
+      items: [
+        [tr('Hoàn tác', 'Undo'), '⌘Z', null],
+        [tr('Làm lại', 'Redo'), '⇧⌘Z', null],
+        '-',
+        [tr('Cắt', 'Cut'), '⌘X', null],
+        [tr('Sao chép', 'Copy'), '⌘C', null],
+        [tr('Dán', 'Paste'), '⌘V', null],
+        '-',
+        [tr('Tìm…', 'Find…'), '⌘F', null],
+        [tr('Thay thế…', 'Replace…'), '⌥⌘F', null],
+      ],
+    },
+    {
+      key: 'view',
+      label: t.mView,
+      items: [
+        [t.navPane, '⌥⌘1', () => set((p) => ({ nav: !p.nav })), s.nav],
+        [t.infoPane, '⌥⌘2', () => set((p) => ({ info: !p.info })), s.info],
+        '-',
+        [t.tabObjects, '⌘1', () => set({ view: 'objects' }), view === 'objects'],
+        [tr('Dữ liệu bảng', 'Table data'), '⌘2', () => set({ view: 'data' }), view === 'data'],
+        ['SQL Editor', '⌘3', () => set({ view: 'sql' }), view === 'sql'],
+        ['ER Diagram', '⌘4', () => set({ view: 'er' }), view === 'er'],
+        [t.tabCompare, '⌘5', () => set({ view: 'compare' }), view === 'compare'],
+        '-',
+        [tr('Toàn màn hình', 'Full screen'), '⌃⌘F', null],
+      ],
+    },
+    {
+      key: 'tools',
+      label: t.mTools,
+      items: [
+        [t.captureSnap + '…', '⌘⇧C', () => set({ view: 'compare' })],
+        [tr('Sao lưu…', 'Backup…'), '', () => set({ view: 'backup' })],
+        [t.tbAutomation + '…', '', () => set({ view: 'jobs' })],
+        '-',
+        [tr('Bảng lệnh', 'Command palette'), '⌘K', () => set({ showPalette: true })],
+        '-',
+        [t.settings + '…', '⌘,', () => set({ dialog: 'settings' })],
+      ],
+    },
+    {
+      key: 'window',
+      label: t.mWindow,
+      items: [
+        [tr('Thu nhỏ', 'Minimize'), '⌘M', null],
+        [tr('Phóng to', 'Zoom'), '', null],
+        '-',
+        [tr('Tab kế tiếp', 'Next tab'), '⌃⇥', null],
+        [tr('Tab trước', 'Previous tab'), '⌃⇧⇥', null],
+      ],
+    },
+    {
+      key: 'help',
+      label: t.mHelp,
+      items: [
+        [tr('Tài liệu', 'Documentation'), '', null],
+        [tr('Phím tắt', 'Keyboard shortcuts'), '⌘/', null],
+        '-',
+        [t.checkUpdates + '…', '', () => set({ dialog: 'updates' })],
+        [tr('Giới thiệu ', 'About ') + 'Corvus DB Studio', '', () => set({ dialog: 'about' })],
+      ],
+    },
+  ]
+
+  return (
+    <div
+      style={{
+        height: 26,
+        flex: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        padding: '0 10px',
+        background: 'var(--pane2)',
+        borderBottom: '1px solid var(--border)',
+        color: 'var(--text2)',
+        fontSize: 11.5,
+      }}
+    >
+      <div
+        style={{
+          padding: '0 8px',
+          height: 18,
+          display: 'flex',
+          alignItems: 'center',
+          borderRadius: 4,
+          cursor: 'default',
+          fontWeight: 600,
+          color: 'var(--text)',
+        }}
+      >
+        Corvus
+      </div>
+
+      {menus.map((m) => {
+        const open = s.menu === m.key
+        return (
+          <div key={m.key} style={{ position: 'relative' }}>
+            <div
+              className="hv-accent-soft"
+              onClick={(e) => {
+                e.stopPropagation()
+                set((prev) => ({ menu: prev.menu === m.key ? null : m.key }))
+              }}
+              onMouseEnter={() => {
+                if (s.menu) set({ menu: m.key })
+              }}
+              style={{
+                padding: '0 8px',
+                height: 18,
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 4,
+                cursor: 'pointer',
+                background: open ? 'var(--accent-soft)' : 'transparent',
+                color: open ? 'var(--accent)' : 'var(--text2)',
+              }}
+            >
+              {m.label}
+            </div>
+
+            {open && (
+              <div
+                className="pop-in"
+                style={{
+                  position: 'absolute',
+                  top: 22,
+                  left: 0,
+                  minWidth: 232,
+                  background: 'var(--pane)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 7,
+                  boxShadow: 'var(--shadow)',
+                  padding: 4,
+                  zIndex: 50,
+                }}
+              >
+                {m.items.map((it, i) =>
+                  it === '-' ? (
+                    <div
+                      key={'sep' + i}
+                      style={{ height: 1, margin: '4px 6px', background: 'var(--grid-line)', pointerEvents: 'none' }}
+                    />
+                  ) : (
+                    <div
+                      key={it[0]}
+                      className="hv-accent-soft"
+                      onClick={() => {
+                        set({ menu: null })
+                        it[2]?.()
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        height: 24,
+                        padding: '0 9px 0 6px',
+                        borderRadius: 5,
+                        cursor: 'pointer',
+                        fontSize: 11.5,
+                        color: 'var(--text)',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 10,
+                          flex: 'none',
+                          color: 'var(--accent)',
+                          visibility: it[3] ? 'visible' : 'hidden',
+                          fontSize: 10,
+                        }}
+                      >
+                        ✓
+                      </span>
+                      <span>{it[0]}</span>
+                      <span style={{ marginLeft: 'auto', color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 10.5 }}>
+                        {it[1]}
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      <div
+        className="hv-accent-border"
+        onClick={() => set({ showPalette: true })}
+        style={{
+          marginLeft: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          height: 18,
+          padding: '0 8px',
+          borderRadius: 4,
+          border: '1px solid var(--border-strong)',
+          cursor: 'pointer',
+          fontSize: 11,
+        }}
+      >
+        <SearchIcon />
+        <span>{t.paletteHint}</span>
+        <span style={{ fontFamily: 'var(--mono)', opacity: 0.7 }}>⌘K</span>
+      </div>
+    </div>
+  )
+}
