@@ -19,6 +19,9 @@
     "build": "tsc -b --noEmit",
     "typecheck": "tsc -b --noEmit"
   },
+  "dependencies": {
+    "@corvus/contract": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.7.2"
   }

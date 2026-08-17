@@ -269,6 +269,10 @@ importers:
         version: 5.9.3
 
   packages/sql:
+    dependencies:
+      '@corvus/contract':
+        specifier: workspace:*
+        version: link:../contract
     devDependencies:
       typescript:
         specifier: ^5.7.2

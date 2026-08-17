@@ -323,17 +323,17 @@ T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 # E-010 · Object Designer (SPEC-06)  `[W2-W3]`
 
 ```
-T-140 · [W2] TableDesign schema + FieldDesign có id bền vững
-T-141 · [W2] DdlGenerator.createTable cho 3 engine
-T-142 · [W2] DdlGenerator.alterTable — thuật toán diff theo id
+[DONE] T-140 · [W2] TableDesign schema + FieldDesign có id bền vững
+[DONE] T-141 · [W2] DdlGenerator.createTable cho 3 engine
+[DONE] T-142 · [W2] DdlGenerator.alterTable — thuật toán diff theo id
         ✅ golden file 40 kịch bản × 3 engine
-T-143 · [W2] Cảnh báo DDL: mất dữ liệu, rebuild, khoá bảng, NOT NULL violation
-T-144 · [W2] SQLite recreate-table 12 bước
+[DONE] T-143 · [W2] Cảnh báo DDL: mất dữ liệu, rebuild, khoá bảng, NOT NULL violation
+[DONE] T-144 · [W2] SQLite recreate-table 12 bước
         ✅ dữ liệu, index, trigger, view được giữ (integration)
-T-145 · [W2] FieldGrid + typeCatalog dropdown
+[DONE] T-145 · [W2] FieldGrid + typeCatalog dropdown
 T-146 · [W2] IndexTab, ForeignKeyTab, CheckTab, OptionTab
 T-147 · [W3] TriggerTab + editor body
-T-148 · [W2] ddl.previewTable / applyTable + PreviewStore
+[DONE] T-148 · [W2] ddl.previewTable / applyTable + PreviewStore
 T-149 · [W2] DropObjectDialog (gõ tên + hiện dependencies)
 T-150 · [W2] ViewDesigner
 T-151 · [W3] RoutineDesigner (tham số, body, security, determinism)
@@ -345,7 +345,7 @@ T-154 · [W2] Read-only → designer chỉ đọc
 # E-011 · Job & File  `[W3]`
 
 ```
-T-050 · [W3] FileGateway interface + 2 hiện thực
+[DONE] T-050 · [W3] FileGateway interface + 2 hiện thực
 T-051 · [W3] Upload theo chunk có resume + dọn file tạm (web)
 T-052 · [W1] Cảnh báo localhost ở dialog kết nối (web)
 T-054 · [W5] Tray mode desktop + cảnh báo lịch
@@ -358,7 +358,7 @@ T-058 · [W3] Khởi động lại → job đang chạy → failed/INTERRUPTED, 
 # E-012 · Import / Export (SPEC-08)  `[W3]`
 
 ```
-T-250 · [W3] WizardShell dùng chung (Back/Next/Save profile/Start)
+[DONE] T-250 · [W3] WizardShell dùng chung (Back/Next/Save profile/Start)
 T-251 · [W3] import.analyze (đọc phần đầu file, suy luận kiểu, preview 100 dòng)
 T-252 · [W3] Parser CSV/TSV/TXT delimited + fixed-width
 T-253 · [W3] Parser JSON (stream-json) + XML (sax)
@@ -368,7 +368,7 @@ T-256 · [W3] FieldMappingGrid (Smart/Direct/Unmatch)
 T-257 · [W3] 5 import mode → SQL
 T-258 · [W3] Đường nhanh: PG COPY FROM STDIN, MySQL extended insert, MSSQL bulk
 T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng dòng
-T-260 · [W3] Export: 9 formatter stream
+[DONE] T-260 · [W3] Export: 9 formatter stream
 T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
 T-262 · [W3] tool_profile lưu/nạp cấu hình
 T-263 · [W3] ImportWizard 6 bước UI
