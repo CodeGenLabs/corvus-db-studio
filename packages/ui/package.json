@@ -23,6 +23,7 @@
   "dependencies": {
     "@corvus/client": "workspace:*",
     "@corvus/contract": "workspace:*",
+    "@corvus/sql": "workspace:*",
     "@corvus/transport-mock": "workspace:*",
     "@tanstack/react-query": "^5.66.0",
     "react": "^18.3.1",

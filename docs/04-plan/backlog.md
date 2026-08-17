@@ -226,21 +226,21 @@ T-027 · [W1] corvus workspace export/import định dạng .corvusws
 [DONE] T-075 · [W0] HostKeyPrompt + luồng trustHostKey
 [DONE] T-076 · [W0] Chế độ read-only: SQL parse guard + session-level + UI badge
 [DONE] T-077 · [W1] Connection coloring + virtual group
-T-078 · [W1] parseUri / toUri
-T-079 · [W1] Host policy chống SSRF (web) + cảnh báo localhost
-T-080 · [W1] Nhân bản profile, sắp xếp lại
+[DONE] T-078 · [W1] parseUri / toUri
+[DONE] T-079 · [W1] Host policy chống SSRF (web) + cảnh báo localhost
+[DONE] T-080 · [W1] Nhân bản profile, sắp xếp lại
 [DONE] T-081 · [W0] NavPane nối dữ liệu thật (lazy load)
-T-082 · [W1] Trạng thái empty/loading/error cho toàn bộ luồng kết nối
+[DONE] T-082 · [W1] Trạng thái empty/loading/error cho toàn bộ luồng kết nối
 ```
 Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 của SPEC-01.
 
 # E-006 · Điều hướng & Objects (SPEC-02)  `[W0-W2]`
 
 ```
-T-085 · [W0] introspect.* methods
-T-086 · [W0] Introspector cho PG/MySQL/SQLite (truy vấn gộp, không N+1)
-T-087 · [W1] Cache metadata trên đĩa (msgpack) + TTL + fingerprint
-T-088 · [W1] schema.invalidated topic + invalidateQueries phía client
+[DONE] T-085 · [W0] introspect.* methods
+[DONE] T-086 · [W0] Introspector cho PG/MySQL/SQLite (truy vấn gộp, không N+1)
+[DONE] T-087 · [W1] Cache metadata trên đĩa (msgpack) + TTL + fingerprint
+[DONE] T-088 · [W1] schema.invalidated topic + invalidateQueries phía client
 T-089 · [W1] Objects List view ảo hoá (5000 object)
 T-090 · [W2] Objects Detail view + ColumnChooser
 T-091 · [W1] Tìm kiếm lọc trong cây và trong Objects tab
@@ -256,32 +256,32 @@ T-098 · [W2] Virtual grouping cho object
 # E-007 · DataGrid (ADR-0005)  `[W1]`
 
 ```
-T-030 · [W1] DataGrid: ảo hoá hàng + cột, resize, chọn vùng
+[DONE] T-030 · [W1] DataGrid: ảo hoá hàng + cột, resize, chọn vùng
         ✅ 1M dòng ≥ 55 fps (benchmark trong CI); resize ≤ 16 ms/frame
-T-031 · [W1] CellEditor: 12 kiểu (text, memo, số, bool 3 trạng thái, date/time, enum, set,
+[DONE] T-031 · [W1] CellEditor: 12 kiểu (text, memo, số, bool 3 trạng thái, date/time, enum, set,
         json, xml, blob/hex/image, uuid, array)
         ✅ round-trip đúng mọi kiểu (dùng lại C4)
 T-032 · [W1] Nạp tăng dần từ AsyncIterable<ResultChunk> + ring buffer 200k
-T-033 · [W1] Copy/paste: TSV, INSERT, UPDATE, JSON, Markdown (chạy trong Web Worker)
+[DONE] T-033 · [W1] Copy/paste: TSV, INSERT, UPDATE, JSON, Markdown (chạy trong Web Worker)
         ✅ copy 100k cell ≤ 1 s
 T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
 T-035 · [W2] Ẩn/hiện cột, đóng băng N cột đầu, lưu theo (connection, bảng)
 T-036 · [W2] Renderer NULL / chuỗi rỗng / BLOB / missing (Mongo) phân biệt trực quan
 T-037 · [W1] Điều hướng bàn phím + ARIA role
 T-038 · [W2] Find/Replace trong grid
-T-039 · [W1] NavigationBar (first/prev/next/last page & record, limit setting)
+[DONE] T-039 · [W1] NavigationBar (first/prev/next/last page & record, limit setting)
 ```
 
 # E-008 · Data Editor (SPEC-03)  `[W1-W2]`
 
 ```
-T-100 · [W1] data.browse (stream) + FilterExpr AST → SQL
-T-101 · [W1] data.previewChanges / applyChanges + preview-token
+[DONE] T-100 · [W1] data.browse (stream) + FilterExpr AST → SQL
+[DONE] T-101 · [W1] data.previewChanges / applyChanges + preview-token
 T-102 · [W1] Optimistic locking (expected values → WHERE)
 T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transaction
 T-104 · [W1] Bảng không PK: đọc được, không sửa, banner
-T-105 · [W1] tx.begin/commit/rollback + TransactionBar + timeout 10 phút
-T-106 · [W1] FilterPanel nối logic thật (builder + text mode + preview SQL)
+[DONE] T-105 · [W1] tx.begin/commit/rollback + TransactionBar + timeout 10 phút
+[DONE] T-106 · [W1] FilterPanel nối logic thật (builder + text mode + preview SQL)
 T-107 · [W2] Filter nhanh từ giá trị cell
 T-108 · [W1] Sort server-side theo header click
 T-109 · [W1] Set NULL / Set Empty String (2 hành động riêng)
@@ -299,15 +299,15 @@ T-118 · [W2] Cell editor lớn (panel/dialog) cho memo/json/xml/hex/image
 # E-009 · SQL Editor (SPEC-04)  `[W1-W2]`
 
 ```
-T-040 · [W1] SqlEditor (CodeMirror 6) + corvusTheme buộc vào biến CSS
+[DONE] T-040 · [W1] SqlEditor (CodeMirror 6) + corvusTheme buộc vào biến CSS
 T-041 · [W2] Extension completion từ introspect.identifiers (debounce + cache)
 T-042 · [W2] Extension diagnostics từ CorvusError.position
 T-043 · [W1] Bảng phím tắt editor
-T-044 · [W1] splitStatements cho PG/MySQL/SQLite + golden 60 case/dialect
+[DONE] T-044 · [W1] splitStatements cho PG/MySQL/SQLite + golden 60 case/dialect
         ✅ đủ 8 trường hợp khó ở SPEC-04 §6
-T-045 · [W1] query.execute + nhiều result set + ResultTabs
-T-046 · [W1] MessagesPanel (notice, warning, affected rows theo statement)
-T-047 · [W1] Huỷ query (Esc / nút Stop) ≤ 200 ms
+[DONE] T-045 · [W1] query.execute + nhiều result set + ResultTabs
+[DONE] T-046 · [W1] MessagesPanel (notice, warning, affected rows theo statement)
+[DONE] T-047 · [W1] Huỷ query (Esc / nút Stop) ≤ 200 ms
 T-048 · [W1] Guard read-only + cảnh báo DELETE/UPDATE không WHERE
 T-049 · [W1] Query history: ghi + tìm kiếm + panel
 T-120 · [W2] query.format / minify + tuỳ chọn

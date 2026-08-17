@@ -338,6 +338,9 @@ importers:
       '@corvus/contract':
         specifier: workspace:*
         version: link:../contract
+      '@corvus/sql':
+        specifier: workspace:*
+        version: link:../sql
       '@corvus/transport-mock':
         specifier: workspace:*
         version: link:../transport-mock
