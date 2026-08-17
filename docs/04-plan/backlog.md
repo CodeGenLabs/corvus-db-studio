@@ -477,7 +477,7 @@ T-475 · [W2] Pane maximize/restore
 T-476 · [W6] Focus mode
 T-477 · [W6] ShortcutEditor + phát hiện xung đột
 T-478 · [W4] Favorites (Ctrl+1..9) + Share via URI
-T-479 · [W1] ConnectionLostBanner + tự nối lại
+[DONE] T-479 · [W1] ConnectionLostBanner + tự nối lại
 T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
 T-481 · [W5] Cảnh báo thoát khi có job/transaction
 T-482 · [W6] Deep link corvus:// (desktop)
@@ -497,9 +497,9 @@ T-484 · [W3] app.checkUpdate + không tự cài khi có job chạy
 T-503 · [W1] Mua và thiết lập chứng chỉ EV Code Signing (bắt đầu SỚM)
 T-504 · [W3] Ký số trong CI + verify bằng signtool
 T-505 · [W3] electron-updater + feed generic + kênh stable/beta
-T-506 · [W3] release.yml: build 3 artifact, ký, publish, changelog
-T-507 · [W3] integration.yml nightly: testcontainers ma trận engine × version
-T-508 · [W3] security.yml weekly: pnpm audit + trivy + license check
+[DONE] T-506 · [W3] release.yml: build 3 artifact, ký, publish, changelog
+[DONE] T-507 · [W3] integration.yml nightly: testcontainers ma trận engine × version
+[DONE] T-508 · [W3] security.yml weekly: pnpm audit + trivy + license check
 T-509 · [W3] Smoke test sau đóng gói (native module load được)
 ```
 

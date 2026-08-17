@@ -22,6 +22,7 @@ export { Kw } from './components/code'
 export * from './components/grid'
 export * from './components/wizard'
 export * from './components/common/States'
+export * from './components/common/ConnectionLostBanner'
 export * from './wizards'
 
 // Dialogs
