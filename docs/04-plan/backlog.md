@@ -24,34 +24,34 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
 # E-001 · Nền tảng monorepo  `[W0]`
 
 ```
-T-001 · [W0] Dựng pnpm workspace + Turborepo + tsconfig.base
+[DONE] T-001 · [W0] Dựng pnpm workspace + Turborepo + tsconfig.base
         docs: monorepo.md §2, §6
         📁 package.json, pnpm-workspace.yaml, turbo.json, tsconfig.base.json
         ✅ pnpm install chạy; turbo run build chạy; app hiện tại vẫn build được
 
-T-002 · [W0] Di chuyển UI hiện tại vào packages/ui
+[DONE] T-002 · [W0] Di chuyển UI hiện tại vào packages/ui
         monorepo.md §3 bước 2
         ⇦ T-001
         📁 packages/ui/src/** (từ src/components, src/views, src/styles, src/i18n)
         ✅ import từ @corvus/ui hoạt động; app chạy như trước; không mất tính năng nào
 
-T-003 · [W0] Tách kiểu dùng chung sang packages/contract/src/models
+[DONE] T-003 · [W0] Tách kiểu dùng chung sang packages/contract/src/models
         ⇦ T-001
         📁 packages/contract/src/models/*.ts
         ✅ ui và engine cùng import một kiểu; không khai báo trùng
 
-T-004 · [W0] Chuyển mock data sang packages/transport-mock/src/fixtures
+[DONE] T-004 · [W0] Chuyển mock data sang packages/transport-mock/src/fixtures
         ⇦ T-001
         📁 packages/transport-mock/src/fixtures/sakila.ts
         ✅ Storybook và unit test UI chạy không cần database
 
-T-005 · [W0] Tách StudioProvider → useShellStore (zustand) + hook react-query
+[DONE] T-005 · [W0] Tách StudioProvider → useShellStore (zustand) + hook react-query
         ADR-0007 · SPEC-15 §4
         ⇦ T-002, T-014
         📁 packages/ui/src/store/shell.ts, packages/client/src/queries/*
         ✅ đổi tab không re-render grid; đổi theme không refetch; e2e hiện có vẫn xanh
 
-T-006 · [W0] Dựng apps/web (Fastify + SPA) và apps/desktop (Electron 3 tiến trình)
+[DONE] T-006 · [W0] Dựng apps/web (Fastify + SPA) và apps/desktop (Electron 3 tiến trình)
         ADR-0001 · overview.md §3
         ⇦ T-002, T-012, T-013
         📁 apps/web/{client,server}, apps/desktop/{main,preload,renderer}
@@ -79,31 +79,31 @@ T-009 · [W0] ESLint rule tuỳ biến: no-driver-id-branching, no-raw-sql-conca
 # E-002 · Contract & Transport  `[W0]`
 
 ```
-T-010 · [W0] defineUnary / defineStream + registry METHODS
+[DONE] T-010 · [W0] defineUnary / defineStream + registry METHODS
         ADR-0008 · rpc-contract.md §3
         ⇦ T-001
         📁 packages/contract/src/define.ts, index.ts
         ✅ z.infer cho ra type đúng; registry gom đủ method
 
-T-011 · [W0] Đóng gói font vào bundle, bỏ Google Fonts, siết CSP
+[DONE] T-011 · [W0] Đóng gói font vào bundle, bỏ Google Fonts, siết CSP
         security.md §8 · SPEC-15 §10
         ⇦ T-002
         📁 packages/ui/src/theme/fonts.css, apps/*/index.html
         ✅ Playwright kiểm: 0 request ra domain ngoài
 
-T-012 · [W0] transport-http: client + server + ack window + reconnect
+[DONE] T-012 · [W0] transport-http: client + server + ack window + reconnect
         ADR-0002 · rpc-contract.md §5.1
         ⇦ T-010
         📁 packages/transport-http/src/{client.ts,server.ts,frames.ts}
         ✅ stream 1M dòng không làm phồng RAM client; ngắt WS → tự nối lại, subscribe khôi phục
 
-T-013 · [W0] transport-ipc: preload + host + MessagePort stream
+[DONE] T-013 · [W0] transport-ipc: preload + host + MessagePort stream
         rpc-contract.md §5.2
         ⇦ T-010
         📁 packages/transport-ipc/src/{client.ts,host.ts,preload.ts}
         ✅ contextIsolation+sandbox bật; chỉ window.corvus được phơi; method ngoài registry bị từ chối
 
-T-014 · [W0] transport-mock + createClient
+[DONE] T-014 · [W0] transport-mock + createClient
         ⇦ T-010, T-004
         📁 packages/transport-mock/src/index.ts, packages/client/src/createClient.ts
         ✅ toàn bộ UI chạy trên mock, không cần engine
@@ -124,13 +124,13 @@ T-017 · [W1] useQueryStream: ring buffer + huỷ + phát hiện lỗ hổng seq
         📁 packages/client/src/useQueryStream.ts
         ✅ ring buffer giới hạn 200k dòng; huỷ ≤ 200 ms; seq không liên tục → báo lỗi
 
-T-018 · [W0] Engine router: validate zod + AuthContext + audit + guard
+[DONE] T-018 · [W0] Engine router: validate zod + AuthContext + audit + guard
         rpc-contract.md · security.md §4
         ⇦ T-010
         📁 packages/engine/src/router.ts, auth/, audit.ts, guards.ts
         ✅ mọi method đi qua 4 bước; test khẳng định không bypass được
 
-T-019 · [W0] Bảng lỗi CorvusError + i18n key + redaction middleware
+[DONE] T-019 · [W0] Bảng lỗi CorvusError + i18n key + redaction middleware
         overview.md §6 · security.md §3
         ⇦ T-010
         📁 packages/contract/src/errors.ts, packages/engine/src/redact.ts
@@ -140,13 +140,13 @@ T-019 · [W0] Bảng lỗi CorvusError + i18n key + redaction middleware
 # E-003 · Driver layer  `[W0]`
 
 ```
-T-020 · [W0] Định nghĩa CapabilitySet đầy đủ
+[DONE] T-020 · [W0] Định nghĩa CapabilitySet đầy đủ
         ADR-0003 · capability-matrix.md
         ⇦ T-010
         📁 packages/contract/src/capabilities.ts
         ✅ khớp 100% với capability-matrix.md
 
-T-021 · [W0] Driver SPI interface + registry
+[DONE] T-021 · [W0] Driver SPI interface + registry
         driver-spi.md §1
         ⇦ T-020
         📁 packages/driver-core/src/{types.ts,registry.ts}

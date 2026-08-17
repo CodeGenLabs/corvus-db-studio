@@ -1,0 +1,20 @@
+{
+  "name": "@corvus/app-desktop-main",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -b --noEmit",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@corvus/contract": "workspace:*",
+    "@corvus/transport-ipc": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "electron": "^33.2.1",
+    "typescript": "^5.7.2"
+  }
+}

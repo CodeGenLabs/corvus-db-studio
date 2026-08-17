@@ -5,7 +5,9 @@ packages:
   - 'apps/desktop/*'
 
 allowBuilds:
+  electron: true
   esbuild: true
 
 onlyBuiltDependencies:
   - esbuild
+  - electron

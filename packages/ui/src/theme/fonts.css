@@ -1,0 +1,29 @@
+/* Local / System Font Stack Definitions */
+:root {
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono-plex: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-mono-mplus: 'M PLUS 1 Code', 'SFMono-Regular', Consolas, 'Hiragino Sans', 'Meiryo', monospace;
+  --font-mono-noto: 'Noto Sans Mono', 'SFMono-Regular', Consolas, monospace;
+  --font-mono-jb: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, Monaco, Consolas, monospace;
+  --font-mono-system: 'Cascadia Code', 'Segoe UI Mono', Consolas, Monaco, monospace;
+}
+
+[data-mono="plex"] {
+  --mono: var(--font-mono-plex);
+}
+
+[data-mono="mplus"] {
+  --mono: var(--font-mono-mplus);
+}
+
+[data-mono="noto"] {
+  --mono: var(--font-mono-noto);
+}
+
+[data-mono="jb"] {
+  --mono: var(--font-mono-jb);
+}
+
+[data-mono="system"] {
+  --mono: var(--font-mono-system);
+}

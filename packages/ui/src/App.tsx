@@ -1,3 +1,4 @@
+import type { Transport } from '@corvus/contract'
 import { FilterPanel } from './components/FilterPanel'
 import { InfoPane } from './components/InfoPane'
 import { MenuBar } from './components/MenuBar'
@@ -105,9 +106,13 @@ function Shell() {
   )
 }
 
-export default function App() {
+export interface CorvusAppProps {
+  transport?: Transport
+}
+
+export default function App({ transport }: CorvusAppProps = {}) {
   return (
-    <StudioProvider>
+    <StudioProvider transport={transport}>
       <Shell />
     </StudioProvider>
   )

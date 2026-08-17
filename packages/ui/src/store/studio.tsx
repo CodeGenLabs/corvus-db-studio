@@ -1,5 +1,8 @@
 import {
+  createContext,
+  useContext,
   useEffect,
+  useMemo,
   type CSSProperties,
   type ReactNode,
 } from 'react'
@@ -9,8 +12,11 @@ import type {
   Config,
   FilterCriterion,
   SortCriterion,
+  Transport,
   View,
 } from '@corvus/contract'
+import { createMockTransport } from '@corvus/transport-mock'
+import { createClient, type Client } from '@corvus/client'
 import { useShellStore, type ShellState } from './shell'
 
 export type { ShellState, ShellState as StudioState }
@@ -24,6 +30,16 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+const ClientContext = createContext<Client | null>(null)
+
+export function useClient(): Client {
+  const client = useContext(ClientContext)
+  if (!client) {
+    throw new Error('useClient must be used inside <StudioProvider>')
+  }
+  return client
+}
 
 export interface Studio {
   s: ShellState
@@ -45,8 +61,19 @@ export interface Studio {
   infoOpen: boolean
 }
 
-export function StudioProvider({ children }: { children: ReactNode }) {
+export function StudioProvider({
+  children,
+  transport,
+}: {
+  children: ReactNode
+  transport?: Transport
+}) {
   const set = useShellStore((state) => state.set)
+
+  const client = useMemo(() => {
+    const t = transport ?? createMockTransport()
+    return createClient(t)
+  }, [transport])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,7 +91,11 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [set])
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  return (
+    <ClientContext.Provider value={client}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </ClientContext.Provider>
+  )
 }
 
 export function useStudio(): Studio {
