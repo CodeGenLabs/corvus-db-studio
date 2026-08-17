@@ -1,4 +1,4 @@
-import type { Dataset, FieldDef, TableRow, TreeNode } from '../types'
+import type { Dataset, FieldDef, TableRow, TreeNode } from '@corvus/contract'
 
 export const TABLES: TableRow[] = [
   ['actor', '200', '16 KB', 'InnoDB', '204', '2026-07-14 09:12'],

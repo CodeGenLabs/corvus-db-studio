@@ -1,0 +1,32 @@
+{
+  "name": "@corvus/contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./models": {
+      "types": "./src/models/index.ts",
+      "import": "./src/models/index.ts"
+    },
+    "./*": {
+      "types": "./src/*",
+      "import": "./src/*"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --noEmit",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

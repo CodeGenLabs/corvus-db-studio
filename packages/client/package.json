@@ -1,0 +1,33 @@
+{
+  "name": "@corvus/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./queries": {
+      "types": "./src/queries/index.ts",
+      "import": "./src/queries/index.ts"
+    },
+    "./*": {
+      "types": "./src/*",
+      "import": "./src/*"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --noEmit",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@corvus/contract": "workspace:*",
+    "@tanstack/react-query": "^5.66.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

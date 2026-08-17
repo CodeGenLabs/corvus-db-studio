@@ -1,15 +1,25 @@
 {
   "name": "corvus-db-studio",
+  "version": "0.0.0",
   "private": true,
-  "version": "3.2.1",
   "type": "module",
+  "packageManager": "pnpm@11.22.0",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc -b --noEmit"
+    "dev:web": "turbo run dev --filter=@corvus/app-web...",
+    "dev:desktop": "turbo run dev --filter=@corvus/app-desktop...",
+    "build": "turbo run build",
+    "build:app": "tsc -b && vite build",
+    "test": "turbo run test",
+    "test:it": "turbo run test:integration",
+    "test:e2e": "playwright test",
+    "lint": "eslint . && depcruise packages apps",
+    "typecheck": "turbo run typecheck",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "preview": "vite preview"
   },
   "dependencies": {
+    "@corvus/ui": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -17,6 +27,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "turbo": "^2.4.4",
     "typescript": "^5.7.2",
     "vite": "^6.0.5"
   }
