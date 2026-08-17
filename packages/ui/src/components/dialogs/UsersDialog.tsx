@@ -1,15 +1,50 @@
+import { useState } from 'react'
 import { Modal } from './Modal'
 import { DB_USERS } from '../../data/schema'
 import { useStudio } from '../../store/studio'
 
 const COLS = '1fr 130px 150px 140px 150px'
 
+const PRIVILEGES = [
+  'SELECT',
+  'INSERT',
+  'UPDATE',
+  'DELETE',
+  'CREATE',
+  'DROP',
+  'ALTER',
+  'INDEX',
+  'EXECUTE',
+  'GRANT OPTION',
+]
+
 export function UsersDialog() {
   const { s, set, t, rowH } = useStudio()
   const close = () => set({ dialog: null })
 
+  const [activeTab, setActiveTab] = useState<'users' | 'privileges' | 'designer'>('users')
+  const [selectedUser, setSelectedUser] = useState(s.userSel || 'app_user')
+  const [userPrivs, setUserPrivs] = useState<Record<string, 'granted' | 'none' | 'inherited'>>({
+    SELECT: 'granted',
+    INSERT: 'granted',
+    UPDATE: 'granted',
+    DELETE: 'none',
+    CREATE: 'none',
+    DROP: 'none',
+    ALTER: 'none',
+    INDEX: 'inherited',
+    EXECUTE: 'granted',
+    'GRANT OPTION': 'none',
+  })
+
+  const togglePriv = (priv: string) => {
+    const current = userPrivs[priv] || 'none'
+    const next = current === 'granted' ? 'none' : current === 'none' ? 'inherited' : 'granted'
+    setUserPrivs({ ...userPrivs, [priv]: next })
+  }
+
   return (
-    <Modal onClose={close} surface={{ width: 720, height: 440, display: 'flex', flexDirection: 'column' }}>
+    <Modal onClose={close} surface={{ width: 760, height: 480, display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
           height: 38,
@@ -23,129 +58,191 @@ export function UsersDialog() {
         }}
       >
         <span style={{ fontWeight: 600 }}>{t.usersTitle}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>6 · sakila @ Local Dev</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 7 }}>
-          <div
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>sakila @ Local Dev</span>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <button
+            onClick={() => setActiveTab('users')}
             style={{
               height: 24,
-              padding: '0 11px',
-              display: 'flex',
-              alignItems: 'center',
-              borderRadius: 5,
-              background: 'var(--accent)',
-              color: 'var(--on-accent)',
-              fontWeight: 600,
+              padding: '0 10px',
+              borderRadius: 4,
+              border: 'none',
+              background: activeTab === 'users' ? 'var(--pane)' : 'transparent',
+              color: activeTab === 'users' ? 'var(--accent)' : 'var(--text2)',
+              fontWeight: activeTab === 'users' ? 600 : 400,
               fontSize: 11.5,
               cursor: 'pointer',
             }}
           >
-            {t.usersNew}
-          </div>
-          <div
-            className="hv-accent-border"
+            Người dùng ({DB_USERS.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('privileges')}
             style={{
               height: 24,
-              padding: '0 11px',
-              display: 'flex',
-              alignItems: 'center',
-              border: '1px solid var(--border-strong)',
-              borderRadius: 5,
-              color: 'var(--text2)',
+              padding: '0 10px',
+              borderRadius: 4,
+              border: 'none',
+              background: activeTab === 'privileges' ? 'var(--pane)' : 'transparent',
+              color: activeTab === 'privileges' ? 'var(--accent)' : 'var(--text2)',
+              fontWeight: activeTab === 'privileges' ? 600 : 400,
               fontSize: 11.5,
               cursor: 'pointer',
             }}
           >
-            {t.usersRoles}
-          </div>
+            Ma trận quyền (Privilege Matrix)
+          </button>
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: COLS,
-          height: 24,
-          flex: 'none',
-          alignItems: 'center',
-          background: 'var(--pane2)',
-          borderBottom: '1px solid var(--border)',
-          fontSize: 10.5,
-          fontWeight: 600,
-          letterSpacing: '.3px',
-          textTransform: 'uppercase',
-          color: 'var(--text3)',
-        }}
-      >
-        <div style={{ padding: '0 10px' }}>{t.usersUser}</div>
-        <div style={{ padding: '0 10px' }}>{t.usersHost}</div>
-        <div style={{ padding: '0 10px' }}>{t.usersRole}</div>
-        <div style={{ padding: '0 10px' }}>{t.usersLast}</div>
-        <div style={{ padding: '0 10px' }}>{t.usersState}</div>
-      </div>
+      {activeTab === 'users' && (
+        <>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: COLS,
+              height: 24,
+              flex: 'none',
+              alignItems: 'center',
+              background: 'var(--pane2)',
+              borderBottom: '1px solid var(--border)',
+              fontSize: 10.5,
+              fontWeight: 600,
+              letterSpacing: '.3px',
+              textTransform: 'uppercase',
+              color: 'var(--text3)',
+            }}
+          >
+            <div style={{ padding: '0 10px' }}>{t.usersUser}</div>
+            <div style={{ padding: '0 10px' }}>{t.usersHost}</div>
+            <div style={{ padding: '0 10px' }}>{t.usersRole}</div>
+            <div style={{ padding: '0 10px' }}>{t.usersLast}</div>
+            <div style={{ padding: '0 10px' }}>{t.usersState}</div>
+          </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {DB_USERS.map((u, i) => {
-          const color = u[4] === 'active' ? 'var(--green)' : u[4] === 'locked' ? 'var(--amber)' : 'var(--red)'
-          return (
-            <div
-              key={u[0]}
-              className="hv-row"
-              onClick={() => set({ userSel: u[0] })}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: COLS,
-                height: rowH + 5,
-                alignItems: 'center',
-                cursor: 'pointer',
-                borderBottom: '1px solid var(--grid-line)',
-                background: s.userSel === u[0] ? 'var(--accent-soft)' : i % 2 ? 'var(--row-alt)' : 'transparent',
-              }}
-            >
-              <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-                <span
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            {DB_USERS.map((u, i) => {
+              const color = u[4] === 'active' ? 'var(--green)' : u[4] === 'locked' ? 'var(--amber)' : 'var(--red)'
+              return (
+                <div
+                  key={u[0]}
+                  className="hv-row"
+                  onClick={() => {
+                    setSelectedUser(u[0])
+                    set({ userSel: u[0] })
+                  }}
                   style={{
-                    width: 20,
-                    height: 20,
-                    flex: 'none',
-                    borderRadius: '50%',
-                    display: 'flex',
+                    display: 'grid',
+                    gridTemplateColumns: COLS,
+                    height: rowH + 5,
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 9,
-                    fontWeight: 600,
-                    background: 'var(--accent-soft)',
-                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    borderBottom: '1px solid var(--grid-line)',
+                    background: selectedUser === u[0] ? 'var(--accent-soft)' : i % 2 ? 'var(--row-alt)' : 'transparent',
                   }}
                 >
-                  {u[0].slice(0, 2).toUpperCase()}
-                </span>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 11.5 }}>{u[0]}</span>
-              </div>
-              <div style={{ padding: '0 10px', color: 'var(--text2)', fontFamily: 'var(--mono)', fontSize: 11 }}>{u[1]}</div>
-              <div style={{ padding: '0 10px', color: 'var(--text2)' }}>{u[2]}</div>
-              <div style={{ padding: '0 10px', color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 11 }}>{u[3]}</div>
-              <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    height: 17,
-                    padding: '0 7px',
-                    borderRadius: 9,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color,
-                    border: '1px solid ' + color + '55',
-                  }}
-                >
-                  {u[4]}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--accent)', cursor: 'pointer' }}>{t.usersEdit}</span>
-              </div>
+                  <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                    <span
+                      style={{
+                        width: 20,
+                        height: 20,
+                        flex: 'none',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 9,
+                        fontWeight: 600,
+                        background: 'var(--accent-soft)',
+                        color: 'var(--accent)',
+                      }}
+                    >
+                      {u[0].slice(0, 2).toUpperCase()}
+                    </span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 11.5 }}>{u[0]}</span>
+                  </div>
+                  <div style={{ padding: '0 10px', color: 'var(--text2)', fontFamily: 'var(--mono)', fontSize: 11 }}>{u[1]}</div>
+                  <div style={{ padding: '0 10px', color: 'var(--text2)' }}>{u[2]}</div>
+                  <div style={{ padding: '0 10px', color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 11 }}>{u[3]}</div>
+                  <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        height: 17,
+                        padding: '0 7px',
+                        borderRadius: 9,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color,
+                        border: '1px solid ' + color + '55',
+                      }}
+                    >
+                      {u[4]}
+                    </span>
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedUser(u[0])
+                        setActiveTab('privileges')
+                      }}
+                      style={{ fontSize: 11, color: 'var(--accent)', cursor: 'pointer' }}
+                    >
+                      {t.usersEdit}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'privileges' && (
+        <div style={{ flex: 1, padding: 14, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--text2)' }}>Đang cấu hình quyền cho user:</span>
+            <strong style={{ fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--accent)' }}>{selectedUser}</strong>
+          </div>
+
+          <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden', background: 'var(--pane)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 180px', padding: '6px 12px', background: 'var(--pane2)', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text2)' }}>
+              <div>Đặc quyền (Privilege)</div>
+              <div>Trạng thái</div>
+              <div>Ghi chú</div>
             </div>
-          )
-        })}
-      </div>
+
+            {PRIVILEGES.map((p) => {
+              const state = userPrivs[p] || 'none'
+              const color = state === 'granted' ? 'var(--green)' : state === 'inherited' ? 'var(--accent)' : 'var(--text3)'
+              const label = state === 'granted' ? '✔ Đã cấp (Granted)' : state === 'inherited' ? '⇪ Thừa hưởng (Inherited)' : '✖ Không cấp'
+              return (
+                <div
+                  key={p}
+                  className="hv-row"
+                  onClick={() => togglePriv(p)}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 140px 180px',
+                    padding: '8px 12px',
+                    alignItems: 'center',
+                    borderBottom: '1px solid var(--grid-line)',
+                    cursor: 'pointer',
+                    fontSize: 11.5,
+                  }}
+                >
+                  <div style={{ fontFamily: 'var(--mono)', fontWeight: 600, color: 'var(--text)' }}>{p}</div>
+                  <div>
+                    <span style={{ color, fontWeight: 600, fontSize: 11 }}>{label}</span>
+                  </div>
+                  <div style={{ color: 'var(--text3)', fontSize: 10.5 }}>Nhấp để chuyển trạng thái</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <div
         style={{

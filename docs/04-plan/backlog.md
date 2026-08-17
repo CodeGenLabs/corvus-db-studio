@@ -418,9 +418,9 @@ T-351 · [W5] Batch job runner (tuần tự, continueOnError, huỷ)
 T-353 · [W5] Leader election qua schedule_lock (web nhiều instance)
 T-354 · [W5] Bỏ qua lần bắn chồng + ghi log
 T-355 · [W5] Notify: SMTP (nodemailer) + webhook HMAC + sendTest
-T-356 · [W5] BatchJobEditor + StepPicker (kéo thả)
-T-357 · [W5] CronBuilder + diễn giải bằng chữ + 5 lần chạy kế tiếp
-T-358 · [W5] RunHistoryGrid + LogViewer (tail, tìm, tải về)
+[DONE] T-356 · [W5] BatchJobEditor + StepPicker (kéo thả)
+[DONE] T-357 · [W5] CronBuilder + diễn giải bằng chữ + 5 lần chạy kế tiếp
+[DONE] T-358 · [W5] RunHistoryGrid + LogViewer (tail, tìm, tải về)
 T-359 · [W5] apps/cli: corvus run-job + exit code + stdout log
 T-360 · [W5] Xoay vòng lịch sử chạy
 ```
@@ -433,10 +433,10 @@ T-381 · [W5] Hiện thực cho PG / MySQL / MSSQL
 [DONE] T-382 · [W5] security.users / .roles / .privileges
 T-383 · [W5] previewUser / applyUser (mật khẩu che khi hiển thị + comment giải thích)
 T-384 · [W5] previewGrant / applyGrant
-T-385 · [W5] UsersDialog nối logic thật
+[DONE] T-385 · [W5] UsersDialog nối logic thật
 T-386 · [W5] UserDesigner render từ driver.userDesignSchema
 T-387 · [W5] RoleDesigner
-T-388 · [W5] PrivilegeMatrix (3 trạng thái: gán / không / thừa hưởng)
+[DONE] T-388 · [W5] PrivilegeMatrix (3 trạng thái: gán / không / thừa hưởng)
 T-389 · [W5] Cảnh báo tác động vào chính mình / user hệ thống
 T-390 · [W5] security-password-leak.test.ts
 ```
@@ -460,7 +460,7 @@ T-411 · [W5] Local account (argon2id) + OIDC
 T-412 · [W5] RBAC 5 role + connection ACL
 T-413 · [W5] Cookie + CSRF + session xoay 8 giờ
 [DONE] T-414 · [W5] audit_log + ghi theo mức khai báo trong contract
-T-415 · [W5] LoginView + xử lý session hết hạn
+[DONE] T-415 · [W5] LoginView + xử lý session hết hạn
 T-416 · [W5] Quản lý user Corvus (admin UI)
 ```
 
@@ -472,7 +472,7 @@ T-471 · [W2] Khôi phục tab sau khởi động (3 chế độ onStartup)
 T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo namespace
         ✅ CI fail khi thiếu khoá ở bất kỳ ngôn ngữ nào
 [DONE] T-473 · [W2] Settings đầy đủ 7 mục + DEFAULT_CONFIG một chỗ duy nhất
-T-474 · [W2] CommandPalette: fuzzy search + nguồn thật (workspace.paletteSearch)
+[DONE] T-474 · [W2] CommandPalette: fuzzy search + nguồn thật (workspace.paletteSearch)
 T-475 · [W2] Pane maximize/restore
 T-476 · [W6] Focus mode
 T-477 · [W6] ShortcutEditor + phát hiện xung đột
@@ -484,8 +484,8 @@ T-482 · [W6] Deep link corvus:// (desktop)
 T-483 · [W3] Lazy load view nặng (ModelView, BiView, PipelineBuilder, ExplainTree)
         ✅ bundle initial ≤ 900 KB gzip
 T-484 · [W3] app.checkUpdate + không tự cài khi có job chạy
-T-485 · [W2] Trạng thái empty/loading/error/unsupported chuẩn hoá thành component dùng chung
-T-486 · [W2] Format số/ngày/dung lượng theo locale
+[DONE] T-485 · [W2] Trạng thái empty/loading/error/unsupported chuẩn hoá thành component dùng chung
+[DONE] T-486 · [W2] Format số/ngày/dung lượng theo locale
 ```
 
 # E-020 · Đóng gói & Phát hành  `[W3]`
