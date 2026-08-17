@@ -18,6 +18,9 @@ export { ObjectToolbar } from './components/ObjectToolbar'
 export { FilterPanel } from './components/FilterPanel'
 export { SearchIcon } from './components/SearchIcon'
 export { Kw } from './components/code'
+export * from './components/grid'
+export * from './components/wizard'
+export * from './wizards'
 
 // Dialogs
 export { Modal } from './components/dialogs/Modal'

@@ -1,0 +1,31 @@
+appId: com.corvus.studio
+productName: Corvus DB Studio
+copyright: Copyright © 2026 Corvus Team
+
+directories:
+  output: dist-desktop
+  buildResources: build
+
+files:
+  - "apps/desktop-main/dist/**/*"
+  - "apps/desktop-preload/dist/**/*"
+  - "apps/desktop-renderer/dist/**/*"
+  - "packages/*/dist/**/*"
+  - "node_modules/**/*"
+  - "package.json"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Corvus DB Studio

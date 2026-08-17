@@ -359,20 +359,20 @@ T-058 · [W3] Khởi động lại → job đang chạy → failed/INTERRUPTED, 
 
 ```
 [DONE] T-250 · [W3] WizardShell dùng chung (Back/Next/Save profile/Start)
-T-251 · [W3] import.analyze (đọc phần đầu file, suy luận kiểu, preview 100 dòng)
-T-252 · [W3] Parser CSV/TSV/TXT delimited + fixed-width
+[DONE] T-251 · [W3] import.analyze (đọc phần đầu file, suy luận kiểu, preview 100 dòng)
+[DONE] T-252 · [W3] Parser CSV/TSV/TXT delimited + fixed-width
 T-253 · [W3] Parser JSON (stream-json) + XML (sax)
 T-254 · [W3] Parser XLSX (exceljs streaming)
 T-255 · [W3] decodeStream đa encoding + BOM
-T-256 · [W3] FieldMappingGrid (Smart/Direct/Unmatch)
-T-257 · [W3] 5 import mode → SQL
+[DONE] T-256 · [W3] FieldMappingGrid (Smart/Direct/Unmatch)
+[DONE] T-257 · [W3] 5 import mode → SQL
 T-258 · [W3] Đường nhanh: PG COPY FROM STDIN, MySQL extended insert, MSSQL bulk
 T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng dòng
 [DONE] T-260 · [W3] Export: 9 formatter stream
 T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
 T-262 · [W3] tool_profile lưu/nạp cấu hình
-T-263 · [W3] ImportWizard 6 bước UI
-T-264 · [W3] ExportWizard 5 bước UI
+[DONE] T-263 · [W3] ImportWizard 6 bước UI
+[DONE] T-264 · [W3] ExportWizard 5 bước UI
 T-265 · [W3] Copy/Delete mode qua preview
 ```
 
@@ -383,12 +383,12 @@ T-265 · [W3] Copy/Delete mode qua preview
 T-321 · [W3] Backup job: thứ tự object, index/FK ở cuối, stream ra file
 T-322 · [W3] Nén gzip/zstd + verify sau khi ghi
 T-323 · [W3] backup.list đọc header (không đọc cả file)
-T-324 · [W3] restore.preview: willDrop + currentRows + compatibility
-T-325 · [W3] Restore job: đọc stream, splitStatements, transaction nếu có
+[DONE] T-324 · [W3] restore.preview: willDrop + currentRows + compatibility
+[DONE] T-325 · [W3] Restore job: đọc stream, splitStatements, transaction nếu có
 T-326 · [W3] Extract SQL từ file backup
 T-327 · [W5] Wrapper mysqldump/pg_dump khi có sẵn
 [DONE] T-328 · [W3] BackupView nối logic thật + BackupHistoryGrid
-T-329 · [W3] RestoreWizard
+[DONE] T-329 · [W3] RestoreWizard
 T-330 · [W3] Xử lý DISK_FULL, BACKUP_CORRUPT, RESTORE_PARTIAL
 ```
 
@@ -491,9 +491,9 @@ T-486 · [W2] Format số/ngày/dung lượng theo locale
 # E-020 · Đóng gói & Phát hành  `[W3]`
 
 ```
-T-500 · [W3] Dockerfile nhiều tầng + docker-compose mẫu + healthcheck
-T-501 · [W3] Biến môi trường + từ chối start khi thiếu CORVUS_MASTER_KEY
-T-502 · [W3] electron-builder.yml + NSIS + portable
+[DONE] T-500 · [W3] Dockerfile nhiều tầng + docker-compose mẫu + healthcheck
+[DONE] T-501 · [W3] Biến môi trường + từ chối start khi thiếu CORVUS_MASTER_KEY
+[DONE] T-502 · [W3] electron-builder.yml + NSIS + portable
 T-503 · [W1] Mua và thiết lập chứng chỉ EV Code Signing (bắt đầu SỚM)
 T-504 · [W3] Ký số trong CI + verify bằng signtool
 T-505 · [W3] electron-updater + feed generic + kênh stable/beta
