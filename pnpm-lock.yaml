@@ -195,6 +195,54 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/driver-mysql:
+    dependencies:
+      '@corvus/contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@corvus/driver-core':
+        specifier: workspace:*
+        version: link:../driver-core
+      '@corvus/sql':
+        specifier: workspace:*
+        version: link:../sql
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/driver-postgres:
+    dependencies:
+      '@corvus/contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@corvus/driver-core':
+        specifier: workspace:*
+        version: link:../driver-core
+      '@corvus/sql':
+        specifier: workspace:*
+        version: link:../sql
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/driver-sqlite:
+    dependencies:
+      '@corvus/contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@corvus/driver-core':
+        specifier: workspace:*
+        version: link:../driver-core
+      '@corvus/sql':
+        specifier: workspace:*
+        version: link:../sql
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/engine:
     dependencies:
       '@corvus/contract':
@@ -206,16 +254,35 @@ importers:
       '@corvus/sql':
         specifier: workspace:*
         version: link:../sql
+      '@corvus/storage':
+        specifier: workspace:*
+        version: link:../storage
       zod:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
 
   packages/sql:
     devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/storage:
+    dependencies:
+      '@corvus/contract':
+        specifier: workspace:*
+        version: link:../contract
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -246,6 +313,19 @@ importers:
         specifier: workspace:*
         version: link:../contract
     devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/tunnel:
+    dependencies:
+      '@corvus/contract':
+        specifier: workspace:*
+        version: link:../contract
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

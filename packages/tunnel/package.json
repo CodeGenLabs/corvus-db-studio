@@ -1,5 +1,5 @@
 {
-  "name": "@corvus/engine",
+  "name": "@corvus/tunnel",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -9,10 +9,6 @@
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts"
-    },
-    "./session": {
-      "types": "./src/session/index.ts",
-      "import": "./src/session/index.ts"
     },
     "./*": {
       "types": "./src/*",
@@ -24,11 +20,7 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
-    "@corvus/contract": "workspace:*",
-    "@corvus/driver-core": "workspace:*",
-    "@corvus/sql": "workspace:*",
-    "@corvus/storage": "workspace:*",
-    "zod": "^3.24.1"
+    "@corvus/contract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

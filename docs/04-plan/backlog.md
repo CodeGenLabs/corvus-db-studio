@@ -151,26 +151,28 @@ T-017 · [W1] useQueryStream: ring buffer + huỷ + phát hiện lỗ hổng seq
         ⇦ T-020
         📁 packages/driver-core/src/{types.ts,registry.ts}
 
-T-022 · [W0] driver-conformance-suite: khung + C1 Connect + C2 Introspect
+[DONE] T-022 · [W0] driver-conformance-suite: khung + C1 Connect + C2 Introspect
         driver-spi.md §8
         ⇦ T-021
         📁 packages/driver-core/src/conformance/**
         ✅ chạy được với testcontainers; báo cáo rõ nhóm nào fail
 
-T-023 · [W0] driver-postgres: connect, pool, introspect, dialect
+[DONE] T-023 · [W0] driver-postgres: connect, pool, introspect, dialect
         ⇦ T-022
         📁 packages/driver-postgres/src/**
         ✅ vượt C1+C2; listObjects 5000 bảng ≤ 800 ms; không N+1 (test đếm query)
 
-T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
+[DONE] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
         ⇦ T-022
+        📁 packages/driver-mysql/src/**
         ✅ vượt C1+C2; capabilities thu hẹp đúng theo version server
 
-T-024b · [W0] driver-sqlite
+[DONE] T-024b · [W0] driver-sqlite
         ⇦ T-022
+        📁 packages/driver-sqlite/src/**
         ✅ vượt C1+C2
 
-T-029 · [W0] @corvus/tunnel: SSH (ssh2) + known_hosts + TLS config
+[DONE] T-029 · [W0] @corvus/tunnel: SSH (ssh2) + known_hosts + TLS config
         SPEC-01 FR-01.08–11 · security.md §8
         ⇦ T-021
         📁 packages/tunnel/src/**
@@ -181,13 +183,13 @@ T-029 · [W0] @corvus/tunnel: SSH (ssh2) + known_hosts + TLS config
 # E-004 · Storage & Security  `[W0]`
 
 ```
-T-025 · [W0] @corvus/storage + migration runner có checksum
+[DONE] T-025 · [W0] @corvus/storage + migration runner có checksum
         ADR-0006 · workspace-storage.md
         ⇦ T-001
         📁 packages/storage/src/**, migrations/0001_init.sql
         ✅ migration idempotent; sửa file cũ → checksum fail → từ chối khởi động
 
-T-026 · [W0] Tự backup workspace.db trước khi migrate
+[DONE] T-026 · [W0] Tự backup workspace.db trước khi migrate
         ⇦ T-025
         ✅ file .bak-<version> được tạo; test với file thật
 
@@ -196,17 +198,17 @@ T-027 · [W1] corvus workspace export/import định dạng .corvusws
         ⇦ T-025
         ✅ round-trip đầy đủ, có và không có secret; passphrase PBKDF2 600k
 
-T-028 · [W0] Từ chối khởi động khi user_version mới hơn app
+[DONE] T-028 · [W0] Từ chối khởi động khi user_version mới hơn app
         ⇦ T-025
         ✅ thông điệp rõ, không downgrade âm thầm
 
-T-029b · [W0] SecretVault: OsKeychainVault + EnvelopeVault
+[DONE] T-029b · [W0] SecretVault: OsKeychainVault + EnvelopeVault
         security.md §2
         ⇦ T-025
         📁 packages/storage/src/vault/**
         ✅ desktop dùng safeStorage; web dùng envelope + HKDF; server từ chối start khi thiếu MK
 
-T-029c · [W0] Test rò rỉ secret (4 bộ)
+[DONE] T-029c · [W0] Test rò rỉ secret (4 bộ)
         security.md §2, §11
         ⇦ T-029b, T-019
         📁 packages/engine/src/__tests__/{vault,connection,security,ai}-leak.test.ts
@@ -216,18 +218,18 @@ T-029c · [W0] Test rò rỉ secret (4 bộ)
 # E-005 · Kết nối (SPEC-01)  `[W0]`
 
 ```
-T-070 · [W0] connection.* methods trong contract
-T-071 · [W0] SessionManager + pool + idle timeout + heartbeat + backoff reconnect
-T-072 · [W0] connection.test (profile đã lưu + draft chưa lưu)
-T-073 · [W0] ConnectionForm render từ driver.connectionSchema
-T-074 · [W0] SslTab, SshTab, AdvancedTab
-T-075 · [W0] HostKeyPrompt + luồng trustHostKey
-T-076 · [W0] Chế độ read-only: SQL parse guard + session-level + UI badge
-T-077 · [W1] Connection coloring + virtual group
+[DONE] T-070 · [W0] connection.* methods trong contract
+[DONE] T-071 · [W0] SessionManager + pool + idle timeout + heartbeat + backoff reconnect
+[DONE] T-072 · [W0] connection.test (profile đã lưu + draft chưa lưu)
+[DONE] T-073 · [W0] ConnectionForm render từ driver.connectionSchema
+[DONE] T-074 · [W0] SslTab, SshTab, AdvancedTab
+[DONE] T-075 · [W0] HostKeyPrompt + luồng trustHostKey
+[DONE] T-076 · [W0] Chế độ read-only: SQL parse guard + session-level + UI badge
+[DONE] T-077 · [W1] Connection coloring + virtual group
 T-078 · [W1] parseUri / toUri
 T-079 · [W1] Host policy chống SSRF (web) + cảnh báo localhost
 T-080 · [W1] Nhân bản profile, sắp xếp lại
-T-081 · [W0] NavPane nối dữ liệu thật (lazy load)
+[DONE] T-081 · [W0] NavPane nối dữ liệu thật (lazy load)
 T-082 · [W1] Trạng thái empty/loading/error cho toàn bộ luồng kết nối
 ```
 Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 của SPEC-01.

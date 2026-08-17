@@ -8,6 +8,8 @@ import type {
 } from '@corvus/contract'
 import type { SqlDialect } from '@corvus/sql'
 
+export type { ResultChunk, TableMeta }
+
 export interface ServerVersion {
   raw: string
   major: number

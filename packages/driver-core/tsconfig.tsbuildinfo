@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/registry.ts","./src/types.ts"],"version":"5.9.3"}
+{"root":["./src/index.ts","./src/registry.ts","./src/types.ts","./src/conformance/c1-connect.ts","./src/conformance/c2-introspect.ts","./src/conformance/index.ts","./src/conformance/runner.ts","./src/conformance/types.ts"],"version":"5.9.3"}
