@@ -397,11 +397,11 @@ T-330 · [W3] Xử lý DISK_FULL, BACKUP_CORRUPT, RESTORE_PARTIAL
 ```
 [DONE] T-200 · [W4] QueryModel + buildSelect(model, dialect) + golden 30 case/dialect
 T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
-T-202 · [W4] BuilderCanvas + TableNode + JoinEdge
-T-203 · [W4] ClauseTabs: FROM/SELECT/WHERE/GROUP BY/HAVING/ORDER BY
-T-204 · [W4] Join tự sinh theo FK + đổi loại join
+[DONE] T-202 · [W4] BuilderCanvas + TableNode + JoinEdge
+[DONE] T-203 · [W4] ClauseTabs: FROM/SELECT/WHERE/GROUP BY/HAVING/ORDER BY
+[DONE] T-204 · [W4] Join tự sinh theo FK + đổi loại join
 T-205 · [W4] Subquery trong FROM và WHERE
-T-206 · [W4] SqlPreviewPane realtime + cảnh báo ghi đè
+[DONE] T-206 · [W4] SqlPreviewPane realtime + cảnh báo ghi đè
 [DONE] T-220 · [W4] ErView: introspect toàn schema + layout + render
 T-221 · [W4] Lưu vị trí node theo (connection, schema)
 T-222 · [W4] Ngưỡng 150 bảng → dialog chọn tập bảng
@@ -448,7 +448,7 @@ T-390 · [W5] security-password-leak.test.ts
 [DONE] T-401 · [W5] monitor.killProcess qua preview
 [DONE] T-402 · [W5] monitor.variables + previewSetVariable
 [DONE] T-403 · [W5] monitor.status + highlight chỉ số thay đổi
-T-404 · [W5] ServerMonitorView + auto refresh + huỷ stream khi rời view
+[DONE] T-404 · [W5] ServerMonitorView + auto refresh + huỷ stream khi rời view
 T-405 · [W4] search.findInSchema (job, data + structure, 4 mode)
 ```
 
