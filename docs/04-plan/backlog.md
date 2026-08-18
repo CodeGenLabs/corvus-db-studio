@@ -369,7 +369,7 @@ T-254 · [W3] Parser XLSX (exceljs streaming)
 [DONE] T-258 · [W3] Đường nhanh: PG COPY FROM STDIN, MySQL extended insert, MSSQL bulk
 T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng dòng
 [DONE] T-260 · [W3] Export: 9 formatter stream
-T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
+[DONE] T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
 [DONE] T-262 · [W3] tool_profile lưu/nạp cấu hình
 [DONE] T-263 · [W3] ImportWizard 6 bước UI
 [DONE] T-264 · [W3] ExportWizard 5 bước UI
@@ -380,7 +380,7 @@ T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
 
 ```
 [DONE] T-320 · [W3] Định dạng file backup + header metadata + file .meta checksum
-T-321 · [W3] Backup job: thứ tự object, index/FK ở cuối, stream ra file
+[DONE] T-321 · [W3] Backup job: thứ tự object, index/FK ở cuối, stream ra file
 T-322 · [W3] Nén gzip/zstd + verify sau khi ghi
 T-323 · [W3] backup.list đọc header (không đọc cả file)
 [DONE] T-324 · [W3] restore.preview: willDrop + currentRows + compatibility
@@ -413,7 +413,7 @@ T-205 · [W4] Subquery trong FROM và WHERE
 
 ```
 [DONE] T-350 · [W5] batch_job + schedule + job_run schema + CRUD methods
-T-351 · [W5] Batch job runner (tuần tự, continueOnError, huỷ)
+[DONE] T-351 · [W5] Batch job runner (tuần tự, continueOnError, huỷ)
 [DONE] T-352 · [W5] Scheduler (node-cron) + timezone + hot reload
 T-353 · [W5] Leader election qua schedule_lock (web nhiều instance)
 T-354 · [W5] Bỏ qua lần bắn chồng + ghi log
@@ -422,7 +422,7 @@ T-354 · [W5] Bỏ qua lần bắn chồng + ghi log
 [DONE] T-357 · [W5] CronBuilder + diễn giải bằng chữ + 5 lần chạy kế tiếp
 [DONE] T-358 · [W5] RunHistoryGrid + LogViewer (tail, tìm, tải về)
 T-359 · [W5] apps/cli: corvus run-job + exit code + stdout log
-T-360 · [W5] Xoay vòng lịch sử chạy
+[DONE] T-360 · [W5] Xoay vòng lịch sử chạy
 ```
 
 # E-016 · Server Security (SPEC-12)  `[W5]`
