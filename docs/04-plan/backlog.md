@@ -449,7 +449,7 @@ T-390 · [W5] security-password-leak.test.ts
 [DONE] T-402 · [W5] monitor.variables + previewSetVariable
 [DONE] T-403 · [W5] monitor.status + highlight chỉ số thay đổi
 [DONE] T-404 · [W5] ServerMonitorView + auto refresh + huỷ stream khi rời view
-T-405 · [W4] search.findInSchema (job, data + structure, 4 mode)
+[DONE] T-405 · [W4] search.findInSchema (job, data + structure, 4 mode)
 ```
 
 # E-018 · Multi-user web  `[W5]`
@@ -461,7 +461,7 @@ T-412 · [W5] RBAC 5 role + connection ACL
 T-413 · [W5] Cookie + CSRF + session xoay 8 giờ
 [DONE] T-414 · [W5] audit_log + ghi theo mức khai báo trong contract
 [DONE] T-415 · [W5] LoginView + xử lý session hết hạn
-T-416 · [W5] Quản lý user Corvus (admin UI)
+[DONE] T-416 · [W5] Quản lý user Corvus (admin UI)
 ```
 
 # E-019 · Shell & Settings (SPEC-15)  `[W0-W6]`
@@ -474,8 +474,8 @@ T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo n
 [DONE] T-473 · [W2] Settings đầy đủ 7 mục + DEFAULT_CONFIG một chỗ duy nhất
 [DONE] T-474 · [W2] CommandPalette: fuzzy search + nguồn thật (workspace.paletteSearch)
 [DONE] T-475 · [W2] Pane maximize/restore
-T-476 · [W6] Focus mode
-T-477 · [W6] ShortcutEditor + phát hiện xung đột
+[DONE] T-476 · [W6] Focus mode
+[DONE] T-477 · [W6] ShortcutEditor + phát hiện xung đột
 [DONE] T-478 · [W4] Favorites (Ctrl+1..9) + Share via URI
 [DONE] T-479 · [W1] ConnectionLostBanner + tự nối lại
 T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
