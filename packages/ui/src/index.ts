@@ -20,6 +20,9 @@ export * from './utils/unload-guard'
 export * from './utils/tree-filter'
 export * from './utils/quote-helper'
 export * from './utils/virtual-group'
+export * from './utils/column-config'
+export * from './utils/grid-keyboard'
+export * from './utils/identifier-cache'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
@@ -76,6 +79,7 @@ export { SystemUserWarningModal } from './components/dialogs/SystemUserWarningMo
 export { CopyTableDialog } from './components/dialogs/CopyTableDialog'
 export { CorvusUserManagerModal } from './components/dialogs/CorvusUserManagerModal'
 export { ShortcutEditorModal } from './components/dialogs/ShortcutEditorModal'
+export { ColumnChooserDialog } from './components/dialogs/ColumnChooserDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'

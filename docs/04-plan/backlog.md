@@ -242,12 +242,12 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 [DONE] T-087 · [W1] Cache metadata trên đĩa (msgpack) + TTL + fingerprint
 [DONE] T-088 · [W1] schema.invalidated topic + invalidateQueries phía client
 T-089 · [W1] Objects List view ảo hoá (5000 object)
-T-090 · [W2] Objects Detail view + ColumnChooser
+[DONE] T-090 · [W2] Objects Detail view + ColumnChooser
 [DONE] T-091 · [W1] Tìm kiếm lọc trong cây và trong Objects tab
 T-092 · [W1] InfoPane tab General (dữ liệu thật)
 T-093 · [W1] InfoPane tab DDL (introspect.ddl + syntax highlight + Ctrl+F)
 T-094 · [W2] InfoPane tab Dependencies (Using / Used By)
-T-095 · [W1] introspect.identifiers + cache cho code completion
+[DONE] T-095 · [W1] introspect.identifiers + cache cho code completion
 [DONE] T-096 · [W2] ObjectContextMenu theo capability + quyền
 [DONE] T-097 · [W1] Copy tên object đã quote đúng dialect
 [DONE] T-098 · [W2] Virtual grouping cho object
@@ -265,9 +265,9 @@ T-032 · [W1] Nạp tăng dần từ AsyncIterable<ResultChunk> + ring buffer 20
 [DONE] T-033 · [W1] Copy/paste: TSV, INSERT, UPDATE, JSON, Markdown (chạy trong Web Worker)
         ✅ copy 100k cell ≤ 1 s
 T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
-T-035 · [W2] Ẩn/hiện cột, đóng băng N cột đầu, lưu theo (connection, bảng)
+[DONE] T-035 · [W2] Ẩn/hiện cột, đóng băng N cột đầu, lưu theo (connection, bảng)
 [DONE] T-036 · [W2] Renderer NULL / chuỗi rỗng / BLOB / missing (Mongo) phân biệt trực quan
-T-037 · [W1] Điều hướng bàn phím + ARIA role
+[DONE] T-037 · [W1] Điều hướng bàn phím + ARIA role
 [DONE] T-038 · [W2] Find/Replace trong grid
 [DONE] T-039 · [W1] NavigationBar (first/prev/next/last page & record, limit setting)
 ```
