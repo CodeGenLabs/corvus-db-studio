@@ -243,14 +243,14 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 [DONE] T-088 · [W1] schema.invalidated topic + invalidateQueries phía client
 T-089 · [W1] Objects List view ảo hoá (5000 object)
 T-090 · [W2] Objects Detail view + ColumnChooser
-T-091 · [W1] Tìm kiếm lọc trong cây và trong Objects tab
+[DONE] T-091 · [W1] Tìm kiếm lọc trong cây và trong Objects tab
 T-092 · [W1] InfoPane tab General (dữ liệu thật)
 T-093 · [W1] InfoPane tab DDL (introspect.ddl + syntax highlight + Ctrl+F)
 T-094 · [W2] InfoPane tab Dependencies (Using / Used By)
 T-095 · [W1] introspect.identifiers + cache cho code completion
-T-096 · [W2] ObjectContextMenu theo capability + quyền
-T-097 · [W1] Copy tên object đã quote đúng dialect
-T-098 · [W2] Virtual grouping cho object
+[DONE] T-096 · [W2] ObjectContextMenu theo capability + quyền
+[DONE] T-097 · [W1] Copy tên object đã quote đúng dialect
+[DONE] T-098 · [W2] Virtual grouping cho object
 ```
 
 # E-007 · DataGrid (ADR-0005)  `[W1]`
