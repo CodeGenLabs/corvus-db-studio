@@ -28,6 +28,7 @@ export * from './utils/tab-session'
 export * from './utils/deep-link-handler'
 export * from './utils/update-checker'
 export * from './utils/version-check'
+export * from './utils/lazy-views'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'

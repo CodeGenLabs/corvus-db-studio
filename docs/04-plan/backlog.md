@@ -362,12 +362,12 @@ T-054 · [W5] Tray mode desktop + cảnh báo lịch
 [DONE] T-251 · [W3] import.analyze (đọc phần đầu file, suy luận kiểu, preview 100 dòng)
 [DONE] T-252 · [W3] Parser CSV/TSV/TXT delimited + fixed-width
 [DONE] T-253 · [W3] Parser JSON (stream-json) + XML (sax)
-T-254 · [W3] Parser XLSX (exceljs streaming)
+[DONE] T-254 · [W3] Parser XLSX (exceljs streaming)
 [DONE] T-255 · [W3] decodeStream đa encoding + BOM
 [DONE] T-256 · [W3] FieldMappingGrid (Smart/Direct/Unmatch)
 [DONE] T-257 · [W3] 5 import mode → SQL
 [DONE] T-258 · [W3] Đường nhanh: PG COPY FROM STDIN, MySQL extended insert, MSSQL bulk
-T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng dòng
+[DONE] T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng dòng
 [DONE] T-260 · [W3] Export: 9 formatter stream
 [DONE] T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
 [DONE] T-262 · [W3] tool_profile lưu/nạp cấu hình
@@ -421,7 +421,7 @@ T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 [DONE] T-356 · [W5] BatchJobEditor + StepPicker (kéo thả)
 [DONE] T-357 · [W5] CronBuilder + diễn giải bằng chữ + 5 lần chạy kế tiếp
 [DONE] T-358 · [W5] RunHistoryGrid + LogViewer (tail, tìm, tải về)
-T-359 · [W5] apps/cli: corvus run-job + exit code + stdout log
+[DONE] T-359 · [W5] apps/cli: corvus run-job + exit code + stdout log
 [DONE] T-360 · [W5] Xoay vòng lịch sử chạy
 ```
 
@@ -481,7 +481,7 @@ T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo n
 [DONE] T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
 [DONE] T-481 · [W5] Cảnh báo thoát khi có job/transaction
 [DONE] T-482 · [W6] Deep link corvus:// (desktop)
-T-483 · [W3] Lazy load view nặng (ModelView, BiView, PipelineBuilder, ExplainTree)
+[DONE] T-483 · [W3] Lazy load view nặng (ModelView, BiView, PipelineBuilder, ExplainTree)
         ✅ bundle initial ≤ 900 KB gzip
 [DONE] T-484 · [W3] app.checkUpdate + không tự cài khi có job chạy
 [DONE] T-485 · [W2] Trạng thái empty/loading/error/unsupported chuẩn hoá thành component dùng chung
