@@ -279,7 +279,7 @@ T-038 · [W2] Find/Replace trong grid
 [DONE] T-101 · [W1] data.previewChanges / applyChanges + preview-token
 T-102 · [W1] Optimistic locking (expected values → WHERE)
 T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transaction
-T-104 · [W1] Bảng không PK: đọc được, không sửa, banner
+[DONE] T-104 · [W1] Bảng không PK: đọc được, không sửa, banner
 [DONE] T-105 · [W1] tx.begin/commit/rollback + TransactionBar + timeout 10 phút
 [DONE] T-106 · [W1] FilterPanel nối logic thật (builder + text mode + preview SQL)
 T-107 · [W2] Filter nhanh từ giá trị cell
@@ -291,9 +291,9 @@ T-112 · [W4] Table Profile (lưu filter/sort/cột/độ rộng)
 T-113 · [W2] Sửa nhiều cell cùng lúc
 [DONE] T-114 · [W2] data.count chính xác (tuỳ chọn) + estimateRowCount mặc định
 [DONE] T-115 · [W1] SqlPreviewDialog dùng chung
-T-116 · [W1] ConflictDialog (mine ↔ theirs ↔ overwrite/skip)
+[DONE] T-116 · [W1] ConflictDialog (mine ↔ theirs ↔ overwrite/skip)
 T-117 · [W2] Định dạng date/time theo setting
-T-118 · [W2] Cell editor lớn (panel/dialog) cho memo/json/xml/hex/image
+[DONE] T-118 · [W2] Cell editor lớn (panel/dialog) cho memo/json/xml/hex/image
 ```
 
 # E-009 · SQL Editor (SPEC-04)  `[W1-W2]`
