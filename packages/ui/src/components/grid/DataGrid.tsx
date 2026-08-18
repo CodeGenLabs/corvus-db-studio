@@ -12,6 +12,9 @@ export interface DataGridProps {
   pageSize?: number
   currentPage?: number
   tableName?: string
+  sortColumn?: string
+  sortDirection?: 'asc' | 'desc' | null
+  onSortChange?: (colName: string, dir: 'asc' | 'desc' | null) => void
   onPageChange?: (page: number) => void
   onPageSizeChange?: (size: number) => void
   onCellEdit?: (rowIdx: number, colIdx: number, val: CellValue) => void
@@ -24,12 +27,26 @@ export function DataGrid({
   pageSize = 100,
   currentPage = 1,
   tableName = 'table',
+  sortColumn,
+  sortDirection,
+  onSortChange,
   onPageChange,
   onPageSizeChange,
   onCellEdit,
 }: DataGridProps) {
   const [selection, setSelection] = useState<GridSelection | null>(null)
   const [editingCell, setEditingCell] = useState<{ row: number; col: number; val: string } | null>(null)
+
+  const handleHeaderClick = (colName: string) => {
+    if (!onSortChange) return
+    if (sortColumn !== colName) {
+      onSortChange(colName, 'asc')
+    } else if (sortDirection === 'asc') {
+      onSortChange(colName, 'desc')
+    } else {
+      onSortChange(colName, null)
+    }
+  }
 
   const handleCellClick = (r: number, c: number) => {
     setSelection({ startRow: r, startCol: c, endRow: r, endCol: c })
@@ -146,45 +163,49 @@ export function DataGrid({
           }}
         >
           <div style={{ padding: '5px 6px', borderRight: '1px solid var(--grid-line)' }} />
-          {columns.map((c, i) => (
-            <div
-              key={c.name + i}
-              style={{
-                padding: '4px 8px 3px',
-                borderRight: i === columns.length - 1 ? 'none' : '1px solid var(--grid-line)',
-                textAlign: c.align === 'r' ? 'right' : 'left',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <span>{c.name}</span>
-              <span
+          {columns.map((c, i) => {
+            const isSorted = sortColumn === c.name
+            return (
+              <div
+                key={c.name + i}
+                onClick={() => handleHeaderClick(c.name)}
                 style={{
-                  display: 'block',
-                  marginTop: 1,
-                  fontFamily: 'var(--mono)',
-                  fontSize: 10,
-                  fontWeight: 400,
-                  color: 'var(--text3)',
+                  padding: '4px 8px 3px',
+                  borderRight: i === columns.length - 1 ? 'none' : '1px solid var(--grid-line)',
+                  textAlign: c.align === 'r' ? 'right' : 'left',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  cursor: onSortChange ? 'pointer' : 'default',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: c.align === 'r' ? 'flex-end' : 'flex-start',
+                  gap: 4,
                 }}
               >
-                {c.type.toLowerCase()}
-              </span>
-            </div>
-          ))}
+                <span>{c.name}</span>
+                {isSorted && (
+                  <span style={{ fontSize: 9, color: 'var(--accent)' }}>
+                    {sortDirection === 'asc' ? '▲' : '▼'}
+                  </span>
+                )}
+                <span style={{ fontSize: 9.5, color: 'var(--text3)', fontWeight: 400 }}>{c.type}</span>
+              </div>
+            )
+          })}
         </div>
 
-        {rows.map((r, rowIdx) => (
+        {rows.map((row, rIdx) => (
           <div
-            key={rowIdx}
+            key={rIdx}
             className="hv-row"
             style={{
               display: 'grid',
               gridTemplateColumns: gridTemplate,
-              background: rowIdx % 2 ? 'var(--row-alt)' : 'transparent',
-              height: 24,
+              borderBottom: '1px solid var(--grid-line)',
               fontSize: 11.5,
+              height: 24,
+              alignItems: 'center',
             }}
           >
             <div
@@ -194,48 +215,27 @@ export function DataGrid({
                 color: 'var(--text3)',
                 fontFamily: 'var(--mono)',
                 fontSize: 10.5,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
                 borderRight: '1px solid var(--grid-line)',
               }}
             >
-              {rowIdx + 1 + (currentPage - 1) * pageSize}
+              {(currentPage - 1) * pageSize + rIdx + 1}
             </div>
 
-            {r.map((val, colIdx) => {
+            {columns.map((col, cIdx) => {
+              const cell = row[cIdx]
+              const isNull = isNullValue(cell)
               const isSelected =
                 selection &&
-                rowIdx >= selection.startRow &&
-                rowIdx <= selection.endRow &&
-                colIdx >= selection.startCol &&
-                colIdx <= selection.endCol
+                rIdx >= Math.min(selection.startRow, selection.endRow) &&
+                rIdx <= Math.max(selection.startRow, selection.endRow) &&
+                cIdx >= Math.min(selection.startCol, selection.endCol) &&
+                cIdx <= Math.max(selection.startCol, selection.endCol)
 
-              const isEditing = editingCell?.row === rowIdx && editingCell?.col === colIdx
-              const isNull = isNullValue(val)
+              const isEditing = editingCell?.row === rIdx && editingCell?.col === cIdx
 
-              return (
-                <div
-                  key={colIdx}
-                  onClick={() => handleCellClick(rowIdx, colIdx)}
-                  onDoubleClick={() => handleCellDoubleClick(rowIdx, colIdx)}
-                  style={{
-                    padding: '0 8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: columns[colIdx]?.align === 'r' ? 'flex-end' : 'flex-start',
-                    borderRight: colIdx === r.length - 1 ? 'none' : '1px solid var(--grid-line)',
-                    background: isSelected ? 'var(--accent-soft)' : 'transparent',
-                    color: isNull ? 'var(--text3)' : 'var(--text)',
-                    fontFamily: columns[colIdx]?.align === 'r' ? 'var(--mono)' : 'inherit',
-                    fontStyle: isNull ? 'italic' : 'normal',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    userSelect: 'none',
-                  }}
-                >
-                  {isEditing ? (
+              if (isEditing) {
+                return (
+                  <div key={col.name + cIdx} style={{ padding: '0 2px' }}>
                     <input
                       autoFocus
                       value={editingCell.val}
@@ -251,13 +251,36 @@ export function DataGrid({
                         border: '1px solid var(--accent)',
                         background: 'var(--pane)',
                         color: 'var(--text)',
+                        fontFamily: 'var(--mono)',
+                        fontSize: 11,
                         padding: '0 4px',
-                        fontSize: 11.5,
+                        outline: 'none',
                       }}
                     />
-                  ) : (
-                    renderCellValue(val)
-                  )}
+                  </div>
+                )
+              }
+
+              return (
+                <div
+                  key={col.name + cIdx}
+                  onClick={() => handleCellClick(rIdx, cIdx)}
+                  onDoubleClick={() => handleCellDoubleClick(rIdx, cIdx)}
+                  style={{
+                    padding: '0 8px',
+                    textAlign: col.align === 'r' ? 'right' : 'left',
+                    fontFamily: 'var(--mono)',
+                    color: isNull ? 'var(--text3)' : 'var(--text)',
+                    fontStyle: isNull ? 'italic' : 'normal',
+                    background: isSelected ? 'var(--sel)' : 'transparent',
+                    borderRight: cIdx === columns.length - 1 ? 'none' : '1px solid var(--grid-line)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    cursor: 'cell',
+                  }}
+                >
+                  {renderCellValue(cell)}
                 </div>
               )
             })}
@@ -265,15 +288,13 @@ export function DataGrid({
         ))}
       </div>
 
-      {onPageChange && (
-        <NavigationBar
-          currentPage={currentPage}
-          totalRows={totalRows}
-          pageSize={pageSize}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
-      )}
+      <NavigationBar
+        currentPage={currentPage}
+        pageSize={pageSize}
+        totalRows={totalRows}
+        onPageChange={onPageChange || (() => {})}
+        onPageSizeChange={onPageSizeChange || (() => {})}
+      />
     </div>
   )
 }

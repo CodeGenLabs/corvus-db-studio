@@ -29,6 +29,7 @@ export * from './components/common/NoPkBanner'
 export * from './components/common/QueryHistoryPanel'
 export * from './components/common/NoWhereWarningModal'
 export * from './components/common/FindReplaceBar'
+export * from './components/common/SnippetPicker'
 export * from './wizards'
 
 // Dialogs
@@ -58,4 +59,5 @@ export { QueryBuilderView } from './views/QueryBuilderView'
 export { LoginView } from './views/LoginView'
 export { ViewDesigner } from './views/ViewDesigner'
 export { RoutineDesigner } from './views/RoutineDesigner'
+export { TriggerDesigner } from './views/TriggerDesigner'
 export { FormView } from './views/FormView'

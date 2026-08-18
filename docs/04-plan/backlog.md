@@ -283,7 +283,7 @@ T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transacti
 [DONE] T-105 · [W1] tx.begin/commit/rollback + TransactionBar + timeout 10 phút
 [DONE] T-106 · [W1] FilterPanel nối logic thật (builder + text mode + preview SQL)
 [DONE] T-107 · [W2] Filter nhanh từ giá trị cell
-T-108 · [W1] Sort server-side theo header click
+[DONE] T-108 · [W1] Sort server-side theo header click
 [DONE] T-109 · [W1] Set NULL / Set Empty String (2 hành động riêng)
 [DONE] T-110 · [W2] FormView
 T-111 · [W4] Foreign-key data selection
@@ -315,7 +315,7 @@ T-043 · [W1] Bảng phím tắt editor
 T-122 · [W2] Folding, brace highlight, word wrap, zoom
 T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
 T-124 · [W4] Query parameters (:name) + ParamPrompt
-T-125 · [W4] Snippets (built-in + custom + placeholder)
+[DONE] T-125 · [W4] Snippets (built-in + custom + placeholder)
 [DONE] T-126 · [W3] query.explain + ExplainTree + tô node đắt nhất
 T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 ```
@@ -332,7 +332,7 @@ T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
         ✅ dữ liệu, index, trigger, view được giữ (integration)
 [DONE] T-145 · [W2] FieldGrid + typeCatalog dropdown
 [DONE] T-146 · [W2] IndexTab, ForeignKeyTab, CheckTab, OptionTab
-T-147 · [W3] TriggerTab + editor body
+[DONE] T-147 · [W3] TriggerTab + editor body
 [DONE] T-148 · [W2] ddl.previewTable / applyTable + PreviewStore
 [DONE] T-149 · [W2] DropObjectDialog (gõ tên + hiện dependencies)
 [DONE] T-150 · [W2] ViewDesigner
