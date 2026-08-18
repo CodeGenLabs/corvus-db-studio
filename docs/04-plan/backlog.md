@@ -277,8 +277,8 @@ T-038 · [W2] Find/Replace trong grid
 ```
 [DONE] T-100 · [W1] data.browse (stream) + FilterExpr AST → SQL
 [DONE] T-101 · [W1] data.previewChanges / applyChanges + preview-token
-T-102 · [W1] Optimistic locking (expected values → WHERE)
-T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transaction
+[DONE] T-102 · [W1] Optimistic locking (expected values → WHERE)
+[DONE] T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transaction
 [DONE] T-104 · [W1] Bảng không PK: đọc được, không sửa, banner
 [DONE] T-105 · [W1] tx.begin/commit/rollback + TransactionBar + timeout 10 phút
 [DONE] T-106 · [W1] FilterPanel nối logic thật (builder + text mode + preview SQL)
@@ -300,7 +300,7 @@ T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transacti
 
 ```
 [DONE] T-040 · [W1] SqlEditor (CodeMirror 6) + corvusTheme buộc vào biến CSS
-T-041 · [W2] Extension completion từ introspect.identifiers (debounce + cache)
+[DONE] T-041 · [W2] Extension completion từ introspect.identifiers (debounce + cache)
 T-042 · [W2] Extension diagnostics từ CorvusError.position
 [DONE] T-043 · [W1] Bảng phím tắt editor
 [DONE] T-044 · [W1] splitStatements cho PG/MySQL/SQLite + golden 60 case/dialect
@@ -312,7 +312,7 @@ T-042 · [W2] Extension diagnostics từ CorvusError.position
 [DONE] T-049 · [W1] Query history: ghi + tìm kiếm + panel
 [DONE] T-120 · [W2] query.format / minify + tuỳ chọn
 [DONE] T-121 · [W2] Find/Replace trong editor (regex, whole word, match case)
-T-122 · [W2] Folding, brace highlight, word wrap, zoom
+[DONE] T-122 · [W2] Folding, brace highlight, word wrap, zoom
 [DONE] T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
 [DONE] T-124 · [W4] Query parameters (:name) + ParamPrompt
 [DONE] T-125 · [W4] Snippets (built-in + custom + placeholder)
