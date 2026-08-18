@@ -241,12 +241,12 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 [DONE] T-086 · [W0] Introspector cho PG/MySQL/SQLite (truy vấn gộp, không N+1)
 [DONE] T-087 · [W1] Cache metadata trên đĩa (msgpack) + TTL + fingerprint
 [DONE] T-088 · [W1] schema.invalidated topic + invalidateQueries phía client
-T-089 · [W1] Objects List view ảo hoá (5000 object)
+[DONE] T-089 · [W1] Objects List view ảo hoá (5000 object)
 [DONE] T-090 · [W2] Objects Detail view + ColumnChooser
 [DONE] T-091 · [W1] Tìm kiếm lọc trong cây và trong Objects tab
-T-092 · [W1] InfoPane tab General (dữ liệu thật)
-T-093 · [W1] InfoPane tab DDL (introspect.ddl + syntax highlight + Ctrl+F)
-T-094 · [W2] InfoPane tab Dependencies (Using / Used By)
+[DONE] T-092 · [W1] InfoPane tab General (dữ liệu thật)
+[DONE] T-093 · [W1] InfoPane tab DDL (introspect.ddl + syntax highlight + Ctrl+F)
+[DONE] T-094 · [W2] InfoPane tab Dependencies (Using / Used By)
 [DONE] T-095 · [W1] introspect.identifiers + cache cho code completion
 [DONE] T-096 · [W2] ObjectContextMenu theo capability + quyền
 [DONE] T-097 · [W1] Copy tên object đã quote đúng dialect
