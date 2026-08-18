@@ -381,8 +381,8 @@ T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng d
 ```
 [DONE] T-320 · [W3] Định dạng file backup + header metadata + file .meta checksum
 [DONE] T-321 · [W3] Backup job: thứ tự object, index/FK ở cuối, stream ra file
-T-322 · [W3] Nén gzip/zstd + verify sau khi ghi
-T-323 · [W3] backup.list đọc header (không đọc cả file)
+[DONE] T-322 · [W3] Nén gzip/zstd + verify sau khi ghi
+[DONE] T-323 · [W3] backup.list đọc header (không đọc cả file)
 [DONE] T-324 · [W3] restore.preview: willDrop + currentRows + compatibility
 [DONE] T-325 · [W3] Restore job: đọc stream, splitStatements, transaction nếu có
 [DONE] T-326 · [W3] Extract SQL từ file backup
@@ -438,7 +438,7 @@ T-359 · [W5] apps/cli: corvus run-job + exit code + stdout log
 [DONE] T-387 · [W5] RoleDesigner
 [DONE] T-388 · [W5] PrivilegeMatrix (3 trạng thái: gán / không / thừa hưởng)
 [DONE] T-389 · [W5] Cảnh báo tác động vào chính mình / user hệ thống
-T-390 · [W5] security-password-leak.test.ts
+[DONE] T-390 · [W5] security-password-leak.test.ts
 ```
 
 # E-017 · Monitoring (SPEC-13 monitor)  `[W5]`
@@ -478,7 +478,7 @@ T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo n
 [DONE] T-477 · [W6] ShortcutEditor + phát hiện xung đột
 [DONE] T-478 · [W4] Favorites (Ctrl+1..9) + Share via URI
 [DONE] T-479 · [W1] ConnectionLostBanner + tự nối lại
-T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
+[DONE] T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
 [DONE] T-481 · [W5] Cảnh báo thoát khi có job/transaction
 [DONE] T-482 · [W6] Deep link corvus:// (desktop)
 T-483 · [W3] Lazy load view nặng (ModelView, BiView, PipelineBuilder, ExplainTree)

@@ -4,6 +4,37 @@ export interface ExtractedBackupSection {
   sql: string
 }
 
+export interface ExtractedBackupMetadata {
+  database?: string
+  dialect?: string
+  createdAt?: string
+  version?: string
+  tables?: string[]
+}
+
+/**
+ * Extracts metadata properties from backup SQL header comments
+ */
+export function extractBackupMetadata(headerContent: string): ExtractedBackupMetadata | null {
+  const lines = headerContent.split('\n')
+  const meta: ExtractedBackupMetadata = {}
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('-- Database:')) {
+      meta.database = trimmed.replace('-- Database:', '').trim()
+    } else if (trimmed.startsWith('-- Dialect:')) {
+      meta.dialect = trimmed.replace('-- Dialect:', '').trim()
+    } else if (trimmed.startsWith('-- CreatedAt:')) {
+      meta.createdAt = trimmed.replace('-- CreatedAt:', '').trim()
+    } else if (trimmed.startsWith('-- Version:')) {
+      meta.version = trimmed.replace('-- Version:', '').trim()
+    }
+  }
+
+  return Object.keys(meta).length > 0 ? meta : null
+}
+
 /**
  * Extracts SQL statements and sections from raw backup SQL text without storing full temporary database files
  */

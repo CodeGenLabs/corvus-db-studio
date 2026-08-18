@@ -27,6 +27,7 @@ export * from './utils/erd-layout-store'
 export * from './utils/tab-session'
 export * from './utils/deep-link-handler'
 export * from './utils/update-checker'
+export * from './utils/version-check'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
