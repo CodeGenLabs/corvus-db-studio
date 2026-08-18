@@ -57,19 +57,19 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
         📁 apps/web/{client,server}, apps/desktop/{main,preload,renderer}
         ✅ cả hai render <CorvusApp/>; khác nhau đúng 1 dòng bootstrap; cả hai chạy được
 
-T-007 · [W0] Cấu hình @electron/rebuild cho better-sqlite3
+[DONE] T-007 · [W0] Cấu hình @electron/rebuild cho better-sqlite3
         packaging-release.md §2
         ⇦ T-006
         📁 apps/desktop/package.json, scripts/rebuild-native.mjs
         ✅ require('better-sqlite3') OK trong Electron đã đóng gói (smoke test)
 
-T-008 · [W0] Thiết lập CI: lint + typecheck + unit + build + depcruise
+[DONE] T-008 · [W0] Thiết lập CI: lint + typecheck + unit + build + depcruise
         packaging-release.md §5
         ⇦ T-001
         📁 .github/workflows/ci.yml, .dependency-cruiser.cjs, eslint.config.js
         ✅ PR vi phạm luật phụ thuộc bị chặn (test bằng PR có chủ đích)
 
-T-009 · [W0] ESLint rule tuỳ biến: no-driver-id-branching, no-raw-sql-concat, no-node-in-ui
+[DONE] T-009 · [W0] ESLint rule tuỳ biến: no-driver-id-branching, no-raw-sql-concat, no-node-in-ui
         ADR-0003 · coding-rules.md
         ⇦ T-008
         📁 tools/eslint-rules/*.js
