@@ -12,6 +12,8 @@ export * from './utils/draft-manager'
 export * from './utils/table-profile'
 export * from './utils/tool-profile'
 export * from './utils/sql-autocomplete'
+export * from './utils/canvas-exporter'
+export * from './utils/share-uri'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
@@ -61,6 +63,8 @@ export { DdlPartialFailureDialog } from './components/dialogs/DdlPartialFailureD
 export { SaveQueryDialog } from './components/dialogs/SaveQueryDialog'
 export { BulkEditDialog } from './components/dialogs/BulkEditDialog'
 export { ForeignKeyLookupDialog } from './components/dialogs/ForeignKeyLookupDialog'
+export { UserDesignerModal } from './components/dialogs/UserDesignerModal'
+export { RoleDesignerModal } from './components/dialogs/RoleDesignerModal'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'

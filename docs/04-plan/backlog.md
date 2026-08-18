@@ -406,7 +406,7 @@ T-205 · [W4] Subquery trong FROM và WHERE
 T-221 · [W4] Lưu vị trí node theo (connection, schema)
 T-222 · [W4] Ngưỡng 150 bảng → dialog chọn tập bảng
 T-223 · [W4] Tạo/sửa/xoá FK từ canvas (qua preview-token)
-T-224 · [W4] Export PNG/SVG
+[DONE] T-224 · [W4] Export PNG/SVG
 ```
 
 # E-015 · Automation (SPEC-11)  `[W5]`
@@ -434,8 +434,8 @@ T-381 · [W5] Hiện thực cho PG / MySQL / MSSQL
 T-383 · [W5] previewUser / applyUser (mật khẩu che khi hiển thị + comment giải thích)
 T-384 · [W5] previewGrant / applyGrant
 [DONE] T-385 · [W5] UsersDialog nối logic thật
-T-386 · [W5] UserDesigner render từ driver.userDesignSchema
-T-387 · [W5] RoleDesigner
+[DONE] T-386 · [W5] UserDesigner render từ driver.userDesignSchema
+[DONE] T-387 · [W5] RoleDesigner
 [DONE] T-388 · [W5] PrivilegeMatrix (3 trạng thái: gán / không / thừa hưởng)
 T-389 · [W5] Cảnh báo tác động vào chính mình / user hệ thống
 T-390 · [W5] security-password-leak.test.ts
@@ -476,7 +476,7 @@ T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo n
 T-475 · [W2] Pane maximize/restore
 T-476 · [W6] Focus mode
 T-477 · [W6] ShortcutEditor + phát hiện xung đột
-T-478 · [W4] Favorites (Ctrl+1..9) + Share via URI
+[DONE] T-478 · [W4] Favorites (Ctrl+1..9) + Share via URI
 [DONE] T-479 · [W1] ConnectionLostBanner + tự nối lại
 T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
 T-481 · [W5] Cảnh báo thoát khi có job/transaction
