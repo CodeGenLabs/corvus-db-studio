@@ -26,6 +26,7 @@ export * from './utils/identifier-cache'
 export * from './utils/erd-layout-store'
 export * from './utils/tab-session'
 export * from './utils/deep-link-handler'
+export * from './utils/update-checker'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
@@ -87,6 +88,7 @@ export { CorvusUserManagerModal } from './components/dialogs/CorvusUserManagerMo
 export { ShortcutEditorModal } from './components/dialogs/ShortcutEditorModal'
 export { ColumnChooserDialog } from './components/dialogs/ColumnChooserDialog'
 export { TableSelectionDialog } from './components/dialogs/TableSelectionDialog'
+export { CanvasForeignKeyDialog } from './components/dialogs/CanvasForeignKeyDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'

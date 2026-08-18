@@ -405,7 +405,7 @@ T-205 · [W4] Subquery trong FROM và WHERE
 [DONE] T-220 · [W4] ErView: introspect toàn schema + layout + render
 [DONE] T-221 · [W4] Lưu vị trí node theo (connection, schema)
 [DONE] T-222 · [W4] Ngưỡng 150 bảng → dialog chọn tập bảng
-T-223 · [W4] Tạo/sửa/xoá FK từ canvas (qua preview-token)
+[DONE] T-223 · [W4] Tạo/sửa/xoá FK từ canvas (qua preview-token)
 [DONE] T-224 · [W4] Export PNG/SVG
 ```
 
@@ -417,7 +417,7 @@ T-351 · [W5] Batch job runner (tuần tự, continueOnError, huỷ)
 [DONE] T-352 · [W5] Scheduler (node-cron) + timezone + hot reload
 T-353 · [W5] Leader election qua schedule_lock (web nhiều instance)
 T-354 · [W5] Bỏ qua lần bắn chồng + ghi log
-T-355 · [W5] Notify: SMTP (nodemailer) + webhook HMAC + sendTest
+[DONE] T-355 · [W5] Notify: SMTP (nodemailer) + webhook HMAC + sendTest
 [DONE] T-356 · [W5] BatchJobEditor + StepPicker (kéo thả)
 [DONE] T-357 · [W5] CronBuilder + diễn giải bằng chữ + 5 lần chạy kế tiếp
 [DONE] T-358 · [W5] RunHistoryGrid + LogViewer (tail, tìm, tải về)
@@ -429,7 +429,7 @@ T-360 · [W5] Xoay vòng lịch sử chạy
 
 ```
 [DONE] T-380 · [W5] SecurityProvider interface + privilegeCatalog
-T-381 · [W5] Hiện thực cho PG / MySQL / MSSQL
+[DONE] T-381 · [W5] Hiện thực cho PG / MySQL / MSSQL
 [DONE] T-382 · [W5] security.users / .roles / .privileges
 [DONE] T-383 · [W5] previewUser / applyUser (mật khẩu che khi hiển thị + comment giải thích)
 [DONE] T-384 · [W5] previewGrant / applyGrant
@@ -483,7 +483,7 @@ T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
 [DONE] T-482 · [W6] Deep link corvus:// (desktop)
 T-483 · [W3] Lazy load view nặng (ModelView, BiView, PipelineBuilder, ExplainTree)
         ✅ bundle initial ≤ 900 KB gzip
-T-484 · [W3] app.checkUpdate + không tự cài khi có job chạy
+[DONE] T-484 · [W3] app.checkUpdate + không tự cài khi có job chạy
 [DONE] T-485 · [W2] Trạng thái empty/loading/error/unsupported chuẩn hoá thành component dùng chung
 [DONE] T-486 · [W2] Format số/ngày/dung lượng theo locale
 ```
