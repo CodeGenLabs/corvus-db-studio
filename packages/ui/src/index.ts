@@ -30,6 +30,7 @@ export * from './components/common/QueryHistoryPanel'
 export * from './components/common/NoWhereWarningModal'
 export * from './components/common/FindReplaceBar'
 export * from './components/common/SnippetPicker'
+export * from './components/common/JobProgressPanel'
 export * from './wizards'
 
 // Dialogs
@@ -44,6 +45,8 @@ export { SqlPreviewDialog } from './components/dialogs/SqlPreviewDialog'
 export { DropObjectDialog } from './components/dialogs/DropObjectDialog'
 export { CellEditorDialog } from './components/dialogs/CellEditorDialog'
 export { ConflictDialog } from './components/dialogs/ConflictDialog'
+export { ShortcutCheatsheetModal } from './components/dialogs/ShortcutCheatsheetModal'
+export { ParamPromptModal } from './components/dialogs/ParamPromptModal'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'

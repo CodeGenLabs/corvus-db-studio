@@ -302,7 +302,7 @@ T-117 · [W2] Định dạng date/time theo setting
 [DONE] T-040 · [W1] SqlEditor (CodeMirror 6) + corvusTheme buộc vào biến CSS
 T-041 · [W2] Extension completion từ introspect.identifiers (debounce + cache)
 T-042 · [W2] Extension diagnostics từ CorvusError.position
-T-043 · [W1] Bảng phím tắt editor
+[DONE] T-043 · [W1] Bảng phím tắt editor
 [DONE] T-044 · [W1] splitStatements cho PG/MySQL/SQLite + golden 60 case/dialect
         ✅ đủ 8 trường hợp khó ở SPEC-04 §6
 [DONE] T-045 · [W1] query.execute + nhiều result set + ResultTabs
@@ -314,7 +314,7 @@ T-043 · [W1] Bảng phím tắt editor
 [DONE] T-121 · [W2] Find/Replace trong editor (regex, whole word, match case)
 T-122 · [W2] Folding, brace highlight, word wrap, zoom
 T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
-T-124 · [W4] Query parameters (:name) + ParamPrompt
+[DONE] T-124 · [W4] Query parameters (:name) + ParamPrompt
 [DONE] T-125 · [W4] Snippets (built-in + custom + placeholder)
 [DONE] T-126 · [W3] query.explain + ExplainTree + tô node đắt nhất
 T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
@@ -350,7 +350,7 @@ T-051 · [W3] Upload theo chunk có resume + dọn file tạm (web)
 [DONE] T-052 · [W1] Cảnh báo localhost ở dialog kết nối (web)
 T-054 · [W5] Tray mode desktop + cảnh báo lịch
 T-055 · [W3] JobRunner trong worker thread + progress + log file + huỷ
-T-056 · [W3] JobProgressPanel + job.log stream (tail)
+[DONE] T-056 · [W3] JobProgressPanel + job.log stream (tail)
 T-057 · [W3] Khoá theo target: 2 job không cùng ghi một bảng
 T-058 · [W3] Khởi động lại → job đang chạy → failed/INTERRUPTED, không tự chạy lại
 ```
