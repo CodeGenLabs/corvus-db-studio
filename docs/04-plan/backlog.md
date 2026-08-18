@@ -286,7 +286,7 @@ T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transacti
 [DONE] T-108 · [W1] Sort server-side theo header click
 [DONE] T-109 · [W1] Set NULL / Set Empty String (2 hành động riêng)
 [DONE] T-110 · [W2] FormView
-T-111 · [W4] Foreign-key data selection
+[DONE] T-111 · [W4] Foreign-key data selection
 [DONE] T-112 · [W4] Table Profile (lưu filter/sort/cột/độ rộng)
 [DONE] T-113 · [W2] Sửa nhiều cell cùng lúc
 [DONE] T-114 · [W2] data.count chính xác (tuỳ chọn) + estimateRowCount mặc định
@@ -363,14 +363,14 @@ T-058 · [W3] Khởi động lại → job đang chạy → failed/INTERRUPTED, 
 [DONE] T-252 · [W3] Parser CSV/TSV/TXT delimited + fixed-width
 [DONE] T-253 · [W3] Parser JSON (stream-json) + XML (sax)
 T-254 · [W3] Parser XLSX (exceljs streaming)
-T-255 · [W3] decodeStream đa encoding + BOM
+[DONE] T-255 · [W3] decodeStream đa encoding + BOM
 [DONE] T-256 · [W3] FieldMappingGrid (Smart/Direct/Unmatch)
 [DONE] T-257 · [W3] 5 import mode → SQL
 T-258 · [W3] Đường nhanh: PG COPY FROM STDIN, MySQL extended insert, MSSQL bulk
 T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng dòng
 [DONE] T-260 · [W3] Export: 9 formatter stream
 T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
-T-262 · [W3] tool_profile lưu/nạp cấu hình
+[DONE] T-262 · [W3] tool_profile lưu/nạp cấu hình
 [DONE] T-263 · [W3] ImportWizard 6 bước UI
 [DONE] T-264 · [W3] ExportWizard 5 bước UI
 T-265 · [W3] Copy/Delete mode qua preview

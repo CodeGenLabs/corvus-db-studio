@@ -9,6 +9,7 @@ export * from './utils/format'
 export * from './utils/date-format'
 export * from './utils/draft-manager'
 export * from './utils/table-profile'
+export * from './utils/tool-profile'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
@@ -55,6 +56,7 @@ export { TableMaintenanceDialog } from './components/dialogs/TableMaintenanceDia
 export { DdlPartialFailureDialog } from './components/dialogs/DdlPartialFailureDialog'
 export { SaveQueryDialog } from './components/dialogs/SaveQueryDialog'
 export { BulkEditDialog } from './components/dialogs/BulkEditDialog'
+export { ForeignKeyLookupDialog } from './components/dialogs/ForeignKeyLookupDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'
