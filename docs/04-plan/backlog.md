@@ -266,9 +266,9 @@ T-032 · [W1] Nạp tăng dần từ AsyncIterable<ResultChunk> + ring buffer 20
         ✅ copy 100k cell ≤ 1 s
 T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
 T-035 · [W2] Ẩn/hiện cột, đóng băng N cột đầu, lưu theo (connection, bảng)
-T-036 · [W2] Renderer NULL / chuỗi rỗng / BLOB / missing (Mongo) phân biệt trực quan
+[DONE] T-036 · [W2] Renderer NULL / chuỗi rỗng / BLOB / missing (Mongo) phân biệt trực quan
 T-037 · [W1] Điều hướng bàn phím + ARIA role
-T-038 · [W2] Find/Replace trong grid
+[DONE] T-038 · [W2] Find/Replace trong grid
 [DONE] T-039 · [W1] NavigationBar (first/prev/next/last page & record, limit setting)
 ```
 
@@ -301,7 +301,7 @@ T-038 · [W2] Find/Replace trong grid
 ```
 [DONE] T-040 · [W1] SqlEditor (CodeMirror 6) + corvusTheme buộc vào biến CSS
 [DONE] T-041 · [W2] Extension completion từ introspect.identifiers (debounce + cache)
-T-042 · [W2] Extension diagnostics từ CorvusError.position
+[DONE] T-042 · [W2] Extension diagnostics từ CorvusError.position
 [DONE] T-043 · [W1] Bảng phím tắt editor
 [DONE] T-044 · [W1] splitStatements cho PG/MySQL/SQLite + golden 60 case/dialect
         ✅ đủ 8 trường hợp khó ở SPEC-04 §6

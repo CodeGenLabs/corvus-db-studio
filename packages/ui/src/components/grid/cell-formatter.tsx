@@ -8,9 +8,9 @@ export function renderCellValue(val: CellValue | undefined | null): string {
         case 'null':
           return 'NULL'
         case 'missing':
-          return '—'
+          return '— (missing)'
         case 'str':
-          return val.v
+          return val.v === '' ? '[chuỗi rỗng]' : val.v
         case 'num':
           return String(val.v)
         case 'big':
@@ -20,7 +20,7 @@ export function renderCellValue(val: CellValue | undefined | null): string {
         case 'date':
           return val.v
         case 'json':
-          return JSON.stringify(val.v)
+          return typeof val.v === 'string' ? val.v : JSON.stringify(val.v)
         case 'bytes':
           return `<BLOB ${val.v.length}B>`
         default:
@@ -35,4 +35,8 @@ export function isNullValue(val: CellValue | undefined | null): boolean {
   if (val === undefined || val === null) return true
   if (typeof val === 'object' && 'k' in val && val.k === 'null') return true
   return false
+}
+
+export function isEmptyStringValue(val: CellValue | undefined | null): boolean {
+  return typeof val === 'object' && val !== null && 'k' in val && val.k === 'str' && val.v === ''
 }
