@@ -23,6 +23,7 @@ export * from './components/grid'
 export * from './components/wizard'
 export * from './components/common/States'
 export * from './components/common/ConnectionLostBanner'
+export * from './components/common/ExplainTree'
 export * from './wizards'
 
 // Dialogs
@@ -48,3 +49,5 @@ export { JobsView } from './views/JobsView'
 export { MonitorView } from './views/MonitorView'
 export { QueryBuilderView } from './views/QueryBuilderView'
 export { LoginView } from './views/LoginView'
+export { ViewDesigner } from './views/ViewDesigner'
+export { RoutineDesigner } from './views/RoutineDesigner'

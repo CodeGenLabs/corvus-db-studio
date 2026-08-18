@@ -316,7 +316,7 @@ T-122 · [W2] Folding, brace highlight, word wrap, zoom
 T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
 T-124 · [W4] Query parameters (:name) + ParamPrompt
 T-125 · [W4] Snippets (built-in + custom + placeholder)
-T-126 · [W3] query.explain + ExplainTree + tô node đắt nhất
+[DONE] T-126 · [W3] query.explain + ExplainTree + tô node đắt nhất
 T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 ```
 
@@ -331,12 +331,12 @@ T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 [DONE] T-144 · [W2] SQLite recreate-table 12 bước
         ✅ dữ liệu, index, trigger, view được giữ (integration)
 [DONE] T-145 · [W2] FieldGrid + typeCatalog dropdown
-T-146 · [W2] IndexTab, ForeignKeyTab, CheckTab, OptionTab
+[DONE] T-146 · [W2] IndexTab, ForeignKeyTab, CheckTab, OptionTab
 T-147 · [W3] TriggerTab + editor body
 [DONE] T-148 · [W2] ddl.previewTable / applyTable + PreviewStore
 [DONE] T-149 · [W2] DropObjectDialog (gõ tên + hiện dependencies)
-T-150 · [W2] ViewDesigner
-T-151 · [W3] RoutineDesigner (tham số, body, security, determinism)
+[DONE] T-150 · [W2] ViewDesigner
+[DONE] T-151 · [W3] RoutineDesigner (tham số, body, security, determinism)
 T-152 · [W3] ddl.maintain theo capability
 T-153 · [W2] Xử lý DDL_PARTIAL_FAILURE (dialog nêu trạng thái)
 T-154 · [W2] Read-only → designer chỉ đọc
