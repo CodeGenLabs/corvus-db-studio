@@ -23,6 +23,9 @@ export * from './utils/virtual-group'
 export * from './utils/column-config'
 export * from './utils/grid-keyboard'
 export * from './utils/identifier-cache'
+export * from './utils/erd-layout-store'
+export * from './utils/tab-session'
+export * from './utils/deep-link-handler'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
@@ -83,6 +86,7 @@ export { CopyTableDialog } from './components/dialogs/CopyTableDialog'
 export { CorvusUserManagerModal } from './components/dialogs/CorvusUserManagerModal'
 export { ShortcutEditorModal } from './components/dialogs/ShortcutEditorModal'
 export { ColumnChooserDialog } from './components/dialogs/ColumnChooserDialog'
+export { TableSelectionDialog } from './components/dialogs/TableSelectionDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'

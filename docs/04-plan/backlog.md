@@ -403,8 +403,8 @@ T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 T-205 · [W4] Subquery trong FROM và WHERE
 [DONE] T-206 · [W4] SqlPreviewPane realtime + cảnh báo ghi đè
 [DONE] T-220 · [W4] ErView: introspect toàn schema + layout + render
-T-221 · [W4] Lưu vị trí node theo (connection, schema)
-T-222 · [W4] Ngưỡng 150 bảng → dialog chọn tập bảng
+[DONE] T-221 · [W4] Lưu vị trí node theo (connection, schema)
+[DONE] T-222 · [W4] Ngưỡng 150 bảng → dialog chọn tập bảng
 T-223 · [W4] Tạo/sửa/xoá FK từ canvas (qua preview-token)
 [DONE] T-224 · [W4] Export PNG/SVG
 ```
@@ -468,7 +468,7 @@ T-413 · [W5] Cookie + CSRF + session xoay 8 giờ
 
 ```
 [DONE] T-470 · [W2] TabManager + useTabStore: tab thật có state riêng
-T-471 · [W2] Khôi phục tab sau khởi động (3 chế độ onStartup)
+[DONE] T-471 · [W2] Khôi phục tab sau khởi động (3 chế độ onStartup)
 T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo namespace
         ✅ CI fail khi thiếu khoá ở bất kỳ ngôn ngữ nào
 [DONE] T-473 · [W2] Settings đầy đủ 7 mục + DEFAULT_CONFIG một chỗ duy nhất
@@ -480,7 +480,7 @@ T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo n
 [DONE] T-479 · [W1] ConnectionLostBanner + tự nối lại
 T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
 [DONE] T-481 · [W5] Cảnh báo thoát khi có job/transaction
-T-482 · [W6] Deep link corvus:// (desktop)
+[DONE] T-482 · [W6] Deep link corvus:// (desktop)
 T-483 · [W3] Lazy load view nặng (ModelView, BiView, PipelineBuilder, ExplainTree)
         ✅ bundle initial ≤ 900 KB gzip
 T-484 · [W3] app.checkUpdate + không tự cài khi có job chạy
