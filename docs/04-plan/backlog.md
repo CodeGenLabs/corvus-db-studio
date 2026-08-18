@@ -346,13 +346,13 @@ T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
 
 ```
 [DONE] T-050 · [W3] FileGateway interface + 2 hiện thực
-T-051 · [W3] Upload theo chunk có resume + dọn file tạm (web)
+[DONE] T-051 · [W3] Upload theo chunk có resume + dọn file tạm (web)
 [DONE] T-052 · [W1] Cảnh báo localhost ở dialog kết nối (web)
 T-054 · [W5] Tray mode desktop + cảnh báo lịch
-T-055 · [W3] JobRunner trong worker thread + progress + log file + huỷ
+[DONE] T-055 · [W3] JobRunner trong worker thread + progress + log file + huỷ
 [DONE] T-056 · [W3] JobProgressPanel + job.log stream (tail)
-T-057 · [W3] Khoá theo target: 2 job không cùng ghi một bảng
-T-058 · [W3] Khởi động lại → job đang chạy → failed/INTERRUPTED, không tự chạy lại
+[DONE] T-057 · [W3] Khoá theo target: 2 job không cùng ghi một bảng
+[DONE] T-058 · [W3] Khởi động lại → job đang chạy → failed/INTERRUPTED, không tự chạy lại
 ```
 
 # E-012 · Import / Export (SPEC-08)  `[W3]`
