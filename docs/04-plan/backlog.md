@@ -292,7 +292,7 @@ T-113 · [W2] Sửa nhiều cell cùng lúc
 [DONE] T-114 · [W2] data.count chính xác (tuỳ chọn) + estimateRowCount mặc định
 [DONE] T-115 · [W1] SqlPreviewDialog dùng chung
 [DONE] T-116 · [W1] ConflictDialog (mine ↔ theirs ↔ overwrite/skip)
-T-117 · [W2] Định dạng date/time theo setting
+[DONE] T-117 · [W2] Định dạng date/time theo setting
 [DONE] T-118 · [W2] Cell editor lớn (panel/dialog) cho memo/json/xml/hex/image
 ```
 
@@ -317,7 +317,7 @@ T-122 · [W2] Folding, brace highlight, word wrap, zoom
 [DONE] T-124 · [W4] Query parameters (:name) + ParamPrompt
 [DONE] T-125 · [W4] Snippets (built-in + custom + placeholder)
 [DONE] T-126 · [W3] query.explain + ExplainTree + tô node đắt nhất
-T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
+[DONE] T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 ```
 
 # E-010 · Object Designer (SPEC-06)  `[W2-W3]`
@@ -339,7 +339,7 @@ T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 [DONE] T-151 · [W3] RoutineDesigner (tham số, body, security, determinism)
 [DONE] T-152 · [W3] ddl.maintain theo capability
 [DONE] T-153 · [W2] Xử lý DDL_PARTIAL_FAILURE (dialog nêu trạng thái)
-T-154 · [W2] Read-only → designer chỉ đọc
+[DONE] T-154 · [W2] Read-only → designer chỉ đọc
 ```
 
 # E-011 · Job & File  `[W3]`
