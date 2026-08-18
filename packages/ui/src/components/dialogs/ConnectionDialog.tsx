@@ -248,6 +248,11 @@ export function ConnectionDialog() {
                     fontSize: 11.5,
                   }}
                 />
+                {!isSqlite && (formData.host === 'localhost' || formData.host === '127.0.0.1') && (
+                  <span style={{ fontSize: 9.5, color: 'var(--amber)', marginTop: 2 }}>
+                    ⚠️ Trên bản Web, 'localhost' trỏ vào máy chủ web chứ không phải máy tính cá nhân của bạn.
+                  </span>
+                )}
               </div>
 
               {!isSqlite && (

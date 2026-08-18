@@ -282,9 +282,9 @@ T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transacti
 [DONE] T-104 · [W1] Bảng không PK: đọc được, không sửa, banner
 [DONE] T-105 · [W1] tx.begin/commit/rollback + TransactionBar + timeout 10 phút
 [DONE] T-106 · [W1] FilterPanel nối logic thật (builder + text mode + preview SQL)
-T-107 · [W2] Filter nhanh từ giá trị cell
+[DONE] T-107 · [W2] Filter nhanh từ giá trị cell
 T-108 · [W1] Sort server-side theo header click
-T-109 · [W1] Set NULL / Set Empty String (2 hành động riêng)
+[DONE] T-109 · [W1] Set NULL / Set Empty String (2 hành động riêng)
 [DONE] T-110 · [W2] FormView
 T-111 · [W4] Foreign-key data selection
 T-112 · [W4] Table Profile (lưu filter/sort/cột/độ rộng)
@@ -311,7 +311,7 @@ T-043 · [W1] Bảng phím tắt editor
 [DONE] T-048 · [W1] Guard read-only + cảnh báo DELETE/UPDATE không WHERE
 [DONE] T-049 · [W1] Query history: ghi + tìm kiếm + panel
 [DONE] T-120 · [W2] query.format / minify + tuỳ chọn
-T-121 · [W2] Find/Replace trong editor (regex, whole word, match case)
+[DONE] T-121 · [W2] Find/Replace trong editor (regex, whole word, match case)
 T-122 · [W2] Folding, brace highlight, word wrap, zoom
 T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
 T-124 · [W4] Query parameters (:name) + ParamPrompt
@@ -347,7 +347,7 @@ T-154 · [W2] Read-only → designer chỉ đọc
 ```
 [DONE] T-050 · [W3] FileGateway interface + 2 hiện thực
 T-051 · [W3] Upload theo chunk có resume + dọn file tạm (web)
-T-052 · [W1] Cảnh báo localhost ở dialog kết nối (web)
+[DONE] T-052 · [W1] Cảnh báo localhost ở dialog kết nối (web)
 T-054 · [W5] Tray mode desktop + cảnh báo lịch
 T-055 · [W3] JobRunner trong worker thread + progress + log file + huỷ
 T-056 · [W3] JobProgressPanel + job.log stream (tail)
