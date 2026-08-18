@@ -264,7 +264,7 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 [DONE] T-032 · [W1] Nạp tăng dần từ AsyncIterable<ResultChunk> + ring buffer 200k
 [DONE] T-033 · [W1] Copy/paste: TSV, INSERT, UPDATE, JSON, Markdown (chạy trong Web Worker)
         ✅ copy 100k cell ≤ 1 s
-T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
+[DONE] T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
 [DONE] T-035 · [W2] Ẩn/hiện cột, đóng băng N cột đầu, lưu theo (connection, bảng)
 [DONE] T-036 · [W2] Renderer NULL / chuỗi rỗng / BLOB / missing (Mongo) phân biệt trực quan
 [DONE] T-037 · [W1] Điều hướng bàn phím + ARIA role
@@ -348,7 +348,7 @@ T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
 [DONE] T-050 · [W3] FileGateway interface + 2 hiện thực
 [DONE] T-051 · [W3] Upload theo chunk có resume + dọn file tạm (web)
 [DONE] T-052 · [W1] Cảnh báo localhost ở dialog kết nối (web)
-T-054 · [W5] Tray mode desktop + cảnh báo lịch
+[DONE] T-054 · [W5] Tray mode desktop + cảnh báo lịch
 [DONE] T-055 · [W3] JobRunner trong worker thread + progress + log file + huỷ
 [DONE] T-056 · [W3] JobProgressPanel + job.log stream (tail)
 [DONE] T-057 · [W3] Khoá theo target: 2 job không cùng ghi một bảng
@@ -386,7 +386,7 @@ T-054 · [W5] Tray mode desktop + cảnh báo lịch
 [DONE] T-324 · [W3] restore.preview: willDrop + currentRows + compatibility
 [DONE] T-325 · [W3] Restore job: đọc stream, splitStatements, transaction nếu có
 [DONE] T-326 · [W3] Extract SQL từ file backup
-T-327 · [W5] Wrapper mysqldump/pg_dump khi có sẵn
+[DONE] T-327 · [W5] Wrapper mysqldump/pg_dump khi có sẵn
 [DONE] T-328 · [W3] BackupView nối logic thật + BackupHistoryGrid
 [DONE] T-329 · [W3] RestoreWizard
 [DONE] T-330 · [W3] Xử lý DISK_FULL, BACKUP_CORRUPT, RESTORE_PARTIAL
@@ -469,7 +469,7 @@ T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 ```
 [DONE] T-470 · [W2] TabManager + useTabStore: tab thật có state riêng
 [DONE] T-471 · [W2] Khôi phục tab sau khởi động (3 chế độ onStartup)
-T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo namespace
+[DONE] T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo namespace
         ✅ CI fail khi thiếu khoá ở bất kỳ ngôn ngữ nào
 [DONE] T-473 · [W2] Settings đầy đủ 7 mục + DEFAULT_CONFIG một chỗ duy nhất
 [DONE] T-474 · [W2] CommandPalette: fuzzy search + nguồn thật (workspace.paletteSearch)
