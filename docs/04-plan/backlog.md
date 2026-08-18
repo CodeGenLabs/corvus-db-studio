@@ -389,7 +389,7 @@ T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng d
 T-327 · [W5] Wrapper mysqldump/pg_dump khi có sẵn
 [DONE] T-328 · [W3] BackupView nối logic thật + BackupHistoryGrid
 [DONE] T-329 · [W3] RestoreWizard
-T-330 · [W3] Xử lý DISK_FULL, BACKUP_CORRUPT, RESTORE_PARTIAL
+[DONE] T-330 · [W3] Xử lý DISK_FULL, BACKUP_CORRUPT, RESTORE_PARTIAL
 ```
 
 # E-014 · Query Builder & Diagram  `[W4]`
@@ -400,7 +400,7 @@ T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 [DONE] T-202 · [W4] BuilderCanvas + TableNode + JoinEdge
 [DONE] T-203 · [W4] ClauseTabs: FROM/SELECT/WHERE/GROUP BY/HAVING/ORDER BY
 [DONE] T-204 · [W4] Join tự sinh theo FK + đổi loại join
-T-205 · [W4] Subquery trong FROM và WHERE
+[DONE] T-205 · [W4] Subquery trong FROM và WHERE
 [DONE] T-206 · [W4] SqlPreviewPane realtime + cảnh báo ghi đè
 [DONE] T-220 · [W4] ErView: introspect toàn schema + layout + render
 [DONE] T-221 · [W4] Lưu vị trí node theo (connection, schema)
@@ -415,8 +415,8 @@ T-205 · [W4] Subquery trong FROM và WHERE
 [DONE] T-350 · [W5] batch_job + schedule + job_run schema + CRUD methods
 [DONE] T-351 · [W5] Batch job runner (tuần tự, continueOnError, huỷ)
 [DONE] T-352 · [W5] Scheduler (node-cron) + timezone + hot reload
-T-353 · [W5] Leader election qua schedule_lock (web nhiều instance)
-T-354 · [W5] Bỏ qua lần bắn chồng + ghi log
+[DONE] T-353 · [W5] Leader election qua schedule_lock (web nhiều instance)
+[DONE] T-354 · [W5] Bỏ qua lần bắn chồng + ghi log
 [DONE] T-355 · [W5] Notify: SMTP (nodemailer) + webhook HMAC + sendTest
 [DONE] T-356 · [W5] BatchJobEditor + StepPicker (kéo thả)
 [DONE] T-357 · [W5] CronBuilder + diễn giải bằng chữ + 5 lần chạy kế tiếp
