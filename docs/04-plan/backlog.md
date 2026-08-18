@@ -108,17 +108,17 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
         📁 packages/transport-mock/src/index.ts, packages/client/src/createClient.ts
         ✅ toàn bộ UI chạy trên mock, không cần engine
 
-T-015 · [W0] tools/check-contract.mjs
+[DONE] T-015 · [W0] tools/check-contract.mjs
         rpc-contract.md §3
         ⇦ T-010
         📁 tools/check-contract.mjs
         ✅ CI fail khi method thiếu handler / handler thiếu method / method thiếu test
 
-T-016 · [W1] tools/gen-api-docs.ts → docs/api/
+[DONE] T-016 · [W1] tools/gen-api-docs.ts → docs/api/
         ⇦ T-010
         ✅ mọi method có trang tài liệu sinh tự động, kèm schema
 
-T-017 · [W1] useQueryStream: ring buffer + huỷ + phát hiện lỗ hổng seq
+[DONE] T-017 · [W1] useQueryStream: ring buffer + huỷ + phát hiện lỗ hổng seq
         streaming-and-jobs.md §A
         ⇦ T-012, T-014
         📁 packages/client/src/useQueryStream.ts
@@ -193,7 +193,7 @@ T-017 · [W1] useQueryStream: ring buffer + huỷ + phát hiện lỗ hổng seq
         ⇦ T-025
         ✅ file .bak-<version> được tạo; test với file thật
 
-T-027 · [W1] corvus workspace export/import định dạng .corvusws
+[DONE] T-027 · [W1] corvus workspace export/import định dạng .corvusws
         workspace-storage.md §6
         ⇦ T-025
         ✅ round-trip đầy đủ, có và không có secret; passphrase PBKDF2 600k

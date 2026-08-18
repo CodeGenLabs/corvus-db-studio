@@ -1,3 +1,4 @@
 export * from './migration'
 export * from './storage'
 export * from './vault'
+export * from './workspace-archive'
