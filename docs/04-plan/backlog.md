@@ -385,7 +385,7 @@ T-322 · [W3] Nén gzip/zstd + verify sau khi ghi
 T-323 · [W3] backup.list đọc header (không đọc cả file)
 [DONE] T-324 · [W3] restore.preview: willDrop + currentRows + compatibility
 [DONE] T-325 · [W3] Restore job: đọc stream, splitStatements, transaction nếu có
-T-326 · [W3] Extract SQL từ file backup
+[DONE] T-326 · [W3] Extract SQL từ file backup
 T-327 · [W5] Wrapper mysqldump/pg_dump khi có sẵn
 [DONE] T-328 · [W3] BackupView nối logic thật + BackupHistoryGrid
 [DONE] T-329 · [W3] RestoreWizard
@@ -437,7 +437,7 @@ T-384 · [W5] previewGrant / applyGrant
 [DONE] T-386 · [W5] UserDesigner render từ driver.userDesignSchema
 [DONE] T-387 · [W5] RoleDesigner
 [DONE] T-388 · [W5] PrivilegeMatrix (3 trạng thái: gán / không / thừa hưởng)
-T-389 · [W5] Cảnh báo tác động vào chính mình / user hệ thống
+[DONE] T-389 · [W5] Cảnh báo tác động vào chính mình / user hệ thống
 T-390 · [W5] security-password-leak.test.ts
 ```
 
@@ -473,13 +473,13 @@ T-472 · [W2] Hợp nhất i18n: bỏ tr(), mọi chuỗi vào dictionary theo n
         ✅ CI fail khi thiếu khoá ở bất kỳ ngôn ngữ nào
 [DONE] T-473 · [W2] Settings đầy đủ 7 mục + DEFAULT_CONFIG một chỗ duy nhất
 [DONE] T-474 · [W2] CommandPalette: fuzzy search + nguồn thật (workspace.paletteSearch)
-T-475 · [W2] Pane maximize/restore
+[DONE] T-475 · [W2] Pane maximize/restore
 T-476 · [W6] Focus mode
 T-477 · [W6] ShortcutEditor + phát hiện xung đột
 [DONE] T-478 · [W4] Favorites (Ctrl+1..9) + Share via URI
 [DONE] T-479 · [W1] ConnectionLostBanner + tự nối lại
 T-480 · [W3] Contract version check → 426 → màn hình tải lại trang
-T-481 · [W5] Cảnh báo thoát khi có job/transaction
+[DONE] T-481 · [W5] Cảnh báo thoát khi có job/transaction
 T-482 · [W6] Deep link corvus:// (desktop)
 T-483 · [W3] Lazy load view nặng (ModelView, BiView, PipelineBuilder, ExplainTree)
         ✅ bundle initial ≤ 900 KB gzip

@@ -3,6 +3,7 @@ export * from './types'
 export * from './store/studio'
 export * from './store/shell'
 export * from './store/editor-settings'
+export * from './store/pane-state'
 export * from './i18n/dictionaries'
 export * from './data/schema'
 export * from './data/icons'
@@ -14,6 +15,7 @@ export * from './utils/tool-profile'
 export * from './utils/sql-autocomplete'
 export * from './utils/canvas-exporter'
 export * from './utils/share-uri'
+export * from './utils/unload-guard'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
@@ -65,6 +67,7 @@ export { BulkEditDialog } from './components/dialogs/BulkEditDialog'
 export { ForeignKeyLookupDialog } from './components/dialogs/ForeignKeyLookupDialog'
 export { UserDesignerModal } from './components/dialogs/UserDesignerModal'
 export { RoleDesignerModal } from './components/dialogs/RoleDesignerModal'
+export { SystemUserWarningModal } from './components/dialogs/SystemUserWarningModal'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'
