@@ -313,7 +313,7 @@ T-042 · [W2] Extension diagnostics từ CorvusError.position
 [DONE] T-120 · [W2] query.format / minify + tuỳ chọn
 [DONE] T-121 · [W2] Find/Replace trong editor (regex, whole word, match case)
 T-122 · [W2] Folding, brace highlight, word wrap, zoom
-T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
+[DONE] T-123 · [W2] Lưu query vào workspace + mở/lưu file ngoài qua FileGateway
 [DONE] T-124 · [W4] Query parameters (:name) + ParamPrompt
 [DONE] T-125 · [W4] Snippets (built-in + custom + placeholder)
 [DONE] T-126 · [W3] query.explain + ExplainTree + tô node đắt nhất
@@ -337,8 +337,8 @@ T-127 · [W2] Draft tự lưu, giữ qua khởi động lại
 [DONE] T-149 · [W2] DropObjectDialog (gõ tên + hiện dependencies)
 [DONE] T-150 · [W2] ViewDesigner
 [DONE] T-151 · [W3] RoutineDesigner (tham số, body, security, determinism)
-T-152 · [W3] ddl.maintain theo capability
-T-153 · [W2] Xử lý DDL_PARTIAL_FAILURE (dialog nêu trạng thái)
+[DONE] T-152 · [W3] ddl.maintain theo capability
+[DONE] T-153 · [W2] Xử lý DDL_PARTIAL_FAILURE (dialog nêu trạng thái)
 T-154 · [W2] Read-only → designer chỉ đọc
 ```
 

@@ -47,6 +47,9 @@ export { CellEditorDialog } from './components/dialogs/CellEditorDialog'
 export { ConflictDialog } from './components/dialogs/ConflictDialog'
 export { ShortcutCheatsheetModal } from './components/dialogs/ShortcutCheatsheetModal'
 export { ParamPromptModal } from './components/dialogs/ParamPromptModal'
+export { TableMaintenanceDialog } from './components/dialogs/TableMaintenanceDialog'
+export { DdlPartialFailureDialog } from './components/dialogs/DdlPartialFailureDialog'
+export { SaveQueryDialog } from './components/dialogs/SaveQueryDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'
