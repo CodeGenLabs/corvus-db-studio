@@ -8,6 +8,7 @@ export * from './data/icons'
 export * from './utils/format'
 export * from './utils/date-format'
 export * from './utils/draft-manager'
+export * from './utils/table-profile'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
@@ -53,6 +54,7 @@ export { ParamPromptModal } from './components/dialogs/ParamPromptModal'
 export { TableMaintenanceDialog } from './components/dialogs/TableMaintenanceDialog'
 export { DdlPartialFailureDialog } from './components/dialogs/DdlPartialFailureDialog'
 export { SaveQueryDialog } from './components/dialogs/SaveQueryDialog'
+export { BulkEditDialog } from './components/dialogs/BulkEditDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'
