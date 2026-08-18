@@ -396,7 +396,7 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 
 ```
 [DONE] T-200 · [W4] QueryModel + buildSelect(model, dialect) + golden 30 case/dialect
-T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
+[DONE] T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 [DONE] T-202 · [W4] BuilderCanvas + TableNode + JoinEdge
 [DONE] T-203 · [W4] ClauseTabs: FROM/SELECT/WHERE/GROUP BY/HAVING/ORDER BY
 [DONE] T-204 · [W4] Join tự sinh theo FK + đổi loại join
@@ -494,13 +494,13 @@ T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 [DONE] T-500 · [W3] Dockerfile nhiều tầng + docker-compose mẫu + healthcheck
 [DONE] T-501 · [W3] Biến môi trường + từ chối start khi thiếu CORVUS_MASTER_KEY
 [DONE] T-502 · [W3] electron-builder.yml + NSIS + portable
-T-503 · [W1] Mua và thiết lập chứng chỉ EV Code Signing (bắt đầu SỚM)
-T-504 · [W3] Ký số trong CI + verify bằng signtool
-T-505 · [W3] electron-updater + feed generic + kênh stable/beta
+[DONE] T-503 · [W1] Mua và thiết lập chứng chỉ EV Code Signing (bắt đầu SỚM)
+[DONE] T-504 · [W3] Ký số trong CI + verify bằng signtool
+[DONE] T-505 · [W3] electron-updater + feed generic + kênh stable/beta
 [DONE] T-506 · [W3] release.yml: build 3 artifact, ký, publish, changelog
 [DONE] T-507 · [W3] integration.yml nightly: testcontainers ma trận engine × version
 [DONE] T-508 · [W3] security.yml weekly: pnpm audit + trivy + license check
-T-509 · [W3] Smoke test sau đóng gói (native module load được)
+[DONE] T-509 · [W3] Smoke test sau đóng gói (native module load được)
 ```
 
 ---
