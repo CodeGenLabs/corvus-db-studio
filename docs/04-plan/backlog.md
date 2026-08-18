@@ -366,14 +366,14 @@ T-254 · [W3] Parser XLSX (exceljs streaming)
 [DONE] T-255 · [W3] decodeStream đa encoding + BOM
 [DONE] T-256 · [W3] FieldMappingGrid (Smart/Direct/Unmatch)
 [DONE] T-257 · [W3] 5 import mode → SQL
-T-258 · [W3] Đường nhanh: PG COPY FROM STDIN, MySQL extended insert, MSSQL bulk
+[DONE] T-258 · [W3] Đường nhanh: PG COPY FROM STDIN, MySQL extended insert, MSSQL bulk
 T-259 · [W3] Import job pipeline + tiến trình theo byte + log lỗi từng dòng
 [DONE] T-260 · [W3] Export: 9 formatter stream
 T-261 · [W3] Export nhiều object (file riêng / gộp / XLSX nhiều sheet)
 [DONE] T-262 · [W3] tool_profile lưu/nạp cấu hình
 [DONE] T-263 · [W3] ImportWizard 6 bước UI
 [DONE] T-264 · [W3] ExportWizard 5 bước UI
-T-265 · [W3] Copy/Delete mode qua preview
+[DONE] T-265 · [W3] Copy/Delete mode qua preview
 ```
 
 # E-013 · Backup / Restore (SPEC-10)  `[W3]`
@@ -431,8 +431,8 @@ T-360 · [W5] Xoay vòng lịch sử chạy
 [DONE] T-380 · [W5] SecurityProvider interface + privilegeCatalog
 T-381 · [W5] Hiện thực cho PG / MySQL / MSSQL
 [DONE] T-382 · [W5] security.users / .roles / .privileges
-T-383 · [W5] previewUser / applyUser (mật khẩu che khi hiển thị + comment giải thích)
-T-384 · [W5] previewGrant / applyGrant
+[DONE] T-383 · [W5] previewUser / applyUser (mật khẩu che khi hiển thị + comment giải thích)
+[DONE] T-384 · [W5] previewGrant / applyGrant
 [DONE] T-385 · [W5] UsersDialog nối logic thật
 [DONE] T-386 · [W5] UserDesigner render từ driver.userDesignSchema
 [DONE] T-387 · [W5] RoleDesigner

@@ -68,6 +68,7 @@ export { ForeignKeyLookupDialog } from './components/dialogs/ForeignKeyLookupDia
 export { UserDesignerModal } from './components/dialogs/UserDesignerModal'
 export { RoleDesignerModal } from './components/dialogs/RoleDesignerModal'
 export { SystemUserWarningModal } from './components/dialogs/SystemUserWarningModal'
+export { CopyTableDialog } from './components/dialogs/CopyTableDialog'
 
 // Views
 export { ObjectsView } from './views/ObjectsView'
