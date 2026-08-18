@@ -261,7 +261,7 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 [DONE] T-031 · [W1] CellEditor: 12 kiểu (text, memo, số, bool 3 trạng thái, date/time, enum, set,
         json, xml, blob/hex/image, uuid, array)
         ✅ round-trip đúng mọi kiểu (dùng lại C4)
-T-032 · [W1] Nạp tăng dần từ AsyncIterable<ResultChunk> + ring buffer 200k
+[DONE] T-032 · [W1] Nạp tăng dần từ AsyncIterable<ResultChunk> + ring buffer 200k
 [DONE] T-033 · [W1] Copy/paste: TSV, INSERT, UPDATE, JSON, Markdown (chạy trong Web Worker)
         ✅ copy 100k cell ≤ 1 s
 T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
@@ -456,9 +456,9 @@ T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 
 ```
 [DONE] T-410 · [W5] AuthContext: SingleUserAuth + MultiUserAuth
-T-411 · [W5] Local account (argon2id) + OIDC
-T-412 · [W5] RBAC 5 role + connection ACL
-T-413 · [W5] Cookie + CSRF + session xoay 8 giờ
+[DONE] T-411 · [W5] Local account (argon2id) + OIDC
+[DONE] T-412 · [W5] RBAC 5 role + connection ACL
+[DONE] T-413 · [W5] Cookie + CSRF + session xoay 8 giờ
 [DONE] T-414 · [W5] audit_log + ghi theo mức khai báo trong contract
 [DONE] T-415 · [W5] LoginView + xử lý session hết hạn
 [DONE] T-416 · [W5] Quản lý user Corvus (admin UI)

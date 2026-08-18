@@ -29,6 +29,7 @@ export * from './utils/deep-link-handler'
 export * from './utils/update-checker'
 export * from './utils/version-check'
 export * from './utils/lazy-views'
+export * from './utils/result-ring-buffer'
 
 // Shell & Components
 export { TitleBar } from './components/TitleBar'
