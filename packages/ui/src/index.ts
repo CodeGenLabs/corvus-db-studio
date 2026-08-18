@@ -25,6 +25,8 @@ export * from './components/common/States'
 export * from './components/common/ConnectionLostBanner'
 export * from './components/common/ExplainTree'
 export * from './components/common/NoPkBanner'
+export * from './components/common/QueryHistoryPanel'
+export * from './components/common/NoWhereWarningModal'
 export * from './wizards'
 
 // Dialogs
@@ -54,3 +56,4 @@ export { QueryBuilderView } from './views/QueryBuilderView'
 export { LoginView } from './views/LoginView'
 export { ViewDesigner } from './views/ViewDesigner'
 export { RoutineDesigner } from './views/RoutineDesigner'
+export { FormView } from './views/FormView'

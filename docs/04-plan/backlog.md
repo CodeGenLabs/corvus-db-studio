@@ -285,7 +285,7 @@ T-103 · [W1] Thứ tự áp dụng DELETE → UPDATE → INSERT trong transacti
 T-107 · [W2] Filter nhanh từ giá trị cell
 T-108 · [W1] Sort server-side theo header click
 T-109 · [W1] Set NULL / Set Empty String (2 hành động riêng)
-T-110 · [W2] FormView
+[DONE] T-110 · [W2] FormView
 T-111 · [W4] Foreign-key data selection
 T-112 · [W4] Table Profile (lưu filter/sort/cột/độ rộng)
 T-113 · [W2] Sửa nhiều cell cùng lúc
@@ -308,8 +308,8 @@ T-043 · [W1] Bảng phím tắt editor
 [DONE] T-045 · [W1] query.execute + nhiều result set + ResultTabs
 [DONE] T-046 · [W1] MessagesPanel (notice, warning, affected rows theo statement)
 [DONE] T-047 · [W1] Huỷ query (Esc / nút Stop) ≤ 200 ms
-T-048 · [W1] Guard read-only + cảnh báo DELETE/UPDATE không WHERE
-T-049 · [W1] Query history: ghi + tìm kiếm + panel
+[DONE] T-048 · [W1] Guard read-only + cảnh báo DELETE/UPDATE không WHERE
+[DONE] T-049 · [W1] Query history: ghi + tìm kiếm + panel
 [DONE] T-120 · [W2] query.format / minify + tuỳ chọn
 T-121 · [W2] Find/Replace trong editor (regex, whole word, match case)
 T-122 · [W2] Folding, brace highlight, word wrap, zoom
