@@ -18,7 +18,7 @@ const SQL_KEYWORDS =
   /\b(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|CREATE\s+(TABLE|VIEW|INDEX|DATABASE|SCHEMA|USER|ROLE)|ALTER\s+(TABLE|VIEW|COLUMN)|DROP\s+(TABLE|VIEW|INDEX|DATABASE|SCHEMA|USER|ROLE)|TRUNCATE|GRANT|REVOKE|FROM|WHERE|VALUES)\b/i
 
 /** Hàm được coi là đã làm an toàn giá trị/identifier. */
-const SAFE_CALL = /^(quote|escape)|(quoteIdent|quoteIdentifier|ident|escapeLiteral|quoteLiteral|toSqlLiteral)$/i
+const SAFE_CALL = /^(quote|escape)|(quoteIdent|quoteIdentifier|ident|escapeLiteral|quoteLiteral|toSqlLiteral|sqlKeyword)$/i
 /** Tên biến cho thấy nội dung đã được quote từ trước. */
 const SAFE_NAME = /^(quoted|escaped|safe|ident)/i
 /** Hàm dựng chuỗi từ các fragment đã an toàn. */
@@ -35,7 +35,9 @@ function isSafeExpression(expr) {
   if (!expr) return true
   switch (expr.type) {
     case 'Literal':
-      return typeof expr.value === 'number' || typeof expr.value === 'boolean'
+      // Hang bien dich (ke ca chuoi) khong the la input tu ngoai -> an toan.
+      // Nguy hiem la BIEN va KET QUA HAM, khong phai literal.
+      return true
     case 'CallExpression': {
       const name = calleeName(expr.callee)
       return SAFE_CALL.test(name) || SAFE_METHOD.test(name)

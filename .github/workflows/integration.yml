@@ -1,0 +1,46 @@
+name: Integration (database thật)
+
+# Chạy trên DB thật qua testcontainers — chậm và cần Docker, nên không nằm trong CI mọi PR.
+on:
+  schedule:
+    - cron: '0 18 * * *' # 01:00 giờ Việt Nam
+  workflow_dispatch:
+  pull_request:
+    # PR chạm driver / engine / sql thì bắt buộc chạy: đây là nơi lỗi thật lộ ra.
+    paths:
+      - 'packages/driver-*/**'
+      - 'packages/engine/**'
+      - 'packages/sql/**'
+      - 'packages/storage/**'
+
+concurrency:
+  group: integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: Conformance + handler trên PostgreSQL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Pull trước để timeout của test không tính thời gian tải image.
+      - name: Pull image PostgreSQL
+        run: docker pull postgres:16-alpine
+
+      - name: Driver conformance (C1 · C2 · C3 · C5)
+        run: pnpm --filter @corvus/driver-postgres test:integration
+
+      - name: Handler RPC end-to-end
+        run: pnpm --filter @corvus/engine test:integration

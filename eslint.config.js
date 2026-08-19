@@ -110,6 +110,18 @@ export default tseslint.config(
     rules: { 'corvus/no-driver-id-branching': 'warn' },
   },
 
+  // ── SQL trong fixture/conformance ────────────────────────────────────────────
+  // Đây là SQL của BỘ KIỂM ĐỊNH, không phải SQL sinh cho người dùng: schema name là hằng
+  // trong repo, không đến từ input. Rule no-raw-sql-concat nhắm vào SQL chạy trên dữ liệu
+  // thật của khách hàng nên không áp dụng ở đây.
+  {
+    files: [
+      'packages/driver-core/src/conformance/**/*.ts',
+      '**/*.integration.test.ts',
+    ],
+    rules: { 'corvus/no-raw-sql-concat': 'off' },
+  },
+
   // ── Test được nới lỏng vài luật ──────────────────────────────────────────────
   {
     files: ['**/*.{test,spec}.{ts,tsx}', '**/__tests__/**'],

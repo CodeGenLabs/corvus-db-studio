@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@testcontainers/postgresql": "^12.1.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
@@ -37,6 +38,7 @@
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^15.15.0",
+    "testcontainers": "^12.1.0",
     "tsx": "^4.23.12",
     "turbo": "^2.4.4",
     "typescript": "^5.7.2",

@@ -13,7 +13,7 @@
 > - `[MOT PHAN]` — có code ở mức khung, chưa đạt đủ tiêu chí
 > - `[DONE]` — **chưa rà soát**, không được tin
 >
-> Việc tiếp theo: **E-000 · R-06 → R-07 → R-08**, không phải task tính năng mới.
+> Việc tiếp theo: **E-000 · R-08b** (nối UI vào handler thật), rồi T-B01.
 
 Đây là **danh sách việc thực thi được**. Mỗi task đủ nhỏ để một người (hoặc một AI agent) làm
 xong trong ≤ 2 ngày, và đủ rõ để không cần hỏi lại.
@@ -71,21 +71,33 @@ R-01 · Rà soát lại 213 dấu [DONE] còn lại
         ⇦ R-02…R-05 (cần cổng xác minh trước mới rà soát được)
         ✅ mỗi task còn [DONE] phải có lệnh chứng minh, hoặc bị đổi thành [SAI]/[MOT PHAN]
 
-R-06 · Xoá dữ liệu hard-code khỏi packages/driver-*
-        coding-rules §3.8
-        📁 packages/driver-{postgres,mysql,sqlite}/src/driver.ts
-        ✅ grep dữ liệu giả trong driver-* = 0; method chưa làm ném NOT_IMPLEMENTED
+[DONE ✔ 2026-08-18] R-06 · Xoá dữ liệu hard-code khỏi packages/driver-*
+        ✔ driver-mysql / driver-sqlite: ném UNSUPPORTED_FEATURE qua NotImplementedConnection
+        ✔ Thêm packages/driver-core/src/not-implemented.ts làm điểm khởi đầu cho engine mới
+        ✔ grep dữ liệu giả trong driver-* = 0
 
-R-07 · Làm lại driver-postgres với `pg` thật + conformance C1+C2
-        ⇦ R-06 · driver-spi.md §8
-        ✅ testcontainers postgres:16 xanh; listObjects 5000 bảng ≤ 800 ms; không N+1
+[DONE ✔ 2026-08-18] R-07 · driver-postgres THẬT với `pg` + conformance
+        ✔ Pool pg + pg-cursor streaming (không buffer result set), pg_cancel_backend cho huỷ
+        ✔ Introspector 1 truy vấn/loại, chống N+1; getDdl dựng lại từ catalog
+        ✔ Chuẩn hoá CellValue: int8/numeric giữ string, date/timestamp giữ text
+        ✔ Conformance chuyển sang vitest thật: **32/32 xanh** trên postgres:16-alpine
+        ✔ C1 Connect · C2 Introspect · C3 Execute · C5 Transaction
+        ✔ 3 lỗi thật do conformance tìm ra — xem audit-2026-08-18.md
 
-R-08 · 5 handler RPC đầu tiên chạy thật
-        ⇦ R-07
-        📁 packages/engine/src/handlers/{connection,introspect}.ts
-        ✅ connection.test/.open + introspect.databases/.objects/.tableMeta
-        ✅ UI hiện danh sách bảng THẬT từ PostgreSQL (e2e)
-        ✅ Hạ HANDLER_DEBT trong tools/check-contract.ts từ 76 xuống 71
+[DONE ✔ 2026-08-18] R-08 · 6 handler RPC đầu tiên chạy thật
+        ✔ connection.test · connection.open · introspect.databases/.schemas/.objects/.tableMeta
+        ✔ packages/engine/src/handlers/ + ConnectionStore/HandlerDeps
+        ✔ **12/12 test** end-to-end router → handler → driver → PostgreSQL thật
+        ✔ Test khẳng định KHÔNG còn dữ liệu giả ('users'/'orders') lọt qua
+        ✔ HANDLER_DEBT hạ 76 → 70; .github/workflows/integration.yml chạy cả 2 bộ
+        ⚠ CÒN LẠI: nối vào UI (useShellStore + react-query) — task R-08b
+
+R-08b · Nối UI vào handler thật (mốc chứng minh cuối của W-0)
+        ⇦ R-08 · SPEC-02 · ADR-0007
+        📁 packages/ui/src/panes/NavPane.tsx, packages/client/src/queries/introspect.ts
+        ✅ Cây điều hướng hiện database/schema/bảng THẬT từ PostgreSQL, không phải mock
+        ✅ e2e: khởi động PostgreSQL container → tạo connection → duyệt tới bảng
+        ✅ transport-mock vẫn dùng được cho Storybook (không xoá)
 
 T-B01 · Trả nợ 66 chỗ ghép chuỗi SQL không an toàn (13 file)
         security.md §7 · danh sách file nằm trong eslint.config.js
@@ -241,23 +253,23 @@ T-B04 · Nối PreviewTokenManager vào handler + thêm schemaFingerprint
         ⇦ T-020
         📁 packages/driver-core/src/{types.ts,registry.ts}
 
-[SAI — xem audit] T-022 · [W0] driver-conformance-suite: khung + C1 Connect + C2 Introspect
+[DONE ✔ 2026-08-18] T-022 · [W0] driver-conformance-suite: khung + C1 Connect + C2 Introspect
         driver-spi.md §8
         ⇦ T-021
         📁 packages/driver-core/src/conformance/**
         ✅ chạy được với testcontainers; báo cáo rõ nhóm nào fail
 
-[SAI — xem audit] T-023 · [W0] driver-postgres: connect, pool, introspect, dialect
+[DONE ✔ 2026-08-18] T-023 · [W0] driver-postgres: connect, pool, introspect, dialect
         ⇦ T-022
         📁 packages/driver-postgres/src/**
         ✅ vượt C1+C2; listObjects 5000 bảng ≤ 800 ms; không N+1 (test đếm query)
 
-[SAI — xem audit] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
+[HOÃN — R-06 đặt nền] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
         ⇦ T-022
         📁 packages/driver-mysql/src/**
         ✅ vượt C1+C2; capabilities thu hẹp đúng theo version server
 
-[SAI — xem audit] T-024b · [W0] driver-sqlite
+[HOÃN — R-06 đặt nền] T-024b · [W0] driver-sqlite
         ⇦ T-022
         📁 packages/driver-sqlite/src/**
         ✅ vượt C1+C2

@@ -16,14 +16,23 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",
     "@corvus/driver-core": "workspace:*",
-    "@corvus/sql": "workspace:*"
+    "@corvus/sql": "workspace:*",
+    "pg": "^8.23.0",
+    "pg-cursor": "^2.22.0",
+    "pg-types": "^4.1.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@testcontainers/postgresql": "^12.1.0",
+    "@types/pg": "^8.23.1",
+    "@types/pg-cursor": "^2.7.2",
+    "typescript": "^5.7.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.7"
   }
 }

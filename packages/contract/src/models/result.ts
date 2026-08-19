@@ -24,6 +24,8 @@ export interface ResultChunk {
   rows: unknown[][]
   done: boolean
   stats?: QueryStats
+  /** NOTICE của PostgreSQL, warning của MySQL — hiện ở tab Messages (SPEC-04 FR-04.13). */
+  notices?: string[]
 }
 
 export interface QueryResult {

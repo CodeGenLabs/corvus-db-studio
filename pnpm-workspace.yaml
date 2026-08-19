@@ -4,7 +4,15 @@ packages:
   - 'apps/web/*'
   - 'apps/desktop/*'
 
+# Chỉ cho phép build script của đúng những package thực sự cần native binding.
+#
+# ssh2 / cpu-features: packaging-release.md §2 yêu cầu native binding của ssh2 phải là
+#   TUỲ CHỌN và fallback JS phải chạy được — nên cố tình KHÔNG build.
+# protobufjs: dep gián tiếp của testcontainers, không cần.
 allowBuilds:
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
   electron: true
   esbuild: true
 

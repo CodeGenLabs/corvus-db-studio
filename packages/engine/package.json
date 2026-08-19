@@ -24,7 +24,8 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",
@@ -34,7 +35,11 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@corvus/driver-postgres": "workspace:*",
+    "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.7"
   }
 }
