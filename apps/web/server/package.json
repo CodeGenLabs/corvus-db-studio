@@ -15,11 +15,13 @@
     "@corvus/driver-postgres": "workspace:*",
     "@corvus/engine": "workspace:*",
     "@corvus/storage": "workspace:*",
-    "@corvus/transport-http": "workspace:*"
+    "@corvus/transport-http": "workspace:*",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^22.10.2",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.7.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.7"

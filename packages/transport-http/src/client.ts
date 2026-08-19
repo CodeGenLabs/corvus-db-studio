@@ -8,6 +8,9 @@ import type {
 } from '@corvus/contract'
 import type { Frame } from './frames'
 
+/** rpc-contract.md §5.1: client ack mỗi 4 chunk; server mở lại cửa sổ 4 slot mỗi ack. */
+const ACK_EVERY = 4
+
 export interface HttpTransportOptions {
   baseUrl?: string
   wsUrl?: string
@@ -34,8 +37,29 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
     }
   >()
 
-  let reconnectTimeout: number | null = null
+  let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
   let reconnectAttempts = 0
+  /** Ai đang chờ socket mở để gửi khung `open`. */
+  const openWaiters: Array<() => void> = []
+
+  function isOpen(): boolean {
+    return ws !== null && ws.readyState === WebSocket.OPEN
+  }
+
+  /**
+   * Chờ WebSocket mở rồi mới gửi khung `open`.
+   *
+   * Trước đây `stream()` gửi khung `open` chỉ khi socket đã mở sẵn, còn không thì bỏ im —
+   * generator treo vĩnh viễn, không lỗi, không timeout. Đó là lỗi khó chẩn đoán nhất:
+   * người dùng thấy grid quay mãi mà console sạch.
+   */
+  function whenOpen(): Promise<void> {
+    if (isOpen()) return Promise.resolve()
+    if (status === 'closed') return Promise.reject(new Error('Transport đã đóng'))
+    return new Promise<void>((resolve) => {
+      openWaiters.push(resolve)
+    })
+  }
 
   function setStatus(next: TransportStatus) {
     if (status === next) return
@@ -55,15 +79,33 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
         reconnectAttempts = 0
         setStatus('ready')
 
-        // Re-subscribe to active topics
+        // Khôi phục subscribe (rpc-contract §5.1). Chỉ subscribe được khôi phục —
+        // stream thì KHÔNG, xem `onclose`.
         for (const topic of topicSubscriptions.keys()) {
           const frame: Frame = { t: 'sub', id: `sub-${topic}`, topic }
           ws?.send(JSON.stringify(frame))
+        }
+
+        while (openWaiters.length > 0) {
+          openWaiters.shift()?.()
         }
       }
 
       ws.onclose = () => {
         ws = null
+
+        // IV-4 (streaming-and-jobs §A.3): stream đang chạy bị đánh dấu 'interrupted' và
+        // TUYỆT ĐỐI KHÔNG tự chạy lại. Chạy lại một `INSERT … RETURNING` sau khi mạng
+        // chập chờn nghĩa là ghi dữ liệu hai lần. Chỉ người dùng mới được bấm "Thử lại".
+        for (const [id, stream] of activeStreams) {
+          stream.onError({
+            code: 'CONNECTION_LOST',
+            message: 'Mất kết nối tới server giữa lúc đang nhận kết quả',
+            i18nKey: 'error.streamInterrupted',
+          })
+          activeStreams.delete(id)
+        }
+
         if (status !== 'closed') {
           setStatus('reconnecting')
           scheduleReconnect()
@@ -115,14 +157,16 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
     if (reconnectTimeout !== null) return
     const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000)
     reconnectAttempts++
-    reconnectTimeout = window.setTimeout(() => {
+    reconnectTimeout = setTimeout(() => {
       reconnectTimeout = null
       connectWs()
     }, delay)
   }
 
-  // Initial connect if in browser
-  if (typeof window !== 'undefined') {
+  // Điều kiện là có `WebSocket`, không phải có `window`: Node 22 có WebSocket toàn cục
+  // nhưng không có `window`, nên kiểm theo `window` làm transport chết câm ở test và ở
+  // mọi môi trường không phải trình duyệt.
+  if (typeof WebSocket !== 'undefined') {
     connectWs()
   }
 
@@ -183,11 +227,11 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
         onChunk: (data, seq) => {
           queue.push(data as TChunk)
           unackedChunks++
-          if (unackedChunks >= 4) {
+          if (unackedChunks >= ACK_EVERY) {
             unackedChunks = 0
-            if (ws && ws.readyState === WebSocket.OPEN) {
+            if (isOpen()) {
               const ack: Frame = { t: 'ack', id: streamId, seq }
-              ws.send(JSON.stringify(ack))
+              ws?.send(JSON.stringify(ack))
             }
           }
           if (resolveNext) {
@@ -216,14 +260,13 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
       })
 
       const openFrame: Frame = { t: 'open', id: streamId, method, params }
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(openFrame))
-      }
+      await whenOpen()
+      ws?.send(JSON.stringify(openFrame))
 
       const abortHandler = () => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
+        if (isOpen()) {
           const cancelFrame: Frame = { t: 'cancel', id: streamId }
-          ws.send(JSON.stringify(cancelFrame))
+          ws?.send(JSON.stringify(cancelFrame))
         }
         activeStreams.delete(streamId)
         isDone = true

@@ -16,9 +16,21 @@ export type MethodHandler<TParams = unknown, TResult = unknown> = (
   ctx: AuthContext,
 ) => Promise<TResult>
 
+/**
+ * Tuỳ chọn runtime của một lời gọi stream.
+ *
+ * `signal` là đường huỷ THẬT: transport nhận khung `cancel` (hoặc socket đứt) → abort →
+ * driver gọi `pg_cancel_backend` và đóng cursor. Không có nó thì huỷ ở client chỉ làm
+ * client ngừng đọc, còn query vẫn chạy tới cùng trên server (streaming-and-jobs.md IV-3).
+ */
+export interface StreamCallOptions {
+  signal?: AbortSignal
+}
+
 export type StreamHandler<TParams = unknown, TChunk = unknown> = (
   params: TParams,
   ctx: AuthContext,
+  opts: StreamCallOptions,
 ) => AsyncIterable<TChunk>
 
 export interface EngineRouterOptions {
@@ -146,6 +158,7 @@ export class EngineRouter {
     method: string,
     rawParams: unknown,
     authContext?: AuthContext,
+    opts: StreamCallOptions = {},
   ): AsyncIterable<unknown> {
     const ctx = authContext ?? createSingleUserAuth()
 
@@ -176,13 +189,16 @@ export class EngineRouter {
       throw corvusError('UNSUPPORTED_FEATURE', `Stream handler for '${method}' is not implemented yet`)
     }
 
-    const stream = handler(params, ctx)
-    for await (const chunk of stream) {
-      const parsedChunk = streamDef.chunk.safeParse(chunk)
-      if (!parsedChunk.success) {
-        throw corvusError('INTERNAL_ERROR', `Stream chunk validation failed for ${method}: ${parsedChunk.error.message}`)
-      }
-      yield parsedChunk.data
-    }
+    // CỐ Ý KHÔNG validate từng chunk — ADR-0008 nêu đây là ngoại lệ duy nhất của luật
+    // "validate mọi thứ ở ranh giới". Params ở trên vẫn validate đầy đủ.
+    //
+    // Đo thật (tools/bench/chunk-validate.bench.ts, Node 22): 1 000 chunk × 1 000 dòng ×
+    // 20 cột = 1 triệu dòng tốn ~860 ms CPU CHẶN event loop khi validate, ~0 ms khi không.
+    // Thêm nữa `safeParse` trả về BẢN SAO sâu của chunk, nên chunk tồn tại hai lần trong
+    // RAM engine đúng lúc cao điểm — đi ngược IV-1 (≤ 3 chunk) và IV-2 (≤ 400 MB / 10M dòng).
+    //
+    // An toàn vì chunk do chính engine tạo ra từ driver trong cùng process, không phải
+    // dữ liệu từ client. `streamDef.chunk` vẫn là nguồn sự thật cho type và tài liệu.
+    yield* handler(params, ctx, opts)
   }
 }

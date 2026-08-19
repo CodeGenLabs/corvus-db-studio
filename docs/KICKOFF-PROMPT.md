@@ -165,5 +165,14 @@ Nói thẳng chỗ bạn không đồng ý. Đừng khen cho lịch sự. Trả 
 | Muốn ý kiến phản biện về thiết kế | **C** |
 | AI có công cụ đọc file yếu (không tự đọc được repo) | **A**, nhưng dán kèm nội dung `docs/05-rules/AGENTS.md` và SPEC liên quan |
 
+### Prompt đã soạn sẵn cho task cụ thể
+
+| Task | File |
+|---|---|
+| T-B05 · WebSocket streaming | [prompts/T-B05-websocket-streaming.md](prompts/T-B05-websocket-streaming.md) |
+
+Prompt theo task tốt hơn biến thể B ở một điểm: nó liệt kê **những gì ĐÃ CÓ** để agent không
+viết lại, và **những cái bẫy đã biết** rút từ việc rà soát code thật.
+
 **Đừng bỏ "BƯỚC 1 … rồi dừng lại chờ tôi xác nhận" trong biến thể A.** Đó là chốt kiểm soát
 duy nhất phát hiện AI hiểu sai task *trước khi* nó viết code — rẻ hơn nhiều so với review sau.

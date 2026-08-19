@@ -86,6 +86,7 @@ export class PostgresConnection implements DriverConnection {
     let seq = 0
     let emitted = 0
     let columns: ColumnDef[] | undefined
+    let abortListener: (() => void) | undefined
     const startedAt = Date.now()
 
     try {
@@ -93,6 +94,19 @@ export class PostgresConnection implements DriverConnection {
       const pidRes = await client.query<{ pid: number }>('SELECT pg_backend_pid() AS pid')
       const pid = pidRes.rows[0]?.pid
       if (pid !== undefined) this.running.set(handleId, { pid, client })
+
+      if (req.signal) {
+        if (req.signal.aborted) throw corvusError('QUERY_CANCELLED', 'Truy vấn đã bị huỷ')
+        // Chỉ kiểm `signal.aborted` ở đầu vòng lặp là KHÔNG đủ: khi query chạy 10 phút,
+        // ta đang bị chặn trong `readCursor` và không bao giờ quay lại đầu vòng lặp.
+        // Phải chủ động gửi pg_cancel_backend để backend nhả ra (IV-3, ≤ 200 ms).
+        abortListener = () => {
+          void this.cancel({ id: handleId }).catch(() => {
+            // Backend có thể đã kết thúc trước khi lệnh huỷ tới. Không phải lỗi người dùng.
+          })
+        }
+        req.signal.addEventListener('abort', abortListener, { once: true })
+      }
 
       // rowMode 'array' là bắt buộc: mặc định pg trả row dạng object nên `row[i]` là
       // undefined và mọi giá trị biến thành NULL (lỗi đã gặp khi chạy conformance).
@@ -139,6 +153,9 @@ export class PostgresConnection implements DriverConnection {
     } catch (err) {
       throw pgErrorToCorvus(err)
     } finally {
+      // `finally` này chạy cả khi người tiêu thụ `break` giữa chừng (for-await gọi
+      // generator.return()) — đó là đường dọn tài nguyên duy nhất, không được bỏ qua.
+      if (req.signal && abortListener) req.signal.removeEventListener('abort', abortListener)
       this.running.delete(handleId)
       // Đóng cursor TRƯỚC khi trả client về pool, nếu không client sẽ ở trạng thái dở.
       if (cursor) await closeCursorSafely(cursor)

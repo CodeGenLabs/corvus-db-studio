@@ -14,7 +14,8 @@
 > - `[DONE]` — **chưa rà soát**, không được tin
 >
 > **W-0 đã đạt mốc chứng minh** (2026-08-19): UI hiện bảng thật từ PostgreSQL.
-> Việc tiếp theo: **T-B05** (WebSocket streaming) → **T-B01** (trả nợ SQL concat) → W-1.
+> Việc tiếp theo: **T-B01** (trả nợ SQL concat) → W-1.
+> **T-B05 xong 2026-08-19**: WebSocket `/ws` chạy thật, `query.execute` là stream handler đầu tiên.
 
 Đây là **danh sách việc thực thi được**. Mỗi task đủ nhỏ để một người (hoặc một AI agent) làm
 xong trong ≤ 2 ngày, và đủ rõ để không cần hỏi lại.
@@ -105,14 +106,29 @@ R-01 · Rà soát lại 213 dấu [DONE] còn lại
         ✔ 6 test HTTP end-to-end (`@corvus/app-web-server test:integration`)
         ✔ handler thứ 7: connection.list; HANDLER_DEBT 70 → 69
 
-T-B05 · WebSocket server cho streaming (`/ws`)
+[DONE ✔ 2026-08-19] T-B05 · WebSocket server cho streaming (`/ws`)
         rpc-contract.md §5.1 · liên quan T-012
-        📁 apps/web/server/src/index.ts
-        ⚠ Hiện `apps/web/server` chỉ có `node:http` + POST /rpc. Client tự nối lại WS
-          theo backoff mũ (tối đa 10s) nên không treo, nhưng MỌI method stream
-          (`query.execute`, `data.browse`, `job.log`, `monitor.processes`) chưa dùng được.
-        ✅ `ws` server + framing theo rpc-contract §5.1 (ack window 8 chunk)
-        ✅ Test: stream 1M dòng không phồng RAM client; ngắt WS → nối lại, subscribe khôi phục
+        ✔ `ws` + xử lý HTTP upgrade tại `/ws` (`noServer:true`, kiểm Origin — trình duyệt
+          KHÔNG áp CORS cho WebSocket nên header CORS của `/rpc` không bảo vệ được đường này)
+        ✔ Stream handler đầu tiên: `query.execute` → `PostgresConnection.execute()`
+          (mặc định `maxRows` 500 000 theo streaming-and-jobs §A.4); HANDLER_DEBT 69 → 68
+        ✔ Backpressure đổi từ polling `setTimeout(20)` sang promise được ack/cancel/close
+          đánh thức; cửa sổ 8 chunk, mỗi ack mở lại 4 — có test chứng minh không deadlock
+          khi client ngừng ack hoặc chết giữa chừng
+        ✔ `unsub` xoá subscriber thật (trước là nhánh rỗng → rò bộ nhớ); map id→topic
+        ✔ Huỷ nối tới database thật: `AbortSignal` xuyên router → driver →
+          `pg_cancel_backend`; đo được ≤ 200 ms và backend nhả ra (IV-3)
+        ✔ Khung `error` mang mã CorvusError + i18nKey, KHÔNG mang `cause` (nơi mật khẩu
+          hay lọt ra)
+        ✔ Bỏ validate từng `ResultChunk` ở `EngineRouter.handleStream` theo ngoại lệ của
+          ADR-0008 — số đo ở `tools/bench/chunk-validate.bench.ts`: 1 triệu dòng tốn
+          ~860 ms CPU chặn event loop
+        ✔ Test: 14 unit (`transport-http`) + 8 integration (`engine`, gồm 1M dòng RAM
+          phẳng và huỷ ≤ 200 ms) + 13 integration WebSocket thật (`app-web-server`)
+        ✔ Kiểm bằng mắt: `pnpm dev:web` → ws://localhost:5173/ws mở được qua proxy vite,
+          `query.execute` trả 2 500 dòng thật, console không còn lỗi WebSocket
+        ⚠ CHƯA làm: `data.browse`, `job.log`, `monitor.processes`, `ai.chat` vẫn chưa có
+          stream handler; `permessage-deflate` (§5.1) chưa bật; UI SqlView chưa nối (W-1)
 
 T-B06 · Conformance C4/C6/C7/C8/C9 cho driver-postgres
         driver-spi.md §8 — hiện mới có C1, C2, C3, C5

@@ -3,6 +3,15 @@ import { getDriver } from '@corvus/driver-core'
 import type { EngineRouter } from '../router'
 import { draftToResolvedProfile, resolveConnection, type HandlerDeps } from './context'
 
+/**
+ * Trần mặc định cho `query.execute` (streaming-and-jobs.md §A.4).
+ *
+ * Contract để `maxRows` optional, nhưng nếu engine cũng để trống thì một `SELECT *` trên
+ * bảng 50 triệu dòng sẽ chạy tới hết. Mặc định phải AN TOÀN: cắt và bật `stats.truncated`
+ * để UI hiện banner, thay vì im lặng kéo cả bảng về.
+ */
+const DEFAULT_QUERY_MAX_ROWS = 500_000
+
 export type { ConnectionStore, HandlerDeps } from './context'
 
 /**
@@ -121,5 +130,30 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
     const p = params as { connectionId: string; database?: string }
     const conn = await resolveConnection(deps, p.connectionId, ctx.actor.id)
     return conn.introspect.listSchemas(p.database)
+  })
+
+  // ── query.execute (STREAM) ─────────────────────────────────────────────────
+  // Handler stream đầu tiên của hệ thống. `yield*` đi thẳng vào cursor của driver: engine
+  // KHÔNG gom chunk lại, không đếm, không đệm — đó là điều kiện để `SELECT *` trên bảng
+  // lớn chạy với RAM phẳng (coding-rules 3.6 / streaming-and-jobs IV-1, IV-2).
+  //
+  // `signal` đến từ khung `cancel` hoặc từ socket đứt. Driver dùng nó để gửi
+  // `pg_cancel_backend` và đóng cursor (IV-3, ≤ 200 ms).
+  router.registerStream('query.execute', async function* (params, ctx, opts) {
+    const p = params as {
+      connectionId: string
+      sql: string
+      params?: unknown[]
+      chunkSize?: number
+      maxRows?: number
+    }
+    const conn = await resolveConnection(deps, p.connectionId, ctx.actor.id)
+    yield* conn.execute({
+      sql: p.sql,
+      values: p.params,
+      chunkSize: p.chunkSize,
+      maxRows: p.maxRows ?? DEFAULT_QUERY_MAX_ROWS,
+      signal: opts.signal,
+    })
   })
 }

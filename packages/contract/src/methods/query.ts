@@ -20,6 +20,10 @@ export const ResultChunkSchema = z.object({
       rowCount: z.number().int().nonnegative(),
       durationMs: z.number().nonnegative(),
       affectedRows: z.number().int().optional(),
+      // Schema này bị thiếu `truncated` dù `QueryStats` (models/query.ts) đã có từ đầu.
+      // Driver phát cờ này khi chạm maxRows; thiếu nó thì UI không thể hiện banner
+      // "đã cắt bớt" và người dùng kết luận sai trên dữ liệu thiếu (T-B05).
+      truncated: z.boolean().optional(),
     })
     .optional(),
 })
