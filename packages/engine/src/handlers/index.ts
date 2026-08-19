@@ -15,6 +15,13 @@ export type { ConnectionStore, HandlerDeps } from './context'
  * Mỗi khi thêm handler, hạ `HANDLER_DEBT` trong `tools/check-contract.ts`.
  */
 export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void {
+  // ── connection.list ────────────────────────────────────────────────────────
+  // Gốc của cây điều hướng. KHÔNG trả về mật khẩu — profile trong store vốn không chứa
+  // secret (security.md §2, bất biến 2).
+  router.registerUnary('connection.list', async (_params, ctx) => {
+    return deps.connections.list(ctx.actor.id)
+  })
+
   // ── connection.test ────────────────────────────────────────────────────────
   // Thử kết nối bằng cấu hình chưa lưu (nút Test trong dialog) hoặc profile đã lưu.
   router.registerUnary('connection.test', async (params, ctx) => {

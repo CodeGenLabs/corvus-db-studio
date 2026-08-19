@@ -6,14 +6,22 @@
   "main": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc -b --noEmit",
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",
+    "@corvus/driver-core": "workspace:*",
+    "@corvus/driver-postgres": "workspace:*",
+    "@corvus/engine": "workspace:*",
+    "@corvus/storage": "workspace:*",
     "@corvus/transport-http": "workspace:*"
   },
   "devDependencies": {
+    "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^22.10.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.2.7"
   }
 }

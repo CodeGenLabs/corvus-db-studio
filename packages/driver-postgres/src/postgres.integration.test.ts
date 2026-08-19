@@ -1,6 +1,6 @@
 import { afterAll, beforeAll } from 'vitest'
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
-import { POSTGRES_SETUP_SQL, runConformanceSuite } from '@corvus/driver-core'
+import { POSTGRES_SETUP_SQL, runConformanceSuite } from '@corvus/driver-core/conformance'
 import { splitStatements } from '@corvus/sql'
 import type { ResolvedProfile } from '@corvus/driver-core'
 import { postgresDriver } from './index'

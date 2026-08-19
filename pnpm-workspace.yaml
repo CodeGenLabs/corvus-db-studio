@@ -15,7 +15,9 @@ allowBuilds:
   ssh2: false
   electron: true
   esbuild: true
+  better-sqlite3: true
 
 onlyBuiltDependencies:
   - esbuild
   - electron
+  - better-sqlite3

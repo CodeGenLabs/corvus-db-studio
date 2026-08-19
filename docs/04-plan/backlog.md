@@ -13,7 +13,8 @@
 > - `[MOT PHAN]` — có code ở mức khung, chưa đạt đủ tiêu chí
 > - `[DONE]` — **chưa rà soát**, không được tin
 >
-> Việc tiếp theo: **E-000 · R-08b** (nối UI vào handler thật), rồi T-B01.
+> **W-0 đã đạt mốc chứng minh** (2026-08-19): UI hiện bảng thật từ PostgreSQL.
+> Việc tiếp theo: **T-B05** (WebSocket streaming) → **T-B01** (trả nợ SQL concat) → W-1.
 
 Đây là **danh sách việc thực thi được**. Mỗi task đủ nhỏ để một người (hoặc một AI agent) làm
 xong trong ≤ 2 ngày, và đủ rõ để không cần hỏi lại.
@@ -92,12 +93,31 @@ R-01 · Rà soát lại 213 dấu [DONE] còn lại
         ✔ HANDLER_DEBT hạ 76 → 70; .github/workflows/integration.yml chạy cả 2 bộ
         ⚠ CÒN LẠI: nối vào UI (useShellStore + react-query) — task R-08b
 
-R-08b · Nối UI vào handler thật (mốc chứng minh cuối của W-0)
-        ⇦ R-08 · SPEC-02 · ADR-0007
-        📁 packages/ui/src/panes/NavPane.tsx, packages/client/src/queries/introspect.ts
-        ✅ Cây điều hướng hiện database/schema/bảng THẬT từ PostgreSQL, không phải mock
-        ✅ e2e: khởi động PostgreSQL container → tạo connection → duyệt tới bảng
-        ✅ transport-mock vẫn dùng được cho Storybook (không xoá)
+[DONE ✔ 2026-08-19] R-08b · Nối UI vào handler thật — MỐC CUỐI CỦA W-0
+        ✔ `useNavTree`: cây lazy 5 cấp (conn → db → schema → folder → object),
+          khoá node là ĐƯỜNG DẪN đầy đủ nên bảng trùng tên ở 2 schema không mở/đóng cùng nhau
+        ✔ NavPane bỏ TREE tĩnh; có đủ trạng thái loading / error / empty theo node
+        ✔ `@corvus/storage` nối better-sqlite3 thật: workspace.db + migration + WAL
+          + `ensureUser`/`upsertConnection`/`getConnection`; 9 unit test
+        ✔ `apps/web/server` thay mockRouter bằng engine THẬT + graceful shutdown (SIGTERM)
+        ✔ Kiểm chứng trên trình duyệt: PostgreSQL Local → corvus → shop → Tables
+          → customer, order (dữ liệu thật, không phải sakila mock)
+        ✔ 6 test HTTP end-to-end (`@corvus/app-web-server test:integration`)
+        ✔ handler thứ 7: connection.list; HANDLER_DEBT 70 → 69
+
+T-B05 · WebSocket server cho streaming (`/ws`)
+        rpc-contract.md §5.1 · liên quan T-012
+        📁 apps/web/server/src/index.ts
+        ⚠ Hiện `apps/web/server` chỉ có `node:http` + POST /rpc. Client tự nối lại WS
+          theo backoff mũ (tối đa 10s) nên không treo, nhưng MỌI method stream
+          (`query.execute`, `data.browse`, `job.log`, `monitor.processes`) chưa dùng được.
+        ✅ `ws` server + framing theo rpc-contract §5.1 (ack window 8 chunk)
+        ✅ Test: stream 1M dòng không phồng RAM client; ngắt WS → nối lại, subscribe khôi phục
+
+T-B06 · Conformance C4/C6/C7/C8/C9 cho driver-postgres
+        driver-spi.md §8 — hiện mới có C1, C2, C3, C5
+        ✅ C4 Types (round-trip mọi kiểu native) · C6 Cancel (≤ 200 ms, không rò session)
+        ✅ C7 DDL golden file 40 kịch bản · C8 Errors ≥ 20 mã · C9 Resource (RAM 10M dòng)
 
 T-B01 · Trả nợ 66 chỗ ghép chuỗi SQL không an toàn (13 file)
         security.md §7 · danh sách file nằm trong eslint.config.js

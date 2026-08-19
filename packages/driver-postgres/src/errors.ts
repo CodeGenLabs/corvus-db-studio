@@ -41,8 +41,28 @@ export function pgErrorToCorvus(err: unknown): CorvusError {
     severity?: string
   }
 
-  // Lỗi tầng socket không có sqlState.
-  if (!e.code) {
+  // Lỗi tầng mạng của Node CÓ `code` (ECONNREFUSED, ENOTFOUND…) nhưng đó KHÔNG phải
+  // SQLSTATE. SQLSTATE của PostgreSQL luôn đúng 5 ký tự chữ-số. Không phân biệt thì
+  // "connection refused" — lỗi phổ biến nhất — bị báo thành INTERNAL_ERROR.
+  const NET_ERRORS: Record<string, ErrorCode> = {
+    ECONNREFUSED: 'CONNECTION_FAILED',
+    ENOTFOUND: 'CONNECTION_FAILED',
+    EHOSTUNREACH: 'CONNECTION_FAILED',
+    ENETUNREACH: 'CONNECTION_FAILED',
+    ECONNRESET: 'CONNECTION_FAILED',
+    EPIPE: 'CONNECTION_FAILED',
+    EAI_AGAIN: 'CONNECTION_FAILED',
+    ETIMEDOUT: 'QUERY_TIMEOUT',
+  }
+  if (e.code && NET_ERRORS[e.code]) {
+    return corvusError(NET_ERRORS[e.code]!, e.message ?? `Kết nối thất bại (${e.code})`, {
+      detail: e.code,
+      cause: err,
+    })
+  }
+
+  // Lỗi tầng socket không có mã nào cả.
+  if (!e.code || !/^[0-9A-Za-z]{5}$/.test(e.code)) {
     const msg = e.message ?? String(err)
     const code = /timeout/i.test(msg)
       ? 'QUERY_TIMEOUT'

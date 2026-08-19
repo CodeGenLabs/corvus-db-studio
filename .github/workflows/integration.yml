@@ -12,6 +12,7 @@ on:
       - 'packages/engine/**'
       - 'packages/sql/**'
       - 'packages/storage/**'
+      - 'apps/web/server/**'
 
 concurrency:
   group: integration-${{ github.ref }}
@@ -44,3 +45,6 @@ jobs:
 
       - name: Handler RPC end-to-end
         run: pnpm --filter @corvus/engine test:integration
+
+      - name: Web server HTTP RPC end-to-end
+        run: pnpm --filter @corvus/app-web-server test:integration

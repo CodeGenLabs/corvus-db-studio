@@ -1,7 +1,7 @@
 export const VI = {
   mFile: 'Tệp', mEdit: 'Sửa', mView: 'Xem', mTools: 'Công cụ', mWindow: 'Cửa sổ', mHelp: 'Trợ giúp',
   paletteHint: 'Tìm bảng, truy vấn, lệnh…', connected: 'Đã kết nối',
-  navPane: 'Điều hướng', infoPane: 'Thông tin', filterObjects: 'Lọc đối tượng…', searchObjects: 'Tìm trong danh sách',
+  navPane: 'Điều hướng', loading: 'Đang tải…', navEmpty: 'Chưa có kết nối nào', navLoadFailed: 'Không tải được', infoPane: 'Thông tin', filterObjects: 'Lọc đối tượng…', searchObjects: 'Tìm trong danh sách',
   cName: 'Tên', cRows: 'Số dòng', cDataLen: 'Dung lượng', cEngine: 'Engine', cAutoInc: 'Auto inc', cModified: 'Sửa lần cuối',
   openTable: 'Mở bảng', designTable: 'Thiết kế', newTable: 'Bảng mới', deleteTable: 'Xoá bảng', importW: 'Nhập dữ liệu', exportW: 'Xuất dữ liệu',
   editHint: 'Nhấn đôi để sửa ô', noPending: 'Không có thay đổi chờ lưu',
@@ -33,7 +33,7 @@ export type Dict = Record<keyof typeof VI, string>
 export const EN: Dict = {
   mFile: 'File', mEdit: 'Edit', mView: 'View', mTools: 'Tools', mWindow: 'Window', mHelp: 'Help',
   paletteHint: 'Search tables, queries, commands…', connected: 'Connected',
-  navPane: 'Navigation', infoPane: 'Information', filterObjects: 'Filter objects…', searchObjects: 'Search in list',
+  navPane: 'Navigation', loading: 'Loading…', navEmpty: 'No connections yet', navLoadFailed: 'Failed to load', infoPane: 'Information', filterObjects: 'Filter objects…', searchObjects: 'Search in list',
   cName: 'Name', cRows: 'Rows', cDataLen: 'Data length', cEngine: 'Engine', cAutoInc: 'Auto inc', cModified: 'Modified',
   openTable: 'Open table', designTable: 'Design', newTable: 'New table', deleteTable: 'Delete table', importW: 'Import', exportW: 'Export',
   editHint: 'Double-click a cell to edit', noPending: 'No pending changes',
@@ -63,7 +63,7 @@ export const EN: Dict = {
 export const JA: Dict = {
   mFile: 'ファイル', mEdit: '編集', mView: '表示', mTools: 'ツール', mWindow: 'ウィンドウ', mHelp: 'ヘルプ',
   paletteHint: 'テーブル・クエリ・コマンドを検索…', connected: '接続済み',
-  navPane: 'ナビゲーション', infoPane: '情報', filterObjects: 'オブジェクトを絞り込み…', searchObjects: '一覧内を検索',
+  navPane: 'ナビゲーション', loading: '読み込み中…', navEmpty: '接続がまだありません', navLoadFailed: '読み込みに失敗しました', infoPane: '情報', filterObjects: 'オブジェクトを絞り込み…', searchObjects: '一覧内を検索',
   cName: '名前', cRows: '行数', cDataLen: 'データ長', cEngine: 'エンジン', cAutoInc: '自動採番', cModified: '更新日時',
   openTable: '開く', designTable: '設計', newTable: '新規', deleteTable: '削除', importW: 'インポート', exportW: 'エクスポート',
   editHint: 'セルをダブルクリックで編集', noPending: '保留中の変更はありません',

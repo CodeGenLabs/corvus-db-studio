@@ -1,24 +1,25 @@
-import { dbMark, ICON_COLOR, ICONS, iconKey } from '../data/icons'
-import { TREE } from '../data/schema'
+import { dbMark, ICON_COLOR, ICONS } from '../data/icons'
 import { SearchIcon } from './SearchIcon'
-import { useStudio } from '../store/studio'
-import type { TreeNode } from '../types'
+import { useClient, useStudio } from '../store/studio'
+import { useNavTree, type NavKind, type NavRow } from './useNavTree'
 
-function flatten(open: Record<string, boolean>): { n: TreeNode; open: boolean }[] {
-  const out: { n: TreeNode; open: boolean }[] = []
-  const walk = (nodes: TreeNode[]) => {
-    for (const n of nodes) {
-      const isOpen = !!open[n.label]
-      out.push({ n, open: isOpen })
-      if (isOpen && n.children) walk(n.children)
-    }
-  }
-  walk(TREE)
-  return out
+/** Icon key theo loại node của cây THẬT (khác `iconKey` cũ vốn dựa trên nhãn folder tĩnh). */
+function iconFor(kind: NavKind, label: string): string {
+  if (kind === 'folder') return label === 'Views' ? 'view' : 'table'
+  if (kind === 'schema') return 'folder'
+  if (kind === 'view' || kind === 'materializedView') return 'view'
+  if (kind === 'sequence') return 'query'
+  return kind
+}
+
+function colorFor(kind: NavKind, label: string): string {
+  return ICON_COLOR[iconFor(kind, label)] ?? 'var(--text3)'
 }
 
 export function NavPane() {
   const { s, set, t, rowH, navOpen, beginDrag } = useStudio()
+  const client = useClient()
+  const tree = useNavTree(client, s.open)
 
   return (
     <>
@@ -64,97 +65,40 @@ export function NavPane() {
               <path d="M2.2 3.4h11.6M2.2 8h11.6M2.2 12.6h11.6M5.2 1.9v12.2" />
             </svg>
           </span>
-          <span style={{ fontFamily: 'var(--mono)', textTransform: 'none', letterSpacing: 0 }}>{TREE.length}</span>
+          <span style={{ fontFamily: 'var(--mono)', textTransform: 'none', letterSpacing: 0 }}>{tree.connectionCount}</span>
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
-          {flatten(s.open).map(({ n, open }, i) => {
-            const sel = s.selNode === n.label
-            const mark = n.kind === 'conn' ? dbMark(n.meta) : null
-            return (
-              <div
-                key={n.label + i}
-                className="hv-pane2"
-                onClick={() =>
-                  set((prev) => ({
-                    selNode: n.label,
-                    selTable: n.kind === 'table' ? n.label : prev.selTable,
-                    view:
-                      n.kind === 'folder' || n.kind === 'db'
+          {tree.isLoading && <NavMessage text={t.loading} />}
+          {tree.error && <NavMessage text={tree.error} tone="error" />}
+          {!tree.isLoading && !tree.error && tree.rows.length === 0 && (
+            <NavMessage text={t.navEmpty} />
+          )}
+
+          {tree.rows.map((row) => (
+            <NavRowView
+              key={row.path}
+              row={row}
+              rowH={rowH}
+              selected={s.selNode === row.path}
+              onToggle={() =>
+                set((prev) => ({
+                  selNode: row.path,
+                  // Bảng được chọn thì mở luôn view dữ liệu; folder/schema thì về danh sách object.
+                  selTable: row.ref.object ?? prev.selTable,
+                  view:
+                    row.kind === 'table' || row.kind === 'view'
+                      ? 'data'
+                      : row.kind === 'folder' || row.kind === 'schema'
                         ? 'objects'
-                        : n.kind === 'table'
-                          ? 'data'
-                          : prev.view,
-                    open: n.children ? { ...prev.open, [n.label]: !prev.open[n.label] } : prev.open,
-                  }))
-                }
-                onDoubleClick={() => {
-                  if (n.kind === 'table') set({ selTable: n.label, selNode: n.label, view: 'data' })
-                  else if (n.children) set((prev) => ({ open: { ...prev.open, [n.label]: true } }))
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  height: rowH,
-                  padding: `0 8px 0 ${8 + n.depth * 14}px`,
-                  cursor: 'pointer',
-                  background: sel ? 'var(--sel)' : 'transparent',
-                  borderLeft: '2px solid ' + (sel ? 'var(--accent)' : 'transparent'),
-                }}
-              >
-                <span
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 10,
-                    flex: 'none',
-                    color: 'var(--text3)',
-                    visibility: n.children ? 'visible' : 'hidden',
-                    transform: open ? 'rotate(90deg)' : 'none',
-                    transition: 'transform .12s',
-                  }}
-                >
-                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-                    <path d="M6 3.5l5 4.5-5 4.5" />
-                  </svg>
-                </span>
-
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  strokeWidth={1.3}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{
-                    flex: 'none',
-                    stroke: mark ? mark[1] : ICON_COLOR[iconKey(n)],
-                    opacity: n.kind === 'folder' ? 0.95 : 1,
-                  }}
-                >
-                  <path d={mark ? mark[0] : ICONS[iconKey(n)]} />
-                </svg>
-
-                <span
-                  style={{
-                    fontWeight: n.depth === 0 ? 600 : 400,
-                    color: 'var(--text)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {n.label}
-                </span>
-                <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
-                  {n.meta}
-                </span>
-              </div>
-            )
-          })}
+                        : prev.view,
+                  open: row.expandable
+                    ? { ...prev.open, [row.path]: !prev.open[row.path] }
+                    : prev.open,
+                }))
+              }
+            />
+          ))}
         </div>
 
         <div
@@ -186,5 +130,102 @@ export function NavPane() {
         }}
       />
     </>
+  )
+}
+
+function NavMessage({ text, tone }: { text: string; tone?: 'error' }) {
+  return (
+    <div
+      style={{
+        padding: '8px 12px',
+        fontSize: 11,
+        color: tone === 'error' ? 'var(--red)' : 'var(--text3)',
+        lineHeight: 1.5,
+      }}
+    >
+      {text}
+    </div>
+  )
+}
+
+interface NavRowViewProps {
+  row: NavRow
+  rowH: number
+  selected: boolean
+  onToggle: () => void
+}
+
+function NavRowView({ row, rowH, selected, onToggle }: NavRowViewProps) {
+  const mark = row.kind === 'conn' ? dbMark(row.meta) : null
+  const iconKey = iconFor(row.kind, row.label)
+
+  return (
+    <div
+      className="hv-pane2"
+      data-testid={`nav-row-${row.path}`}
+      onClick={onToggle}
+      title={row.error ?? row.path}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        height: rowH,
+        padding: `0 8px 0 ${8 + row.depth * 14}px`,
+        cursor: 'pointer',
+        background: selected ? 'var(--sel)' : 'transparent',
+        borderLeft: '2px solid ' + (selected ? 'var(--accent)' : 'transparent'),
+      }}
+    >
+      <span
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 10,
+          flex: 'none',
+          color: 'var(--text3)',
+          visibility: row.expandable ? 'visible' : 'hidden',
+          transform: row.open ? 'rotate(90deg)' : 'none',
+          transition: 'transform .12s',
+        }}
+      >
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+          <path d="M6 3.5l5 4.5-5 4.5" />
+        </svg>
+      </span>
+
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 16 16"
+        fill="none"
+        strokeWidth={1.3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{
+          flex: 'none',
+          stroke: row.error ? 'var(--red)' : mark ? mark[1] : colorFor(row.kind, row.label),
+          opacity: row.kind === 'folder' ? 0.95 : 1,
+        }}
+      >
+        <path d={mark ? mark[0] : (ICONS[iconKey] ?? ICONS.folder)} />
+      </svg>
+
+      <span
+        style={{
+          fontWeight: row.depth === 0 ? 600 : 400,
+          color: row.error ? 'var(--red)' : 'var(--text)',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {row.label}
+      </span>
+
+      <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>
+        {row.loading ? '…' : row.error ? '!' : row.meta}
+      </span>
+    </div>
   )
 }

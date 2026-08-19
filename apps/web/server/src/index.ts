@@ -1,18 +1,12 @@
 import { pathToFileURL } from 'node:url'
 import http from 'node:http'
 import { HttpRpcServer } from '@corvus/transport-http/server'
+import { buildEngine } from './engine'
 
-// Mock router until @corvus/engine is linked in T-018
-const mockRouter = {
-  async handleRequest(method: string, params: unknown) {
-    return { ok: true, method, params }
-  },
-  async *handleStream(method: string, params: unknown) {
-    yield { seq: 0, method, params, done: true }
-  },
-}
-
-export const rpcServer = new HttpRpcServer(mockRouter)
+// Engine THẬT: workspace SQLite + vault + driver PostgreSQL + router có handler.
+// (Trước đây chỗ này là một mock router echo — xem audit-2026-08-18.md.)
+export const engine = buildEngine()
+export const rpcServer = new HttpRpcServer(engine.router)
 
 /**
  * Origin duoc phep goi RPC.
@@ -86,10 +80,31 @@ export function createWebServer(port = 8080) {
 // Guard `import.meta.main` de import module trong test khong lam server chay len.
 const isEntry = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
 
+/**
+ * Đóng gọn: dừng HTTP, đóng session tới database, đóng workspace.db.
+ *
+ * Không có bước này thì `workspace.db` bị giữ khoá sau khi process kết thúc logic
+ * (Windows báo EBUSY khi xoá) và các kết nối tới database không được trả về sạch sẽ.
+ * Docker gửi SIGTERM khi `docker stop` nên đây là đường thoát chuẩn của production.
+ */
+export async function shutdown(server?: http.Server): Promise<void> {
+  await new Promise<void>((resolve) => {
+    if (!server) return resolve()
+    server.close(() => resolve())
+  })
+  await engine.close()
+}
+
 if (isEntry) {
   const port = Number(process.env.CORVUS_PORT ?? 8080)
-  createWebServer(port).then(() => {
+  createWebServer(port).then((server) => {
     // eslint-disable-next-line no-console -- entry point cua server, log khoi dong la dung
     console.log(`[corvus] RPC server dang lang nghe tai http://127.0.0.1:${port}/rpc`)
+
+    for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+      process.once(signal, () => {
+        void shutdown(server).then(() => process.exit(0))
+      })
+    }
   })
 }

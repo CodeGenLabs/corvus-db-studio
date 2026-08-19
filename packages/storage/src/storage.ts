@@ -1,3 +1,4 @@
+import { corvusError } from '@corvus/contract'
 import type { ConnectionProfile } from '@corvus/contract'
 import { type DriverId } from '@corvus/contract'
 import { MigrationRunner, type MigrationFile, type SqliteDbLike } from './migration'
@@ -123,6 +124,16 @@ export const INITIAL_MIGRATIONS: MigrationFile[] = [
   },
 ]
 
+/**
+ * SQLite trả cột trống là `null`, còn schema zod của contract dùng `.optional()` (undefined).
+ * Không chuẩn hoá thì result validation của router sẽ từ chối — lỗi thật đã gặp khi nối UI.
+ */
+function nullsToUndefined<T extends Record<string, unknown>>(obj: T): T {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(obj)) out[k] = v === null ? undefined : v
+  return out as T
+}
+
 export class WorkspaceStorage {
   private readonly db: SqliteDbLike
   private readonly dbPath?: string
@@ -130,6 +141,31 @@ export class WorkspaceStorage {
   constructor(db: SqliteDbLike, dbPath?: string) {
     this.db = db
     this.dbPath = dbPath
+  }
+
+  /**
+   * Owner mặc định cho bản desktop (single-user).
+   *
+   * Khớp `createSingleUserAuth()` của engine. Mọi bản ghi thuộc về một owner nên desktop
+   * vẫn cần đúng một hàng `app_user` — nếu không thì FK `connection.owner_id` sẽ chặn.
+   */
+  static readonly LOCAL_OWNER_ID = 'local-owner'
+
+  /** Tạo owner nếu chưa có. Idempotent — gọi mỗi lần khởi động cũng không sao. */
+  ensureUser(id: string, username = id, displayName = username, role = 'owner'): void {
+    this.db
+      .prepare(
+        `INSERT INTO app_user (id, username, display_name, role, is_active, created_at)
+         VALUES (?, ?, ?, ?, 1, ?)
+         ON CONFLICT(id) DO NOTHING`,
+      )
+      .run(id, username, displayName, role, new Date().toISOString())
+  }
+
+  /** Tạo owner mặc định của bản desktop. */
+  ensureLocalOwner(): string {
+    this.ensureUser(WorkspaceStorage.LOCAL_OWNER_ID, 'local', 'Local user', 'owner')
+    return WorkspaceStorage.LOCAL_OWNER_ID
   }
 
   initialize(): void {
@@ -175,13 +211,88 @@ export class WorkspaceStorage {
 
     return rows.map((r) => {
       const config = JSON.parse(r.config_json || '{}')
-      return {
+      return nullsToUndefined({
         id: r.id,
         name: r.name,
         driverId: r.driver_id as DriverId,
         color: r.color,
         ...config,
-      }
+      })
     })
+  }
+
+  getConnection(id: string): ConnectionProfile | undefined {
+    const row = this.db
+      .prepare(
+        'SELECT id, name, driver_id, color, mode, group_id, config_json FROM connection WHERE id = ?',
+      )
+      .get(id) as
+      | { id: string; name: string; driver_id: string; color?: string; mode: string; group_id?: string; config_json: string }
+      | undefined
+    if (!row) return undefined
+    const config = JSON.parse(row.config_json || '{}')
+    return nullsToUndefined({
+      id: row.id,
+      name: row.name,
+      driverId: row.driver_id as DriverId,
+      color: row.color,
+      readOnly: row.mode === 'read-only',
+      group: row.group_id,
+      ...config,
+    })
+  }
+
+  /**
+   * Thêm hoặc cập nhật profile.
+   *
+   * `config_json` KHÔNG BAO GIỜ chứa mật khẩu — secret nằm trong SecretVault
+   * (security.md §2, bất biến 1). Hàm này loại bỏ tường minh các trường bí mật để một
+   * lời gọi bất cẩn cũng không ghi được secret vào workspace.db.
+   */
+  upsertConnection(ownerId: string, profile: ConnectionProfile): void {
+    const { id, name, driverId, color, readOnly, group, ...rest } = profile
+    const config = { ...rest } as Record<string, unknown>
+    for (const secretField of ['password', 'passphrase', 'privateKey', 'secret', 'token']) {
+      delete config[secretField]
+    }
+    const now = new Date().toISOString()
+    try {
+      this.db
+      .prepare(
+        `INSERT INTO connection (id, owner_id, name, driver_id, color, mode, group_id, config_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name, driver_id = excluded.driver_id, color = excluded.color,
+           mode = excluded.mode, group_id = excluded.group_id,
+           config_json = excluded.config_json, updated_at = excluded.updated_at`,
+      )
+      .run(
+        id,
+        ownerId,
+        name,
+        driverId,
+        color ?? null,
+        readOnly ? 'read-only' : 'read-write',
+        group ?? null,
+        JSON.stringify(config),
+        now,
+        now,
+      )
+    } catch (err) {
+      // FK owner_id là nguyên nhân phổ biến nhất: gọi ensureUser() trước.
+      if (String(err).includes('FOREIGN KEY')) {
+        throw corvusError(
+          'INVALID_INPUT',
+          `Không lưu được kết nối: owner '${ownerId}' chưa tồn tại. Gọi ensureUser() trước.`,
+          { cause: err },
+        )
+      }
+      throw err
+    }
+  }
+
+  deleteConnection(id: string): boolean {
+    const res = this.db.prepare('DELETE FROM connection WHERE id = ?').run(id)
+    return res.changes > 0
   }
 }
