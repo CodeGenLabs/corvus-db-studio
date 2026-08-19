@@ -41,7 +41,7 @@ function parseServerVersion(raw: string): ServerVersion {
  * `SAVEPOINT` không nhận tham số bind, nên tên bắt buộc phải nhúng vào SQL. Chặn bằng
  * allowlist thay vì escape: escape sai một lần là mở đường injection (security.md §7).
  */
-function assertSavepointName(name: string): string {
+function quoteSavepointName(name: string): string {
   if (!/^[A-Za-z_][A-Za-z0-9_]{0,62}$/.test(name)) {
     throw corvusError('INVALID_INPUT', `Tên savepoint không hợp lệ: '${name}'`)
   }
@@ -236,10 +236,10 @@ export class SqliteConnection implements DriverConnection {
       commit: () => finish('COMMIT'),
       rollback: () => finish('ROLLBACK'),
       savepoint: async (name: string) => {
-        this.db.prepare(`SAVEPOINT ${assertSavepointName(name)}`).run()
+        this.db.prepare(`SAVEPOINT ${quoteSavepointName(name)}`).run()
       },
       rollbackTo: async (name: string) => {
-        this.db.prepare(`ROLLBACK TO SAVEPOINT ${assertSavepointName(name)}`).run()
+        this.db.prepare(`ROLLBACK TO SAVEPOINT ${quoteSavepointName(name)}`).run()
       },
     }
   }

@@ -1,5 +1,22 @@
 import type { ConnectionProfile, DriverId } from './models'
 
+export interface UriShape {
+  scheme: string
+  usesFilePath: boolean
+  defaultPort?: number
+}
+
+export const URI_SHAPE: Record<DriverId, UriShape> = {
+  postgres: { scheme: 'postgresql', usesFilePath: false, defaultPort: 5432 },
+  mysql: { scheme: 'mysql', usesFilePath: false, defaultPort: 3306 },
+  mariadb: { scheme: 'mariadb', usesFilePath: false, defaultPort: 3306 },
+  sqlite: { scheme: 'sqlite', usesFilePath: true },
+  mssql: { scheme: 'sqlserver', usesFilePath: false, defaultPort: 1433 },
+  oracle: { scheme: 'oracle', usesFilePath: false, defaultPort: 1521 },
+  mongodb: { scheme: 'mongodb', usesFilePath: false, defaultPort: 27017 },
+  redis: { scheme: 'redis', usesFilePath: false, defaultPort: 6379 },
+}
+
 const SCHEME_TO_DRIVER: Record<string, DriverId> = {
   postgres: 'postgres',
   postgresql: 'postgres',
@@ -13,36 +30,26 @@ const SCHEME_TO_DRIVER: Record<string, DriverId> = {
   redis: 'redis',
 }
 
-const DRIVER_TO_SCHEME: Record<DriverId, string> = {
-  postgres: 'postgresql',
-  mysql: 'mysql',
-  mariadb: 'mariadb',
-  sqlite: 'sqlite',
-  mssql: 'sqlserver',
-  oracle: 'oracle',
-  mongodb: 'mongodb',
-  redis: 'redis',
-}
-
 export function parseConnectionUri(uri: string): Partial<ConnectionProfile> {
   try {
     const url = new URL(uri)
     const scheme = url.protocol.replace(':', '')
     const driverId = SCHEME_TO_DRIVER[scheme] || 'postgres'
+    const shape = URI_SHAPE[driverId]
 
-    if (driverId === 'sqlite') {
-      const filePath = url.pathname || ''
+    if (shape.usesFilePath) {
+      const filePath = decodeURIComponent(url.pathname || '')
       return {
-        driverId: 'sqlite',
-        name: filePath.split('/').pop() || 'SQLite DB',
+        driverId,
+        name: filePath.split('/').pop() || `${driverId.toUpperCase()} DB`,
         host: filePath,
       }
     }
 
-    const host = url.hostname
+    const host = url.hostname ? decodeURIComponent(url.hostname) : ''
     const port = url.port ? parseInt(url.port, 10) : undefined
-    const user = url.username || undefined
-    const database = url.pathname ? url.pathname.replace(/^\//, '') : undefined
+    const user = url.username ? decodeURIComponent(url.username) : undefined
+    const database = url.pathname ? decodeURIComponent(url.pathname.replace(/^\//, '')) : undefined
 
     return {
       driverId,
@@ -58,11 +65,12 @@ export function parseConnectionUri(uri: string): Partial<ConnectionProfile> {
 }
 
 export function toConnectionUri(profile: ConnectionProfile): string {
-  if (profile.driverId === 'sqlite') {
-    return `sqlite://${profile.host || ''}`
+  const shape = URI_SHAPE[profile.driverId] ?? { scheme: profile.driverId, usesFilePath: false }
+  if (shape.usesFilePath) {
+    return `${shape.scheme}://${profile.host || ''}`
   }
 
-  const scheme = DRIVER_TO_SCHEME[profile.driverId] || profile.driverId
+  const scheme = shape.scheme
   const user = profile.user ? `${encodeURIComponent(profile.user)}@` : ''
   const host = profile.host || 'localhost'
   const port = profile.port ? `:${profile.port}` : ''

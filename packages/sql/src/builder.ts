@@ -1,4 +1,5 @@
 import type { SqlDialect } from './dialect'
+import { quoteIdentifier, quoteLiteral, sqlKeyword } from './dialect'
 
 export interface QueryField {
   table?: string
@@ -45,18 +46,20 @@ export interface QueryModel {
   offset?: number
 }
 
-function quote(name: string, dialect: SqlDialect): string {
-  if (dialect === 'mysql') return `\`${name.replace(/`/g, '``')}\``
-  return `"${name.replace(/"/g, '""')}"`
-}
-
 function qualify(field: string, table?: string, dialect: SqlDialect = 'postgres'): string {
   if (table) {
-    return `${quote(table, dialect)}.${quote(field, dialect)}`
+    return `${quoteIdentifier(table, dialect)}.${quoteIdentifier(field, dialect)}`
   }
-  return quote(field, dialect)
+  return quoteIdentifier(field, dialect)
 }
 
+/**
+ * Builds a SELECT query string from QueryModel.
+ *
+ * NOTE: This is Category (b) - Query Builder generating text SQL for user review/execution.
+ * Identifiers are escaped with quoteIdentifier(), values with quoteLiteral(), and keywords
+ * with sqlKeyword().
+ */
 export function buildSelect(model: QueryModel, dialect: SqlDialect = 'postgres'): string {
   if (!model.tables || model.tables.length === 0) {
     return 'SELECT 1;'
@@ -70,10 +73,11 @@ export function buildSelect(model: QueryModel, dialect: SqlDialect = 'postgres')
     for (const f of model.fields) {
       let expr = qualify(f.name, f.table, dialect)
       if (f.agg) {
-        expr = `${f.agg}(${expr})`
+        const safeAgg = sqlKeyword(f.agg, ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'] as const, 'COUNT')
+        expr = `${safeAgg}(${expr})`
       }
       if (f.alias) {
-        expr += ` AS ${quote(f.alias, dialect)}`
+        expr += ` AS ${quoteIdentifier(f.alias, dialect)}`
       }
       selectParts.push(expr)
     }
@@ -81,19 +85,19 @@ export function buildSelect(model: QueryModel, dialect: SqlDialect = 'postgres')
 
   // 2. FROM clause
   const firstTable = model.tables[0]!
-  let fromPart = quote(firstTable.name, dialect)
+  let quotedFromPart = quoteIdentifier(firstTable.name, dialect)
   if (firstTable.alias) {
-    fromPart += ` AS ${quote(firstTable.alias, dialect)}`
+    quotedFromPart += ` AS ${quoteIdentifier(firstTable.alias, dialect)}`
   }
 
   // 3. JOINs
   const joinParts: string[] = []
   if (model.joins) {
     for (const j of model.joins) {
-      const joinType = j.type.toUpperCase()
-      const toTableQuoted = quote(j.toTable, dialect)
+      const safeJoinType = sqlKeyword(j.type.toUpperCase() as 'INNER', ['INNER', 'LEFT', 'RIGHT', 'FULL'] as const, 'INNER')
+      const quotedToTable = quoteIdentifier(j.toTable, dialect)
       const onClause = `${qualify(j.fromField, j.fromTable, dialect)} = ${qualify(j.toField, j.toTable, dialect)}`
-      joinParts.push(`${joinType} JOIN ${toTableQuoted} ON ${onClause}`)
+      joinParts.push(`${safeJoinType} JOIN ${quotedToTable} ON ${onClause}`)
     }
   }
 
@@ -101,12 +105,17 @@ export function buildSelect(model: QueryModel, dialect: SqlDialect = 'postgres')
   const whereParts: string[] = []
   if (model.where && model.where.length > 0) {
     for (const w of model.where) {
-      const f = qualify(w.field, w.table, dialect)
-      if (w.op === 'IS NULL' || w.op === 'IS NOT NULL') {
-        whereParts.push(`${f} ${w.op}`)
+      const quotedField = qualify(w.field, w.table, dialect)
+      const safeOp = sqlKeyword(
+        w.op,
+        ['=', '!=', '>', '<', '>=', '<=', 'LIKE', 'IN', 'IS NULL', 'IS NOT NULL'] as const,
+        '=',
+      )
+      if (safeOp === 'IS NULL' || safeOp === 'IS NOT NULL') {
+        whereParts.push(`${quotedField} ${safeOp}`)
       } else {
-        const val = w.value !== undefined ? `'${w.value.replace(/'/g, "''")}'` : 'NULL'
-        whereParts.push(`${f} ${w.op} ${val}`)
+        const quotedVal = w.value !== undefined ? quoteLiteral(w.value, dialect) : 'NULL'
+        whereParts.push(`${quotedField} ${safeOp} ${quotedVal}`)
       }
     }
   }
@@ -123,11 +132,12 @@ export function buildSelect(model: QueryModel, dialect: SqlDialect = 'postgres')
   const orderParts: string[] = []
   if (model.orderBy && model.orderBy.length > 0) {
     for (const o of model.orderBy) {
-      orderParts.push(`${qualify(o.field, o.table, dialect)} ${o.dir}`)
+      const safeDir = sqlKeyword(o.dir, ['ASC', 'DESC'] as const, 'ASC')
+      orderParts.push(`${qualify(o.field, o.table, dialect)} ${safeDir}`)
     }
   }
 
-  let sql = `SELECT ${selectParts.join(', ')}\nFROM ${fromPart}`
+  let sql = `SELECT ${selectParts.join(', ')}\nFROM ${quotedFromPart}`
   if (joinParts.length > 0) {
     sql += `\n${joinParts.join('\n')}`
   }
@@ -141,10 +151,10 @@ export function buildSelect(model: QueryModel, dialect: SqlDialect = 'postgres')
     sql += `\nORDER BY ${orderParts.join(', ')}`
   }
   if (model.limit !== undefined) {
-    sql += `\nLIMIT ${model.limit}`
+    sql += `\nLIMIT ${Number(model.limit)}`
   }
   if (model.offset !== undefined) {
-    sql += `\nOFFSET ${model.offset}`
+    sql += `\nOFFSET ${Number(model.offset)}`
   }
 
   return sql + ';'

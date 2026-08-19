@@ -1,3 +1,5 @@
+import { quoteIdentifier, quoteLiteral } from './dialect'
+
 export type MultiExportMode = 'single_file' | 'separate_files' | 'multi_sheet'
 
 export interface MultiExportTarget {
@@ -14,6 +16,12 @@ export interface MultiExportPlan {
   targets: MultiExportTarget[]
 }
 
+/**
+ * Manages export plans and generates merged SQL export scripts.
+ *
+ * NOTE: Category (b) - Export file generation. All identifiers use quoteIdentifier()
+ * and literal values use quoteLiteral().
+ */
 export class MultiExportManager {
   public static planExport(
     targets: MultiExportTarget[],
@@ -30,17 +38,26 @@ export class MultiExportManager {
   public static generateMergedSql(targets: MultiExportTarget[]): string {
     const parts: string[] = []
     for (const target of targets) {
+      const quotedTable = target.schema
+        ? `${quoteIdentifier(target.schema, 'postgres')}.${quoteIdentifier(target.name, 'postgres')}`
+        : quoteIdentifier(target.name, 'postgres')
+
       parts.push(`-- =============================================`)
       parts.push(`-- Target: ${target.schema ? `${target.schema}.` : ''}${target.name}`)
       parts.push(`-- Records: ${target.rows.length}`)
       parts.push(`-- =============================================\n`)
 
       for (const row of target.rows) {
-        const cols = Object.keys(row).map((c) => `"${c}"`).join(', ')
-        const vals = Object.values(row)
-          .map((v) => (v === null ? 'NULL' : typeof v === 'number' ? v : `'${String(v).replace(/'/g, "''")}'`))
+        const quotedCols = Object.keys(row).map((c) => quoteIdentifier(c, 'postgres')).join(', ')
+        const quotedVals = Object.values(row)
+          .map((v) => {
+            if (v === null || v === undefined) return 'NULL'
+            if (typeof v === 'number' || typeof v === 'bigint') return String(v)
+            if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE'
+            return quoteLiteral(String(v), 'postgres')
+          })
           .join(', ')
-        parts.push(`INSERT INTO "${target.name}" (${cols}) VALUES (${vals});`)
+        parts.push(`INSERT INTO ${quotedTable} (${quotedCols}) VALUES (${quotedVals});`)
       }
       parts.push('\n')
     }

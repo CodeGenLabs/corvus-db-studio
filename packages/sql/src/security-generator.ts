@@ -1,5 +1,5 @@
 import type { SqlDialect } from './dialect'
-import { quoteIdentifier } from './dialect'
+import { quoteIdentifier, quoteLiteral } from './dialect'
 
 export interface UserDef {
   username: string
@@ -31,57 +31,59 @@ export function generateUserSql(
   const passwordDisplay = maskPassword ? '********' : user.password || ''
 
   if (dialect === 'mysql') {
+    const quotedAccount = `${quoteLiteral(user.username, 'mysql')}@${quoteLiteral(host, 'mysql')}`
     if (action === 'drop') {
-      return `DROP USER '${user.username}'@'${host}';`
+      return `DROP USER ${quotedAccount};`
     }
     if (action === 'create') {
-      const pluginClause = user.authPlugin ? ` WITH ${user.authPlugin}` : ''
-      const identifiedClause = user.password ? ` IDENTIFIED BY '${passwordDisplay}'` : ''
-      return `CREATE USER '${user.username}'@'${host}'${pluginClause}${identifiedClause};`
+      const safePluginClause = user.authPlugin ? ` WITH ${quoteIdentifier(user.authPlugin, 'mysql')}` : ''
+      const safeIdentifiedClause = user.password ? ` IDENTIFIED BY ${quoteLiteral(passwordDisplay, 'mysql')}` : ''
+      return `CREATE USER ${quotedAccount}${safePluginClause}${safeIdentifiedClause};`
     }
     // Alter
     if (user.password) {
-      return `ALTER USER '${user.username}'@'${host}' IDENTIFIED BY '${passwordDisplay}';`
+      return `ALTER USER ${quotedAccount} IDENTIFIED BY ${quoteLiteral(passwordDisplay, 'mysql')};`
     }
-    return `-- No changes for '${user.username}'@'${host}'`
+    return `-- No changes for ${quotedAccount}`
   }
 
   // PostgreSQL
+  const quotedRole = quoteIdentifier(user.username, 'postgres')
   if (action === 'drop') {
-    return `DROP ROLE "${user.username}";`
+    return `DROP ROLE ${quotedRole};`
   }
   if (action === 'create') {
-    const pwd = user.password ? ` PASSWORD '${passwordDisplay}'` : ''
-    return `CREATE ROLE "${user.username}" WITH LOGIN${pwd};`
+    const safePwd = user.password ? ` PASSWORD ${quoteLiteral(passwordDisplay, 'postgres')}` : ''
+    return `CREATE ROLE ${quotedRole} WITH LOGIN${safePwd};`
   }
   // Alter
   if (user.password) {
-    return `ALTER ROLE "${user.username}" WITH PASSWORD '${passwordDisplay}';`
+    return `ALTER ROLE ${quotedRole} WITH PASSWORD ${quoteLiteral(passwordDisplay, 'postgres')};`
   }
-  return `-- No changes for "${user.username}"`
+  return `-- No changes for ${quotedRole}`
 }
 
 /**
  * Generates GRANT / REVOKE statements for privileges
  */
 export function generateGrantSql(grant: GrantDef, dialect: SqlDialect): string {
-  const privs = grant.privileges.join(', ')
-  const target =
+  const safePrivs = grant.privileges.join(', ')
+  const quotedTarget =
     grant.table && grant.database
       ? `${quoteIdentifier(grant.database, dialect)}.${quoteIdentifier(grant.table, dialect)}`
       : grant.database
       ? `${quoteIdentifier(grant.database, dialect)}.*`
       : '*.*'
 
-  const grantee =
+  const quotedGrantee =
     dialect === 'mysql'
-      ? `'${grant.grantee}'@'${grant.host || '%'}'`
-      : `"${grant.grantee}"`
+      ? `${quoteLiteral(grant.grantee, 'mysql')}@${quoteLiteral(grant.host || '%', 'mysql')}`
+      : quoteIdentifier(grant.grantee, dialect)
 
   if (grant.isRevoke) {
-    return `REVOKE ${privs} ON ${target} FROM ${grantee};`
+    return `REVOKE ${safePrivs} ON ${quotedTarget} FROM ${quotedGrantee};`
   }
 
-  const withGrant = grant.withGrantOption ? ' WITH GRANT OPTION' : ''
-  return `GRANT ${privs} ON ${target} TO ${grantee}${withGrant};`
+  const safeWithGrant = grant.withGrantOption ? ' WITH GRANT OPTION' : ''
+  return `GRANT ${safePrivs} ON ${quotedTarget} TO ${quotedGrantee}${safeWithGrant};`
 }

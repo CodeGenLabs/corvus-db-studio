@@ -1,5 +1,5 @@
 import type { SqlDialect } from './dialect'
-import { quoteIdentifier } from './dialect'
+import { quoteIdentifier, quoteLiteral } from './dialect'
 
 export interface RowChange {
   type: 'insert' | 'update' | 'delete'
@@ -8,6 +8,13 @@ export interface RowChange {
   pkValue: string | number
   data?: Record<string, unknown>
   oldData?: Record<string, unknown>
+}
+
+function formatSqlValue(value: unknown, dialect: SqlDialect): string {
+  if (value === null || value === undefined) return 'NULL'
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : 'NULL'
+  if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE'
+  return quoteLiteral(String(value), dialect)
 }
 
 /**
@@ -24,21 +31,25 @@ export function orderChanges(changes: RowChange[]): RowChange[] {
 }
 
 /**
- * Generates SQL statement for an individual change with optimistic locking
+ * Generates SQL statement for an individual change with optimistic locking.
+ *
+ * NOTE: Category (b) - Preview / generated SQL for row data mutation review.
+ * All identifiers are quoted via quoteIdentifier(), and all cell values are escaped via quoteLiteral().
  */
 export function generateChangeSql(change: RowChange, dialect: SqlDialect): string {
-  const table = quoteIdentifier(change.tableName, dialect)
-  const pk = quoteIdentifier(change.pkColumn, dialect)
+  const quotedTable = quoteIdentifier(change.tableName, dialect)
+  const quotedPk = quoteIdentifier(change.pkColumn, dialect)
+  const quotedPkValue = formatSqlValue(change.pkValue, dialect)
 
   if (change.type === 'delete') {
-    return `DELETE FROM ${table} WHERE ${pk} = ${JSON.stringify(change.pkValue)};`
+    return `DELETE FROM ${quotedTable} WHERE ${quotedPk} = ${quotedPkValue};`
   }
 
   if (change.type === 'insert') {
     const data = change.data || {}
-    const cols = Object.keys(data).map((k) => quoteIdentifier(k, dialect)).join(', ')
-    const vals = Object.values(data).map((v) => (v === null ? 'NULL' : JSON.stringify(v))).join(', ')
-    return `INSERT INTO ${table} (${cols}) VALUES (${vals});`
+    const quotedCols = Object.keys(data).map((k) => quoteIdentifier(k, dialect)).join(', ')
+    const quotedVals = Object.values(data).map((v) => formatSqlValue(v, dialect)).join(', ')
+    return `INSERT INTO ${quotedTable} (${quotedCols}) VALUES (${quotedVals});`
   }
 
   // Update with optimistic locking
@@ -46,19 +57,19 @@ export function generateChangeSql(change: RowChange, dialect: SqlDialect): strin
   const oldData = change.oldData || {}
 
   const setClauses = Object.entries(data).map(
-    ([k, v]) => `${quoteIdentifier(k, dialect)} = ${v === null ? 'NULL' : JSON.stringify(v)}`,
+    ([k, v]) => `${quoteIdentifier(k, dialect)} = ${formatSqlValue(v, dialect)}`,
   )
 
-  const whereClauses = [`${pk} = ${JSON.stringify(change.pkValue)}`]
+  const whereClauses = [`${quotedPk} = ${quotedPkValue}`]
   Object.entries(oldData).forEach(([k, v]) => {
     if (k !== change.pkColumn) {
-      if (v === null) {
+      if (v === null || v === undefined) {
         whereClauses.push(`${quoteIdentifier(k, dialect)} IS NULL`)
       } else {
-        whereClauses.push(`${quoteIdentifier(k, dialect)} = ${JSON.stringify(v)}`)
+        whereClauses.push(`${quoteIdentifier(k, dialect)} = ${formatSqlValue(v, dialect)}`)
       }
     }
   })
 
-  return `UPDATE ${table} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')};`
+  return `UPDATE ${quotedTable} SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')};`
 }

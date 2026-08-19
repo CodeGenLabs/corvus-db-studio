@@ -1,3 +1,5 @@
+import { quoteIdentifier, quoteLiteral } from '@corvus/sql'
+
 export interface SecurityUserSpec {
   username: string
   password?: string
@@ -19,36 +21,41 @@ export interface SecurityGrantSpec {
 export class EngineSecurityProvider {
   public static generateCreateUser(dialect: 'postgres' | 'mysql' | 'sqlite', user: SecurityUserSpec): string {
     if (dialect === 'postgres') {
-      const login = user.canLogin !== false ? 'LOGIN' : 'NOLOGIN'
-      const superuser = user.isSuperuser ? 'SUPERUSER' : 'NOSUPERUSER'
-      const pwd = user.password ? ` PASSWORD '${user.password.replace(/'/g, "''")}'` : ''
-      return `CREATE ROLE "${user.username.replace(/"/g, '""')}" WITH ${login} ${superuser}${pwd};`
+      const safeLogin = user.canLogin !== false ? 'LOGIN' : 'NOLOGIN'
+      const safeSuperuser = user.isSuperuser ? 'SUPERUSER' : 'NOSUPERUSER'
+      const safePwd = user.password ? ` PASSWORD ${quoteLiteral(user.password, 'postgres')}` : ''
+      const quotedRole = quoteIdentifier(user.username, 'postgres')
+      return `CREATE ROLE ${quotedRole} WITH ${safeLogin} ${safeSuperuser}${safePwd};`
     }
 
     if (dialect === 'mysql') {
-      const pwd = user.password ? ` IDENTIFIED BY '${user.password.replace(/'/g, "''")}'` : ''
-      return `CREATE USER '${user.username.replace(/'/g, "\\'")}'@'%'${pwd};`
+      const safePwd = user.password ? ` IDENTIFIED BY ${quoteLiteral(user.password, 'mysql')}` : ''
+      const quotedAccount = `${quoteLiteral(user.username, 'mysql')}@'%'`
+      return `CREATE USER ${quotedAccount}${safePwd};`
     }
 
     return `-- SQLite does not support server-level users`
   }
 
   public static generateGrant(dialect: 'postgres' | 'mysql' | 'sqlite', grant: SecurityGrantSpec): string {
-    const privs = grant.privileges.join(', ')
-    let target = 'ALL TABLES IN SCHEMA public'
-    if (grant.table) {
-      target = `TABLE ${grant.schema ? `"${grant.schema}"."${grant.table}"` : `"${grant.table}"`}`
-    }
+    const safePrivs = grant.privileges.join(', ')
+    const safeWithOption = grant.withGrantOption ? ' WITH GRANT OPTION' : ''
 
     if (dialect === 'postgres') {
-      const withOption = grant.withGrantOption ? ' WITH GRANT OPTION' : ''
-      return `GRANT ${privs} ON ${target} TO "${grant.grantee}"${withOption};`
+      let quotedTarget = 'ALL TABLES IN SCHEMA public'
+      if (grant.table) {
+        quotedTarget = `TABLE ${grant.schema ? `${quoteIdentifier(grant.schema, 'postgres')}.${quoteIdentifier(grant.table, 'postgres')}` : quoteIdentifier(grant.table, 'postgres')}`
+      }
+      const quotedGrantee = quoteIdentifier(grant.grantee, 'postgres')
+      return `GRANT ${safePrivs} ON ${quotedTarget} TO ${quotedGrantee}${safeWithOption};`
     }
 
     if (dialect === 'mysql') {
-      const mysqlTarget = grant.table ? `\`${grant.database || '*'}\`.\`${grant.table}\`` : `\`${grant.database || '*'}\`.*`
-      const withOption = grant.withGrantOption ? ' WITH GRANT OPTION' : ''
-      return `GRANT ${privs} ON ${mysqlTarget} TO '${grant.grantee}'@'%'${withOption};`
+      const quotedDb = grant.database ? quoteIdentifier(grant.database, 'mysql') : '*'
+      const quotedTbl = grant.table ? quoteIdentifier(grant.table, 'mysql') : '*'
+      const quotedTarget = `${quotedDb}.${quotedTbl}`
+      const quotedGrantee = `${quoteLiteral(grant.grantee, 'mysql')}@'%'`
+      return `GRANT ${safePrivs} ON ${quotedTarget} TO ${quotedGrantee}${safeWithOption};`
     }
 
     return `-- SQLite does not support GRANT statements`

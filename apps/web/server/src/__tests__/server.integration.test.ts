@@ -138,15 +138,32 @@ describe('R-08b · web server HTTP RPC trên PostgreSQL thật', () => {
     expect(names).not.toContain('users')
   })
 
-  it('method sai trả lỗi có mã, không phải HTML 500 mơ hồ', async () => {
+  it('method sai trả lỗi có mã code, không phải HTML 500 mơ hồ', async () => {
     const res = await fetch(`${baseUrl}/rpc/khong.co.method`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
     })
     expect(res.status).toBe(500)
-    const body = (await res.json()) as { error?: string }
-    expect(body.error).toContain('Unknown method')
+    const body = (await res.json()) as { code?: string; message?: string }
+    expect(body.code).toBe('INVALID_INPUT')
+    expect(body.message).toContain('Unknown method')
+  })
+
+  it('introspect.tableMeta với bảng không tồn tại trả lỗi có code', async () => {
+    const res = await fetch(`${baseUrl}/rpc/introspect.tableMeta`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        connectionId: 'pg',
+        schema: 'corvus_conf',
+        table: 'non_existent_table_xyz',
+      }),
+    })
+    expect(res.status).toBe(500)
+    const body = (await res.json()) as { code?: string; message?: string }
+    expect(body.code).toBe('TABLE_NOT_FOUND')
+    expect(typeof body.message).toBe('string')
   })
 
   it('CORS không dùng wildcard', async () => {

@@ -1,9 +1,19 @@
 import type { SqlDialect } from './dialect'
-import { quoteIdentifier } from './dialect'
+import { quoteIdentifier, quoteLiteral } from './dialect'
+
+function formatSqlValue(val: unknown, dialect: SqlDialect): string {
+  if (val === null || val === undefined) return 'NULL'
+  if (typeof val === 'number' || typeof val === 'bigint') return String(val)
+  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE'
+  return quoteLiteral(String(val), dialect)
+}
 
 /**
  * Builds high-performance multi-row extended INSERT statements for MySQL/PostgreSQL/SQLite
  * e.g. INSERT INTO table (c1, c2) VALUES (1, 'a'), (2, 'b'), (3, 'c');
+ *
+ * NOTE: Category (b) - Fast-path batch INSERT script generation.
+ * Identifiers are safely quoted with quoteIdentifier(), and literal values with quoteLiteral().
  */
 export function buildExtendedInsertSql(
   tableName: string,
@@ -14,8 +24,8 @@ export function buildExtendedInsertSql(
 ): string[] {
   if (rows.length === 0 || columns.length === 0) return []
 
-  const tableQuoted = quoteIdentifier(tableName, dialect)
-  const colsQuoted = columns.map((c) => quoteIdentifier(c, dialect)).join(', ')
+  const quotedTable = quoteIdentifier(tableName, dialect)
+  const quotedCols = columns.map((c) => quoteIdentifier(c, dialect)).join(', ')
 
   const batches: string[] = []
 
@@ -24,15 +34,12 @@ export function buildExtendedInsertSql(
     const valuesList = batchRows.map((row) => {
       const rowVals = columns.map((col) => {
         const val = row[col]
-        if (val === null || val === undefined) return 'NULL'
-        if (typeof val === 'number' || typeof val === 'bigint') return String(val)
-        if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE'
-        return JSON.stringify(val)
+        return formatSqlValue(val, dialect)
       })
       return `(${rowVals.join(', ')})`
     })
 
-    batches.push(`INSERT INTO ${tableQuoted} (${colsQuoted}) VALUES\n  ${valuesList.join(',\n  ')};`)
+    batches.push(`INSERT INTO ${quotedTable} (${quotedCols}) VALUES\n  ${valuesList.join(',\n  ')};`)
   }
 
   return batches
@@ -42,6 +49,7 @@ export function buildExtendedInsertSql(
  * Builds PostgreSQL COPY FROM STDIN statement
  */
 export function buildPgCopyStdinHeader(tableName: string, columns: string[]): string {
-  const colsQuoted = columns.map((c) => `"${c.replace(/"/g, '""')}"`).join(', ')
-  return `COPY "${tableName.replace(/"/g, '""')}" (${colsQuoted}) FROM stdin WITH (FORMAT csv, HEADER false);`
+  const quotedCols = columns.map((c) => quoteIdentifier(c, 'postgres')).join(', ')
+  const quotedTable = quoteIdentifier(tableName, 'postgres')
+  return `COPY ${quotedTable} (${quotedCols}) FROM stdin WITH (FORMAT csv, HEADER false);`
 }

@@ -76,39 +76,8 @@ export default tseslint.config(
     rules: { 'corvus/no-raw-sql-concat': 'error' },
   },
 
-  // ── NỢ KỸ THUẬT có kiểm soát: T-B01 ──────────────────────────────────────────
-  // 13 file dưới đây có SQL ghép chuỗi không an toàn (66 chỗ), phát hiện lần đầu khi
-  // eslint được cài thật — xem docs/04-plan/audit-2026-08-18.md.
-  // Hạ xuống 'warn' để `pnpm lint` xanh và cổng xác minh hoạt động được NGAY; file MỚI
-  // vẫn bị chặn ở mức 'error'. Danh sách này chỉ được PHÉP NGẮN ĐI, không dài thêm.
-  // Xoá dòng nào đã sửa xong. Khi rỗng, xoá cả block này.
-  {
-    files: [
-      'packages/driver-mysql/src/driver.ts',
-      'packages/driver-postgres/src/driver.ts',
-      'packages/driver-sqlite/src/driver.ts',
-      'packages/engine/src/security-provider.ts',
-      'packages/sql/src/builder.ts',
-      'packages/sql/src/change-order.ts',
-      'packages/sql/src/ddl.ts',
-      'packages/sql/src/fast-path-import.ts',
-      'packages/sql/src/import-parser.ts',
-      'packages/sql/src/multi-export.ts',
-      'packages/sql/src/schema-search.ts',
-      'packages/sql/src/security-generator.ts',
-      'packages/sql/src/subquery-builder.ts',
-    ],
-    rules: { 'corvus/no-raw-sql-concat': 'warn' },
-  },
 
-  // ── NỢ KỸ THUẬT có kiểm soát: T-B02 ──────────────────────────────────────────
-  // contract/src/uri.ts rẽ nhánh theo driverId để dựng/parse URI. Đây là chỗ ranh giới
-  // (URI scheme gắn với tên engine), nhưng vẫn nên chuyển sang bảng tra trong driver
-  // registry. Xem T-B02.
-  {
-    files: ['packages/contract/src/uri.ts'],
-    rules: { 'corvus/no-driver-id-branching': 'warn' },
-  },
+
 
   // ── SQL trong fixture/conformance ────────────────────────────────────────────
   // Đây là SQL của BỘ KIỂM ĐỊNH, không phải SQL sinh cho người dùng: schema name là hằng

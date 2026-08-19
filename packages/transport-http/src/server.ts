@@ -34,7 +34,7 @@ const ACK_RELEASE = 4
  * object thường nên stringify được, nhưng vẫn phải lọc tay để KHÔNG bao giờ để `cause`
  * (có thể chứa chuỗi kết nối kèm mật khẩu) lọt ra ngoài (security.md §2, coding-rules 6.1).
  */
-function toWireError(err: unknown): { code: string; message: string; i18nKey?: string; detail?: string } {
+export function toWireError(err: unknown): { code: string; message: string; i18nKey?: string; detail?: string } {
   if (typeof err === 'object' && err !== null && 'code' in err) {
     const e = err as { code: unknown; message?: unknown; i18nKey?: unknown; detail?: unknown }
     return {

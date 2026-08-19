@@ -1,7 +1,7 @@
 import { pathToFileURL } from 'node:url'
 import http from 'node:http'
 import { WebSocketServer, type WebSocket } from 'ws'
-import { HttpRpcServer, type WsConnection } from '@corvus/transport-http/server'
+import { HttpRpcServer, type WsConnection, toWireError } from '@corvus/transport-http/server'
 import { buildEngine } from './engine'
 
 // Engine THẬT: workspace SQLite + vault + driver PostgreSQL + router có handler.
@@ -57,8 +57,9 @@ export function createWebServer(port = 8080) {
           res.writeHead(200, { 'Content-Type': 'application/json' })
           res.end(JSON.stringify(result))
         } catch (err: unknown) {
+          const wireErr = toWireError(err)
           res.writeHead(500, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }))
+          res.end(JSON.stringify(wireErr))
         }
       })
       return

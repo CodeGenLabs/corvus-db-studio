@@ -1,5 +1,6 @@
 import type { FieldMapping, ImportMode } from '@corvus/contract'
 import type { SqlDialect } from './dialect'
+import { quoteIdentifier, quoteLiteral } from './dialect'
 
 export function parseDelimited(
   text: string,
@@ -114,11 +115,18 @@ export function inferColumnType(samples: string[]): string {
   return 'TEXT'
 }
 
-function quote(name: string, dialect: SqlDialect): string {
-  if (dialect === 'mysql') return `\`${name.replace(/`/g, '``')}\``
-  return `"${name.replace(/"/g, '""')}"`
+function formatSqlValue(raw: string | undefined, dialect: SqlDialect): string {
+  if (raw === undefined || raw === '' || raw === 'NULL') return 'NULL'
+  if (/^-?\d+(\.\d+)?$/.test(raw)) return raw
+  return quoteLiteral(raw, dialect)
 }
 
+/**
+ * Generates SQL statements for file import.
+ *
+ * NOTE: Category (b) - Import wizard SQL statements generated for preview / execution script.
+ * Table and column names are quoted with quoteIdentifier(), and field values with quoteLiteral().
+ */
 export function generateImportSql(
   tableName: string,
   mappings: FieldMapping[],
@@ -130,42 +138,41 @@ export function generateImportSql(
   const activeMappings = mappings.filter((m) => !m.ignored)
   if (activeMappings.length === 0 || rows.length === 0) return statements
 
-  const quotedTable = quote(tableName, dialect)
-  const colsList = activeMappings.map((m) => quote(m.targetField, dialect)).join(', ')
+  const quotedTable = quoteIdentifier(tableName, dialect)
+  const quotedColsList = activeMappings.map((m) => quoteIdentifier(m.targetField, dialect)).join(', ')
 
   if (mode === 'copy') {
     statements.push(`DELETE FROM ${quotedTable};`)
   }
 
   for (const row of rows) {
-    const vals = activeMappings
+    const quotedVals = activeMappings
       .map((_m, idx) => {
         const raw = row[idx]
-        if (raw === undefined || raw === '' || raw === 'NULL') return 'NULL'
-        if (/^-?\d+(\.\d+)?$/.test(raw)) return raw
-        return `'${raw.replace(/'/g, "''")}'`
+        return formatSqlValue(raw, dialect)
       })
       .join(', ')
 
     if (mode === 'append' || mode === 'copy') {
-      statements.push(`INSERT INTO ${quotedTable} (${colsList}) VALUES (${vals});`)
+      statements.push(`INSERT INTO ${quotedTable} (${quotedColsList}) VALUES (${quotedVals});`)
     } else if (mode === 'update') {
       const keyMapping = activeMappings.find((m) => m.isKey) || activeMappings[0]!
       const keyIdx = activeMappings.indexOf(keyMapping)
-      const keyVal = row[keyIdx] !== undefined ? `'${row[keyIdx]?.replace(/'/g, "''")}'` : 'NULL'
+      const quotedKeyVal = formatSqlValue(row[keyIdx], dialect)
+      const quotedKeyCol = quoteIdentifier(keyMapping.targetField, dialect)
 
-      const setAssignments = activeMappings
+      const safeSetAssignments = activeMappings
         .filter((m) => m !== keyMapping)
         .map((m, i) => {
           const raw = row[i]
-          const v = raw === undefined || raw === '' || raw === 'NULL' ? 'NULL' : `'${raw.replace(/'/g, "''")}'`
-          return `${quote(m.targetField, dialect)} = ${v}`
+          const v = formatSqlValue(raw, dialect)
+          return `${quoteIdentifier(m.targetField, dialect)} = ${v}`
         })
         .join(', ')
 
-      if (setAssignments) {
+      if (safeSetAssignments) {
         statements.push(
-          `UPDATE ${quotedTable} SET ${setAssignments} WHERE ${quote(keyMapping.targetField, dialect)} = ${keyVal};`,
+          `UPDATE ${quotedTable} SET ${safeSetAssignments} WHERE ${quotedKeyCol} = ${quotedKeyVal};`,
         )
       }
     }

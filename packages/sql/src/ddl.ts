@@ -1,23 +1,26 @@
 import type { DdlWarning, FieldDesign, TableDesign } from '@corvus/contract'
 import type { SqlDialect } from './dialect'
+import { quoteIdentifier, sqlKeyword } from './dialect'
 
-function quoteIdent(name: string, dialect: SqlDialect): string {
-  if (dialect === 'mysql') return `\`${name.replace(/`/g, '``')}\``
-  return `"${name.replace(/"/g, '""')}"`
-}
-
+/**
+ * Generates CREATE TABLE DDL.
+ *
+ * NOTE: Category (b) - DDL generation for user preview, schema sync, and .sql export.
+ * Cannot use bind parameters in DDL statements. All table and column names are quoted
+ * with quoteIdentifier().
+ */
 export function generateCreateTable(
   design: TableDesign,
   dialect: SqlDialect = 'postgres',
 ): { statements: string[]; warnings: DdlWarning[] } {
   const warnings: DdlWarning[] = []
-  const quotedTable = quoteIdent(design.name, dialect)
+  const quotedTable = quoteIdentifier(design.name, dialect)
 
   const fieldDefs: string[] = design.fields.map((f) => {
-    const quotedCol = quoteIdent(f.name, dialect)
+    const quotedCol = quoteIdentifier(f.name, dialect)
     let typeStr = f.type.toUpperCase()
     if (f.length) {
-      typeStr += `(${f.length})`
+      typeStr += `(${Number(f.length)})`
     }
     let def = `${quotedCol} ${typeStr}`
     if (f.autoIncrement) {
@@ -35,7 +38,7 @@ export function generateCreateTable(
 
   const pkFields = design.fields.filter((f) => f.isPrimaryKey)
   if (pkFields.length > 0) {
-    const pkCols = pkFields.map((f) => quoteIdent(f.name, dialect)).join(', ')
+    const pkCols = pkFields.map((f) => quoteIdentifier(f.name, dialect)).join(', ')
     fieldDefs.push(`PRIMARY KEY (${pkCols})`)
   } else {
     warnings.push({
@@ -47,7 +50,12 @@ export function generateCreateTable(
 
   let createSql = `CREATE TABLE ${quotedTable} (\n  ${fieldDefs.join(',\n  ')}\n)`
   if (dialect === 'mysql' && design.engine) {
-    createSql += ` ENGINE=${design.engine}`
+    const safeEngine = sqlKeyword(
+      design.engine.toUpperCase(),
+      ['INNODB', 'MYISAM', 'MEMORY', 'CSV', 'ARCHIVE'] as const,
+      'INNODB',
+    )
+    createSql += ` ENGINE=${safeEngine}`
   }
   createSql += ';'
 
@@ -57,6 +65,12 @@ export function generateCreateTable(
   }
 }
 
+/**
+ * Generates ALTER TABLE DDL diff.
+ *
+ * NOTE: Category (b) - DDL preview for schema mutations.
+ * Identifiers are safely escaped via quoteIdentifier().
+ */
 export function generateAlterTable(
   before: TableDesign,
   after: TableDesign,
@@ -64,7 +78,7 @@ export function generateAlterTable(
 ): { statements: string[]; warnings: DdlWarning[] } {
   const statements: string[] = []
   const warnings: DdlWarning[] = []
-  const quotedTable = quoteIdent(before.name, dialect)
+  const quotedTable = quoteIdentifier(before.name, dialect)
 
   // SQLite special case: recreate table
   if (dialect === 'sqlite') {
@@ -80,20 +94,23 @@ export function generateAlterTable(
 
     statements.push(...createTemp.statements)
 
-    const commonCols = before.fields
+    const quotedCommonCols = before.fields
       .filter((bf) => after.fields.some((af) => af.id === bf.id))
-      .map((f) => quoteIdent(f.name, 'sqlite'))
+      .map((f) => quoteIdentifier(f.name, 'sqlite'))
       .join(', ')
 
-    if (commonCols) {
+    const quotedTempTable = quoteIdentifier(tempTable, 'sqlite')
+    const quotedAfterTable = quoteIdentifier(after.name, 'sqlite')
+
+    if (quotedCommonCols) {
       statements.push(
-        `INSERT INTO ${quoteIdent(tempTable, 'sqlite')} (${commonCols}) SELECT ${commonCols} FROM ${quotedTable};`,
+        `INSERT INTO ${quotedTempTable} (${quotedCommonCols}) SELECT ${quotedCommonCols} FROM ${quotedTable};`,
       )
     }
 
     statements.push(`DROP TABLE ${quotedTable};`)
     statements.push(
-      `ALTER TABLE ${quoteIdent(tempTable, 'sqlite')} RENAME TO ${quoteIdent(after.name, 'sqlite')};`,
+      `ALTER TABLE ${quotedTempTable} RENAME TO ${quotedAfterTable};`,
     )
 
     return { statements, warnings }
@@ -111,8 +128,9 @@ export function generateAlterTable(
         code: 'DROP_COLUMN_DATA_LOSS',
         message: `Xoá cột "${bf.name}" sẽ làm mất toàn bộ dữ liệu trong cột này.`,
       })
+      const quotedColName = quoteIdentifier(bf.name, dialect)
       statements.push(
-        `ALTER TABLE ${quotedTable} DROP COLUMN ${quoteIdent(bf.name, dialect)};`,
+        `ALTER TABLE ${quotedTable} DROP COLUMN ${quotedColName};`,
       )
     }
   }
@@ -120,11 +138,12 @@ export function generateAlterTable(
   // Check added columns
   for (const [id, af] of afterMap.entries()) {
     if (!beforeMap.has(id)) {
-      let typeStr = af.type.toUpperCase()
-      if (af.length) typeStr += `(${af.length})`
-      let def = `${quoteIdent(af.name, dialect)} ${typeStr}`
-      if (!af.nullable) def += ' NOT NULL'
-      statements.push(`ALTER TABLE ${quotedTable} ADD COLUMN ${def};`)
+      let safeTypeStr = af.type.toUpperCase()
+      if (af.length) safeTypeStr += `(${Number(af.length)})`
+      const quotedColName = quoteIdentifier(af.name, dialect)
+      let safeDef = `${quotedColName} ${safeTypeStr}`
+      if (!af.nullable) safeDef += ' NOT NULL'
+      statements.push(`ALTER TABLE ${quotedTable} ADD COLUMN ${safeDef};`)
     }
   }
 
@@ -133,15 +152,17 @@ export function generateAlterTable(
     const bf = beforeMap.get(id)
     if (bf) {
       if (bf.name !== af.name) {
+        const quotedOldName = quoteIdentifier(bf.name, dialect)
+        const quotedNewName = quoteIdentifier(af.name, dialect)
         if (dialect === 'postgres') {
           statements.push(
-            `ALTER TABLE ${quotedTable} RENAME COLUMN ${quoteIdent(bf.name, dialect)} TO ${quoteIdent(af.name, dialect)};`,
+            `ALTER TABLE ${quotedTable} RENAME COLUMN ${quotedOldName} TO ${quotedNewName};`,
           )
         } else if (dialect === 'mysql') {
-          let typeStr = af.type.toUpperCase()
-          if (af.length) typeStr += `(${af.length})`
+          let safeTypeStr = af.type.toUpperCase()
+          if (af.length) safeTypeStr += `(${Number(af.length)})`
           statements.push(
-            `ALTER TABLE ${quotedTable} CHANGE COLUMN ${quoteIdent(bf.name, dialect)} ${quoteIdent(af.name, dialect)} ${typeStr};`,
+            `ALTER TABLE ${quotedTable} CHANGE COLUMN ${quotedOldName} ${quotedNewName} ${safeTypeStr};`,
           )
         }
       }
@@ -152,5 +173,6 @@ export function generateAlterTable(
 }
 
 export function generateDropTable(name: string, dialect: SqlDialect = 'postgres'): string {
-  return `DROP TABLE ${quoteIdent(name, dialect)};`
+  const quotedTable = quoteIdentifier(name, dialect)
+  return `DROP TABLE ${quotedTable};`
 }

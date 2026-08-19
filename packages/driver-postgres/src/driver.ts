@@ -169,8 +169,14 @@ export class PostgresConnection implements DriverConnection {
     try {
       await client.query('BEGIN')
       if (opts?.isolationLevel) {
-        const level = opts.isolationLevel.replace(/-/g, ' ').toUpperCase()
-        await client.query(`SET TRANSACTION ISOLATION LEVEL ${level}`)
+        const rawLevel = opts.isolationLevel.replace(/-/g, ' ').toUpperCase()
+        const safeLevel = (['READ UNCOMMITTED', 'READ COMMITTED', 'REPEATABLE READ', 'SERIALIZABLE'] as const).find(
+          (l) => l === rawLevel,
+        )
+        if (!safeLevel) {
+          throw corvusError('INVALID_INPUT', `Mức cô lập không hợp lệ: ${opts.isolationLevel}`)
+        }
+        await client.query(`SET TRANSACTION ISOLATION LEVEL ${safeLevel}`)
       }
       // Phòng thủ nhiều lớp cho read-only: đặt ở tầng session, không chỉ chặn ở UI
       // (security.md §5).

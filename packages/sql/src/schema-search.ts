@@ -1,5 +1,5 @@
 import type { SqlDialect } from './dialect'
-import { quoteIdentifier } from './dialect'
+import { quoteIdentifier, quoteLiteral } from './dialect'
 
 export type SearchMode = 'structure' | 'data' | 'routine' | 'all'
 
@@ -20,7 +20,11 @@ export interface SchemaSearchResult {
 }
 
 /**
- * Builds search SQL for schema objects and data
+ * Builds search SQL for schema objects and data.
+ *
+ * NOTE: Search queries generate text SQL for multi-table search execution.
+ * All table/column identifiers are safely quoted with quoteIdentifier(), and all
+ * literal search patterns and table names are escaped with quoteLiteral().
  */
 export function buildSchemaSearchSql(
   query: SchemaSearchQuery,
@@ -29,22 +33,24 @@ export function buildSchemaSearchSql(
   dialect: SqlDialect,
 ): string[] {
   const statements: string[] = []
-  const pattern = query.exactMatch ? query.term : `%${query.term}%`
+  const rawPattern = query.exactMatch ? query.term : `%${query.term}%`
+  const quotedPattern = quoteLiteral(rawPattern, dialect)
 
   if (query.mode === 'data' || query.mode === 'all') {
     for (const tbl of tables) {
-      const tableQuoted = `${quoteIdentifier(schema, dialect)}.${quoteIdentifier(tbl.name, dialect)}`
+      const quotedTable = `${quoteIdentifier(schema, dialect)}.${quoteIdentifier(tbl.name, dialect)}`
+      const quotedTableName = quoteLiteral(tbl.name, dialect)
       const whereClauses = tbl.columns.map((col) => {
-        const colQuoted = quoteIdentifier(col, dialect)
+        const quotedCol = quoteIdentifier(col, dialect)
         if (dialect === 'postgres') {
-          return `${colQuoted}::text ${query.caseSensitive ? 'LIKE' : 'ILIKE'} '${pattern}'`
+          return `${quotedCol}::text ${query.caseSensitive ? 'LIKE' : 'ILIKE'} ${quotedPattern}`
         }
-        return `CAST(${colQuoted} AS CHAR) LIKE '${pattern}'`
+        return `CAST(${quotedCol} AS CHAR) LIKE ${quotedPattern}`
       })
 
       if (whereClauses.length > 0) {
         statements.push(
-          `SELECT '${tbl.name}' AS table_name, count(*) AS matches FROM ${tableQuoted} WHERE ${whereClauses.join(' OR ')};`,
+          `SELECT ${quotedTableName} AS table_name, count(*) AS matches FROM ${quotedTable} WHERE ${whereClauses.join(' OR ')};`,
         )
       }
     }
