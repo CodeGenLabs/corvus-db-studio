@@ -167,11 +167,19 @@ Nói thẳng chỗ bạn không đồng ý. Đừng khen cho lịch sự. Trả 
 
 ### Prompt đã soạn sẵn cho task cụ thể
 
-| Task | File |
-|---|---|
-| T-B05 · WebSocket streaming | [prompts/T-B05-websocket-streaming.md](prompts/T-B05-websocket-streaming.md) |
+Danh sách đầy đủ + thứ tự khuyến nghị: **[prompts/README.md](prompts/README.md)**
 
-Prompt theo task tốt hơn biến thể B ở một điểm: nó liệt kê **những gì ĐÃ CÓ** để agent không
+| Task | File | Trạng thái |
+|---|---|---|
+| T-B05 · WebSocket streaming | [prompts/T-B05-websocket-streaming.md](prompts/T-B05-websocket-streaming.md) | đã xong 2026-08-19 |
+| T-B02 + T-B01 · an toàn SQL | [prompts/T-B01-B02-sql-safety.md](prompts/T-B01-B02-sql-safety.md) | việc tiếp theo |
+| T-024 · driver MySQL | [prompts/T-024-mysql-driver.md](prompts/T-024-mysql-driver.md) | chờ |
+| T-B06 · conformance C4–C9 | [prompts/T-B06-conformance-c4-c9.md](prompts/T-B06-conformance-c4-c9.md) | chờ |
+| T-B03 · bundling app Node | [prompts/T-B03-node-app-bundling.md](prompts/T-B03-node-app-bundling.md) | chờ, độc lập |
+| R-01 · rà soát 211 dấu [DONE] | [prompts/R-01-reaudit-done-markers.md](prompts/R-01-reaudit-done-markers.md) | chờ, song song được |
+| Rà soát code T-B05 + T-024b | [prompts/REVIEW-for-claude.md](prompts/REVIEW-for-claude.md) | dùng trước khi commit |
+
+Prompt theo task tốt hơn biến thể B ở hai điểm: nó liệt kê **những gì ĐÃ CÓ** để agent không
 viết lại, và **những cái bẫy đã biết** rút từ việc rà soát code thật.
 
 **Đừng bỏ "BƯỚC 1 … rồi dừng lại chờ tôi xác nhận" trong biến thể A.** Đó là chốt kiểm soát
