@@ -3,18 +3,21 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.cjs",
   "scripts": {
+    "build": "tsup",
     "typecheck": "tsc -b --noEmit",
     "dev": "electron ."
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",
-    "@corvus/transport-ipc": "workspace:*"
+    "@corvus/transport-ipc": "workspace:*",
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
     "electron": "^33.2.1",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.2"
   }
 }

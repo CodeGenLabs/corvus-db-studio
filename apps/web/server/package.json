@@ -3,8 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "scripts": {
+    "build": "tsup",
     "typecheck": "tsc -b --noEmit",
     "dev": "tsx watch src/index.ts",
     "test:integration": "vitest run --config vitest.config.ts"
@@ -12,18 +13,24 @@
   "dependencies": {
     "@corvus/contract": "workspace:*",
     "@corvus/driver-core": "workspace:*",
+    "@corvus/driver-mysql": "workspace:*",
     "@corvus/driver-postgres": "workspace:*",
+    "@corvus/driver-sqlite": "workspace:*",
     "@corvus/engine": "workspace:*",
     "@corvus/storage": "workspace:*",
     "@corvus/transport-http": "workspace:*",
-    "ws": "^8.21.3",
-    "@corvus/driver-sqlite": "workspace:*",
-    "@corvus/driver-mysql": "workspace:*"
+    "better-sqlite3": "^13.0.3",
+    "mysql2": "^3.23.3",
+    "pg": "^8.23.0",
+    "pg-cursor": "^2.22.0",
+    "pg-types": "^4.1.0",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^12.1.0",
     "@types/node": "^22.10.2",
     "@types/ws": "^8.18.1",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.7"

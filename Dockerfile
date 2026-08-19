@@ -1,42 +1,33 @@
 # syntax=docker/dockerfile:1
 
-# Stage 1: Build all packages
-FROM node:22-alpine AS builder
-
+# --- Stage 1: Build workspace ---
+FROM node:22-bookworm AS builder
 WORKDIR /app
-
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy workspace package definitions
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
-COPY packages/ ./packages/
-COPY apps/ ./apps/
-
-# Install dependencies and build
+RUN corepack enable
+COPY pnpm-lock.yaml package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY packages packages
+COPY apps apps
 RUN pnpm install --frozen-lockfile
 RUN pnpm build
 
-# Stage 2: Runtime image
-FROM node:22-alpine AS runner
-
+# --- Stage 2: Production runtime ---
+FROM node:22-bookworm-slim AS runtime
+# bookworm-slim (glibc cho better-sqlite3)
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV PORT=3000
+# Copy production artifacts
+COPY --from=builder /app/apps/web/server/dist ./server
+COPY --from=builder /app/apps/web/client/dist ./public
+COPY --from=builder /app/node_modules ./node_modules
 
-# Install curl for healthcheck
-RUN apk add --no-cache curl
-
-# Enable pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Copy build artifacts and production node_modules
-COPY --from=builder /app ./
-
-EXPOSE 3000
+ENV NODE_ENV=production CORVUS_DATA_DIR=/var/lib/corvus CORVUS_PORT=8080
+VOLUME /var/lib/corvus
+USER node
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://127.0.0.1:8080/ || exit 1
 
-CMD ["pnpm", "dev:web"]
+CMD ["node", "server/index.js"]

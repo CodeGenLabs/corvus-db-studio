@@ -1,9 +1,8 @@
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { IpcRpcHost } from '@corvus/transport-ipc/host'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd()
 
 // Dummy mock router until @corvus/engine is linked in T-018
 const mockRouter = {
@@ -25,7 +24,7 @@ function createWindow() {
     title: 'Corvus DB Studio',
     titleBarStyle: 'hidden',
     webPreferences: {
-      preload: path.join(__dirname, '../../preload/dist/index.js'),
+      preload: path.join(currentDir, '../../preload/dist/index.cjs'),
       contextIsolation: true,
       sandbox: true,
     },
@@ -34,7 +33,7 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
-    win.loadFile(path.join(__dirname, '../../renderer/dist/index.html'))
+    win.loadFile(path.join(currentDir, '../../renderer/dist/index.html'))
   }
 }
 

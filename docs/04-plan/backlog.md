@@ -14,6 +14,7 @@
 > - `[DONE]` — **chưa rà soát**, không được tin
 >
 > **W-0 đã đạt mốc chứng minh** (2026-08-19): UI hiện bảng thật từ PostgreSQL.
+> **T-B03 xong 2026-08-19**: Real Production Build cho 3 Node Apps (`apps/web/server`, `apps/desktop/main`, `apps/desktop/preload`) qua `tsup` — tạo `dist/` tự chứa, external đúng native module `better-sqlite3`, smoke test tự động kiểm tra khởi động, `/rpc`, `/ws`, clean shutdown ≤ 5s, `require('better-sqlite3')`, Dockerfile đa tầng trên bookworm-slim (glibc), đạt Full Turbo caching (28ms).
 > **T-B06 xong 2026-08-19**: Hoàn thành trọn vẹn 9 nhóm Conformance C1–C9 (Connect, Introspect, Execute, Types, Tx, Cancel, DDL, Errors, Resource) — chạy xanh trên cả 3 engine thật (PostgreSQL 78 test, MySQL 62 test, SQLite 68 test).
 > **T-024 MySQL xong 2026-08-19**: Conformance C1–C9 xanh (62 tests) + NFR-03 stream 100k dòng + cancel KILL QUERY < 200ms; **MySQL là engine thật thứ ba**.
 > **T-B01 & T-B02 xong 2026-08-19**: 0 rule bị tắt, 0 nợ ghép chuỗi SQL.
