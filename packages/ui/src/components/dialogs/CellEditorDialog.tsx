@@ -1,13 +1,14 @@
 import { useState } from 'react'
+import type { CellValue } from '@corvus/contract'
 import { Modal } from './Modal'
 
 export interface CellEditorDialogProps {
   columnName: string
-  initialValue: any
+  initialValue: CellValue
   dataType?: string
   readOnly?: boolean
   onClose: () => void
-  onSave: (value: any) => void
+  onSave: (value: CellValue) => void
 }
 
 export function CellEditorDialog({
@@ -19,9 +20,7 @@ export function CellEditorDialog({
   onSave,
 }: CellEditorDialogProps) {
   const [activeTab, setActiveTab] = useState<'text' | 'json' | 'hex'>('text')
-  const [value, setValue] = useState(
-    typeof initialValue === 'object' ? JSON.stringify(initialValue, null, 2) : String(initialValue ?? ''),
-  )
+  const [value, setValue] = useState(() => cellValueToText(initialValue))
 
   const handleFormatJson = () => {
     try {
@@ -148,7 +147,7 @@ export function CellEditorDialog({
         </button>
         {!readOnly && (
           <button
-            onClick={() => onSave(value)}
+            onClick={() => onSave(textToCellValue(value, initialValue))}
             style={{
               padding: '6px 16px',
               border: 'none',
@@ -166,4 +165,46 @@ export function CellEditorDialog({
       </div>
     </Modal>
   )
+}
+
+/** Đưa CellValue về dạng text để sửa trong editor. */
+function cellValueToText(v: CellValue): string {
+  switch (v.k) {
+    case 'null':
+    case 'missing':
+      return ''
+    case 'json':
+      return JSON.stringify(v.v, null, 2)
+    default:
+      return String(v.v)
+  }
+}
+
+/**
+ * Đưa text đã sửa trở lại CellValue, GIỮ NGUYÊN `k` của giá trị gốc.
+ * Không suy diễn kiểu từ nội dung — cột quyết định kiểu, không phải giá trị
+ * (driver-spi.md §6). Text rỗng trên cột vốn NULL thì giữ NULL, khác với chuỗi rỗng.
+ */
+function textToCellValue(text: string, original: CellValue): CellValue {
+  if (text === '' && (original.k === 'null' || original.k === 'missing')) return original
+  switch (original.k) {
+    case 'num': {
+      const n = Number(text)
+      return Number.isFinite(n) ? { k: 'num', v: n } : { k: 'str', v: text }
+    }
+    case 'bool':
+      return { k: 'bool', v: text === 'true' || text === '1' }
+    case 'json':
+      try {
+        return { k: 'json', v: JSON.parse(text) }
+      } catch {
+        return { k: 'str', v: text }
+      }
+    case 'big':
+    case 'date':
+    case 'bytes':
+      return { k: original.k, v: text }
+    default:
+      return { k: 'str', v: text }
+  }
 }

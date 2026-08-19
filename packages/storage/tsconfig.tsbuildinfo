@@ -1,1 +1,0 @@
-{"root":["./src/index.ts","./src/migration.ts","./src/storage.ts","./src/workspace-archive.ts","./src/vault/envelope.ts","./src/vault/index.ts","./src/vault/memory.ts","./src/vault/os-keychain.ts","./src/vault/types.ts"],"version":"5.9.3"}

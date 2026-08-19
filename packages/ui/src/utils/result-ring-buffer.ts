@@ -1,10 +1,10 @@
-export interface ResultChunk<T = any> {
+export interface ResultChunk<T = unknown> {
   rows: T[]
   isLastChunk: boolean
   totalCount?: number
 }
 
-export class ResultRingBuffer<T = any> {
+export class ResultRingBuffer<T = unknown> {
   private buffer: T[] = []
   private maxCapacity: number
 

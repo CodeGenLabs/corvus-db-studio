@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { selectValue } from '../utils/select-value'
 import { useStudio } from '../store/studio'
 import { formatSql } from '@corvus/sql'
 
@@ -68,7 +69,7 @@ export function ViewDesigner() {
               <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>SQL Security:</label>
               <select
                 value={security}
-                onChange={(e) => setSecurity(e.target.value as any)}
+                onChange={(e) => setSecurity(selectValue(e.target.value, ['DEFINER', 'INVOKER'], 'DEFINER'))}
                 style={{ width: '100%', height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
               >
                 <option value="DEFINER">DEFINER</option>
@@ -80,7 +81,7 @@ export function ViewDesigner() {
               <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Check Option:</label>
               <select
                 value={checkOption}
-                onChange={(e) => setCheckOption(e.target.value as any)}
+                onChange={(e) => setCheckOption(selectValue(e.target.value, ['NONE', 'CASCADED', 'LOCAL'], 'NONE'))}
                 style={{ width: '100%', height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
               >
                 <option value="NONE">NONE</option>

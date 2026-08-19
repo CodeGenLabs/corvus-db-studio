@@ -1,4 +1,4 @@
-import tls from 'node:tls'
+import type tls from 'node:tls'
 import fs from 'node:fs'
 
 export interface TlsOptionsInput {

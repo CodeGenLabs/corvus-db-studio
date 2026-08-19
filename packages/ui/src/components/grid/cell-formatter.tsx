@@ -23,8 +23,12 @@ export function renderCellValue(val: CellValue | undefined | null): string {
           return typeof val.v === 'string' ? val.v : JSON.stringify(val.v)
         case 'bytes':
           return `<BLOB ${val.v.length}B>`
-        default:
-          return String((val as any).v ?? '')
+        default: {
+          // Mọi biến thể của CellValue đã được xử lý ở trên. Nếu thêm biến thể mới mà
+          // quên cập nhật đây, TypeScript sẽ báo lỗi tại dòng này (exhaustive check).
+          const exhaustive: never = val
+          return String(exhaustive)
+        }
       }
     }
   }

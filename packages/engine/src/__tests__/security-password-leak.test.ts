@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { redact } from '../redact'
 import { generateUserSql } from '@corvus/sql'
 
@@ -37,3 +38,15 @@ export function testSecurityPasswordLeak(): { passed: boolean; message?: string 
 
   return { passed: true }
 }
+
+/**
+ * Bọc thành test vitest thật. Trước đây hàm trên chỉ được export mà không có runner
+ * nào gọi, nên test này chưa từng chạy — xem docs/04-plan/audit-2026-08-18.md.
+ */
+describe('security-password-leak', () => {
+  it('mật khẩu user không rò khi tạo/sửa user', async () => {
+    const result = testSecurityPasswordLeak()
+    expect(result.message ?? '').toBe('')
+    expect(result.passed).toBe(true)
+  })
+})

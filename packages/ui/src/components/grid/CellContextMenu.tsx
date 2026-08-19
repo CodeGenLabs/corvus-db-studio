@@ -1,7 +1,9 @@
+import type { CellValue } from '@corvus/contract'
+
 export interface CellContextMenuProps {
   x: number
   y: number
-  cellValue: any
+  cellValue: CellValue
   columnName: string
   onClose: () => void
   onSetNull: () => void

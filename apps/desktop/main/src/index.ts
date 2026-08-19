@@ -53,3 +53,8 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
+
+// T-505 DesktopAppUpdater — export lại để module không mồ côi.
+// TODO(T-505): nối vào luồng khởi động (kiểm tra cập nhật lúc mở app + mỗi 6 giờ)
+// và chặn tự cài khi còn job đang chạy (SPEC-15 FR-15.29).
+export { DesktopAppUpdater, type AppUpdateInfo } from './updater'

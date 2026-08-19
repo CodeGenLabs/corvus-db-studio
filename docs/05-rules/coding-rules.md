@@ -67,6 +67,7 @@ const cfg = parsed.data
 | 3.5 | `{ t: 'raw' }` trong `FilterExpr` chỉ nhận từ input người dùng tường minh, và phải cảnh báo | 🔍 |
 | 3.6 | Driver không được `SELECT` rồi trả cả mảng. Luôn cursor + `AsyncIterable` | 🔍 + 🧪 bench RAM |
 | 3.7 | `multipleStatements` (MySQL) chỉ bật cho session SQL Editor | 🔍 |
+| 3.8 | **Dữ liệu giả chỉ được tồn tại trong `packages/transport-mock`.** Cấm hard-code dữ liệu mẫu trong `driver-*`, `services`, `engine` — driver chưa làm thì ném `NOT_IMPLEMENTED`, không trả dữ liệu giả | 🔍 |
 
 ```ts
 // ❌ CẤM — dù `table` trông như đến từ nguồn tin cậy

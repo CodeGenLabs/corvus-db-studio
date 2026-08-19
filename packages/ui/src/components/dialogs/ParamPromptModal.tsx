@@ -4,7 +4,7 @@ import { Modal } from './Modal'
 export interface ParamPromptModalProps {
   params: string[]
   onClose: () => void
-  onExecute: (paramValues: Record<string, any>) => void
+  onExecute: (paramValues: Record<string, string>) => void
 }
 
 export function ParamPromptModal({

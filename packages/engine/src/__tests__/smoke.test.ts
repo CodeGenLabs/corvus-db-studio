@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import * as crypto from 'node:crypto'
 import * as zlib from 'node:zlib'
 
@@ -23,3 +24,15 @@ export function testPackagingNativeModulesSmoke(): { passed: boolean; message?: 
     return { passed: false, message: `Packaging smoke test threw error: ${err.message}` }
   }
 }
+
+/**
+ * Bọc thành test vitest thật. Trước đây hàm trên chỉ được export mà không có runner
+ * nào gọi, nên test này chưa từng chạy — xem docs/04-plan/audit-2026-08-18.md.
+ */
+describe('smoke', () => {
+  it('native module (crypto, zlib) hoạt động sau đóng gói', async () => {
+    const result = testPackagingNativeModulesSmoke()
+    expect(result.message ?? '').toBe('')
+    expect(result.passed).toBe(true)
+  })
+})

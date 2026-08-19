@@ -1,10 +1,11 @@
 import { Modal } from './Modal'
+import type { CellValue } from '@corvus/contract'
 
 export interface ConflictField {
   column: string
-  myValue: any
-  theirValue: any
-  baseValue: any
+  myValue: CellValue
+  theirValue: CellValue
+  baseValue: CellValue
 }
 
 export interface ConflictDialogProps {

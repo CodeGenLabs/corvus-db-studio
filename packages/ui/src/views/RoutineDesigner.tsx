@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { selectValue } from '../utils/select-value'
 
 interface RoutineParam {
   id: string
@@ -67,7 +68,7 @@ export function RoutineDesigner() {
               <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Loại:</label>
               <select
                 value={kind}
-                onChange={(e) => setKind(e.target.value as any)}
+                onChange={(e) => setKind(selectValue(e.target.value, ['PROCEDURE', 'FUNCTION'], 'PROCEDURE'))}
                 style={{ width: '100%', height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
               >
                 <option value="PROCEDURE">Procedure (Thủ tục)</option>
@@ -117,7 +118,7 @@ export function RoutineDesigner() {
                       value={p.mode}
                       onChange={(e) => {
                         const next = [...params]
-                        next[i] = { ...p, mode: e.target.value as any }
+                        next[i] = { ...p, mode: selectValue(e.target.value, ['IN', 'OUT', 'INOUT'], 'IN') }
                         setParams(next)
                       }}
                       style={{ height: 22, padding: '0 4px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text)', fontSize: 11 }}

@@ -1,6 +1,7 @@
+import { errorMessage } from '@corvus/contract'
 export interface ImportRowError {
   rowIndex: number
-  rowData: any
+  rowData: unknown
   errorMessage: string
 }
 
@@ -21,9 +22,9 @@ export interface ImportPipelineResult {
 
 export class ImportPipelineRunner {
   public static async executePipeline(
-    rows: any[],
+    rows: unknown[],
     totalBytes: number,
-    insertFn: (batch: any[]) => Promise<void>,
+    insertFn: (batch: unknown[]) => Promise<void>,
     options: ImportPipelineOptions = {},
   ): Promise<ImportPipelineResult> {
     const batchSize = options.batchSize || 1000
@@ -35,19 +36,20 @@ export class ImportPipelineRunner {
       try {
         await insertFn(batch)
         importedRows += batch.length
-      } catch (err: any) {
-        // Retry row-by-row in the failed batch to isolate bad rows
+      } catch {
+        // Lô thất bại: thử lại từng dòng để khoanh vùng dòng lỗi.
+        // Lỗi của cả lô bị bỏ qua có chủ ý — lỗi từng dòng mới có giá trị cho người dùng.
         for (let j = 0; j < batch.length; j++) {
           const singleRow = [batch[j]]
           const rowIndex = i + j + 1
           try {
             await insertFn(singleRow)
             importedRows++
-          } catch (rowErr: any) {
+          } catch (rowErr: unknown) {
             const errorObj: ImportRowError = {
               rowIndex,
               rowData: batch[j],
-              errorMessage: rowErr.message,
+              errorMessage: errorMessage(rowErr),
             }
             errors.push(errorObj)
             options.onRowError?.(errorObj)

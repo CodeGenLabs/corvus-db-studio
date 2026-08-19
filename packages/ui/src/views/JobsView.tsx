@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { selectValue } from '../utils/select-value'
 import { useStudio } from '../store/studio'
 import type { BatchJobDef, BatchJobStep } from '@corvus/contract'
 
@@ -386,7 +387,7 @@ export function JobsView() {
                       value={st.kind}
                       onChange={(e) => {
                         const next = [...editSteps]
-                        next[i] = { ...st, kind: e.target.value as any }
+                        next[i] = { ...st, kind: selectValue(e.target.value, ['backup', 'import', 'export', 'batch', 'transfer', 'sync'], 'batch') }
                         setEditSteps(next)
                       }}
                       style={{ height: 24, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text)', fontSize: 11 }}

@@ -12,7 +12,11 @@ export class WebFileGateway implements FileGateway {
       const blob =
         typeof options.content === 'string'
           ? new Blob([options.content], { type: 'text/plain;charset=utf-8' })
-          : new Blob([options.content as any], { type: 'application/octet-stream' })
+          : // Uint8Array<ArrayBufferLike> chưa khớp BlobPart trong lib DOM mới;
+            // copy sang ArrayBuffer thường là cách chuyển đổi an toàn, không cần cast.
+            new Blob([options.content.slice().buffer as ArrayBuffer], {
+              type: 'application/octet-stream',
+            })
 
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')

@@ -1,3 +1,4 @@
+import { toError } from '@corvus/contract'
 import { useEffect, useState, useRef } from 'react'
 
 export interface QueryStreamState<T> {
@@ -72,10 +73,13 @@ export function useQueryStream<T>(
           setState((prev) => ({ ...prev, isLoading: false, isComplete: true }))
           options.onComplete?.()
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!controller.signal.aborted) {
-          setState((prev) => ({ ...prev, isLoading: false, error: err }))
-          options.onError?.(err)
+          // catch nhận unknown (JS cho phép ném bất cứ thứ gì) → chuẩn hoá về Error
+          // để state và callback có kiểu chắc chắn.
+          const error = toError(err)
+          setState((prev) => ({ ...prev, isLoading: false, error }))
+          options.onError?.(error)
         }
       }
     }

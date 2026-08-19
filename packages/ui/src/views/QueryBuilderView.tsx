@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { selectValue } from '../utils/select-value'
 import { useStudio } from '../store/studio'
 import { buildSelect, type QueryModel } from '@corvus/sql'
 
@@ -167,7 +168,7 @@ export function QueryBuilderView() {
                       value={f.agg || ''}
                       onChange={(e) => {
                         const next = [...model.fields]
-                        next[idx] = { ...f, agg: (e.target.value as any) || undefined }
+                        next[idx] = { ...f, agg: e.target.value === '' ? undefined : selectValue(e.target.value, ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'], 'COUNT') }
                         setModel({ ...model, fields: next })
                       }}
                       style={{ padding: '3px 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text2)', fontSize: 11 }}

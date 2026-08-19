@@ -28,3 +28,18 @@ export function formatParameter(index: number, dialect: SqlDialect = 'postgres')
       return `:${index + 1}`
   }
 }
+
+/**
+ * Escape một giá trị chuỗi để nhúng vào SQL dạng literal.
+ *
+ * CHỈ dùng khi không thể bind parameter — cụ thể là khi sinh script SQL cho người dùng
+ * copy hoặc lưu ra file ("Copy as INSERT", export .sql, preview DDL). Với SQL do engine
+ * THỰC THI, luôn bind parameter (security.md §7).
+ */
+export function quoteLiteral(value: string, dialect: SqlDialect = 'postgres'): string {
+  // Nhân đôi dấu nháy đơn — quy tắc chuẩn SQL.
+  let escaped = value.replace(/'/g, "''")
+  // MySQL còn coi dấu gạch chéo ngược là ký tự escape trong chuỗi, nên phải nhân đôi nó.
+  if (dialect === 'mysql') escaped = escaped.replace(/\\/g, '\\\\')
+  return `'${escaped}'`
+}

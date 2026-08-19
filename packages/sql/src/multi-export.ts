@@ -5,7 +5,7 @@ export interface MultiExportTarget {
   type: 'table' | 'view'
   schema?: string
   columns: string[]
-  rows: Record<string, any>[]
+  rows: Record<string, unknown>[]
 }
 
 export interface MultiExportPlan {

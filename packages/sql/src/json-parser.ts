@@ -1,3 +1,4 @@
+import { errorMessage } from '@corvus/contract'
 import type { ColumnDef, CellValue } from '@corvus/contract'
 import { inferColumnType } from './import-parser'
 
@@ -14,8 +15,8 @@ export function parseJsonToTable(jsonContent: string): ParsedJsonTable {
   let parsed: unknown
   try {
     parsed = JSON.parse(jsonContent)
-  } catch (err: any) {
-    throw new Error(`Cú pháp JSON không hợp lệ: ${err.message}`)
+  } catch (err: unknown) {
+    throw new Error(`Cú pháp JSON không hợp lệ: ${errorMessage(err)}`)
   }
 
   let items: Record<string, unknown>[] = []

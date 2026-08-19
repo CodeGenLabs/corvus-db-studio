@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { selectValue } from '../utils/select-value'
 
 export interface DatabaseObjectItem {
   name: string
@@ -48,7 +49,7 @@ export function VirtualObjectsView({ objects, onOpenObject }: VirtualObjectsView
         />
         <select
           value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as any)}
+          onChange={(e) => setTypeFilter(selectValue(e.target.value, ['all', 'table', 'view', 'routine', 'trigger'], 'all'))}
           style={{ height: 22, padding: '0 4px', background: 'var(--pane)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text)' }}
         >
           <option value="all">Tất cả kiểu ({objects.length})</option>

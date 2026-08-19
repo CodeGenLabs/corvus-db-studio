@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { selectValue } from '../../utils/select-value'
 import { Modal } from './Modal'
 
 export interface CanvasForeignKeyDialogProps {
@@ -109,7 +110,7 @@ export function CanvasForeignKeyDialog({
             <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Khi Xoá (ON DELETE):</label>
             <select
               value={onDelete}
-              onChange={(e) => setOnDelete(e.target.value as any)}
+              onChange={(e) => setOnDelete(selectValue(e.target.value, ['CASCADE', 'SET NULL', 'RESTRICT', 'NO ACTION'], 'CASCADE'))}
               style={{ width: '100%', height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border-strong)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
             >
               <option value="CASCADE">CASCADE</option>
@@ -123,7 +124,7 @@ export function CanvasForeignKeyDialog({
             <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Khi Sửa (ON UPDATE):</label>
             <select
               value={onUpdate}
-              onChange={(e) => setOnUpdate(e.target.value as any)}
+              onChange={(e) => setOnUpdate(selectValue(e.target.value, ['CASCADE', 'SET NULL', 'RESTRICT', 'NO ACTION'], 'CASCADE'))}
               style={{ width: '100%', height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border-strong)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
             >
               <option value="CASCADE">CASCADE</option>

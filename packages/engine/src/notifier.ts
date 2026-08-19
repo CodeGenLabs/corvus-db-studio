@@ -1,3 +1,4 @@
+import { errorMessage } from '@corvus/contract'
 import * as crypto from 'node:crypto'
 
 export interface SmtpConfig {
@@ -54,10 +55,10 @@ export class CorvusNotifier {
         success: response.ok,
         statusCode: response.status,
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         success: false,
-        error: err.message,
+        error: errorMessage(err),
       }
     }
   }

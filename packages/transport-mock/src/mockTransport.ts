@@ -201,7 +201,7 @@ export function createMockTransport(options: MockTransportOptions = {}): Transpo
             id: String(idx + 1),
             name,
             kind: 'batch' as const,
-            status: (status === 'ok' ? 'completed' : status === 'running' ? 'running' : 'failed') as any,
+            status: status === 'ok' ? ('completed' as const) : status === 'running' ? ('running' as const) : ('failed' as const),
             createdAt: new Date().toISOString(),
           })) as TResult
         }

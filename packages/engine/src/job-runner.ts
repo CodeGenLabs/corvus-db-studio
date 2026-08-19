@@ -1,3 +1,4 @@
+import { errorMessage } from '@corvus/contract'
 import { JobTargetLockManager } from './job-lock'
 
 export interface EngineJobSpec {
@@ -45,13 +46,13 @@ export class EngineJobRunner {
 
       spec.onLog?.(`[${new Date().toISOString()}] Job completed successfully.`)
       return { success: true }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (abortController.signal.aborted) {
         spec.onLog?.(`[${new Date().toISOString()}] Job was cancelled by user.`)
         return { success: false, error: 'Job was cancelled by user.' }
       }
-      spec.onLog?.(`[${new Date().toISOString()}] Job failed with error: ${err.message}`)
-      return { success: false, error: err.message }
+      spec.onLog?.(`[${new Date().toISOString()}] Job failed with error: ${errorMessage(err)}`)
+      return { success: false, error: errorMessage(err) }
     } finally {
       this.activeJobs.delete(spec.id)
       if (spec.targetSchema && spec.targetTable) {

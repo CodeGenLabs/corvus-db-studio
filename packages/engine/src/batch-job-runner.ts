@@ -2,7 +2,7 @@ export interface BatchStep {
   id: string
   name: string
   type: 'sql' | 'import' | 'export' | 'backup'
-  payload: any
+  payload: unknown
   continueOnError?: boolean
 }
 

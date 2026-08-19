@@ -6,33 +6,49 @@ on:
   pull_request:
     branches: [main, master]
 
+# Huỷ lần chạy cũ khi push tiếp vào cùng PR.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
-    name: Lint, Typecheck, Test & Build
+    name: Verify (lint · typecheck · test · contract · build)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck across 19 packages
+      # Thứ tự này là có chủ đích: cái nào rẻ và bắt lỗi sớm thì chạy trước.
+      - name: Lint (eslint + 3 rule kiến trúc Corvus)
+        run: pnpm exec eslint .
+
+      - name: Layer boundaries (dependency-cruiser)
+        run: pnpm exec depcruise packages apps
+
+      - name: Typecheck
         run: pnpm typecheck
 
-      - name: Build all packages
-        run: pnpm build
-
-      - name: Run Unit & Integration tests
+      - name: Unit tests
         run: pnpm test
+
+      - name: Contract integrity (rpc-contract.md §3 · ADR-0010)
+        run: pnpm check:contract
+
+      - name: Build
+        run: pnpm build

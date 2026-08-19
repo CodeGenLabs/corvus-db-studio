@@ -6,13 +6,30 @@ import type {
   SaveFileResult,
 } from '@corvus/contract'
 
-export class DesktopFileGateway implements FileGateway {
-  private readonly ipcBridge: any
+/**
+ * Bề mặt duy nhất mà preload của Electron phơi ra renderer cho việc chọn file.
+ * Toàn bộ optional vì renderer có thể chạy trong browser (khi dev UI) — lúc đó
+ * gateway rơi về hành vi mặc định thay vì crash.
+ */
+export interface DesktopFileBridge {
+  saveFile?(options: SaveFileOptions): Promise<SaveFileResult>
+  openFile?(options: OpenFileOptions): Promise<OpenFileResult>
+  readFile?(filePath: string): Promise<Uint8Array>
+  writeFile?(filePath: string, data: Uint8Array | string): Promise<void>
+}
 
-  constructor(ipcBridge?: any) {
+declare global {
+  interface Window {
+    corvusDesktop?: { fileGateway?: DesktopFileBridge }
+  }
+}
+
+export class DesktopFileGateway implements FileGateway {
+  private readonly ipcBridge: DesktopFileBridge | null
+
+  constructor(ipcBridge?: DesktopFileBridge) {
     this.ipcBridge =
-      ipcBridge ||
-      (typeof window !== 'undefined' ? (window as any).corvusDesktop?.fileGateway : null)
+      ipcBridge ?? (typeof window !== 'undefined' ? window.corvusDesktop?.fileGateway ?? null : null)
   }
 
   async saveFile(options: SaveFileOptions): Promise<SaveFileResult> {

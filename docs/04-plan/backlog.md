@@ -1,5 +1,20 @@
 # Backlog — Epic → Task
 
+> ⚠️ **CẢNH BÁO — 213 dấu `[DONE]` còn lại KHÔNG đáng tin.**
+> Audit 2026-08-18: chưa có driver database thật, 0/76 method RPC có handler.
+> Đọc [audit-2026-08-18.md](audit-2026-08-18.md) trước khi dựa vào file này.
+>
+> **Trạng thái cổng xác minh: ĐÃ SỬA (2026-08-18).** `pnpm verify` chạy xanh với 6 bước thật.
+> Từ giờ mọi tuyên bố xong phải kèm output lệnh.
+>
+> Ý nghĩa nhãn:
+> - `[DONE ✔ 2026-08-18]` — đã kiểm chứng bằng lệnh trong phiên audit
+> - `[SAI — xem audit]` — đánh dấu xong nhưng không đạt tiêu chí `✅` của chính nó
+> - `[MOT PHAN]` — có code ở mức khung, chưa đạt đủ tiêu chí
+> - `[DONE]` — **chưa rà soát**, không được tin
+>
+> Việc tiếp theo: **E-000 · R-06 → R-07 → R-08**, không phải task tính năng mới.
+
 Đây là **danh sách việc thực thi được**. Mỗi task đủ nhỏ để một người (hoặc một AI agent) làm
 xong trong ≤ 2 ngày, và đủ rõ để không cần hỏi lại.
 
@@ -20,6 +35,81 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
 - `✅` tiêu chí xong, luôn kiểm chứng được
 
 ---
+
+# E-000 · Phục hồi cổng xác minh  `[W0]` — **LÀM TRƯỚC MỌI THỨ**
+
+Sinh ra từ [audit-2026-08-18.md](audit-2026-08-18.md).
+
+```
+[DONE ✔ 2026-08-18] R-02 · Cài vitest/eslint/depcruise/tsx; test thật sự chạy
+        ✔ pnpm test: 7 file, 45 test (trước đó 0 test chạy)
+        ✔ Đã chuyển 6 file `testXxx()` không ai gọi thành test vitest thật
+        ✔ Phát hiện + sửa P0: redact() dùng regex neo nên `sshPassphrase`, `secretKey` rò rỉ
+        ✔ Thêm 39 test hồi quy cho redact()
+
+[DONE ✔ 2026-08-18] R-03 · check-contract chạy được (qua tsx, KHÔNG dùng tsup)
+        ✔ pnpm check:contract: 76 method, kiểm permission/audit/ADR-0010
+        ✔ Test âm: bỏ previewToken khỏi ddl.applyTable → bị chặn đúng
+        ✔ Bỏ task `build` giả (tsc --noEmit) khỏi 14 library + 3 app Node
+
+[DONE ✔ 2026-08-18] R-04 · lint + depcruise vào CI, chứng minh chặn được
+        ✔ ci.yml: 6 bước (eslint, depcruise, typecheck, test, check:contract, build)
+        ✔ Viết 2 rule còn thiếu: no-driver-id-branching, no-raw-sql-concat
+        ✔ Mở rộng depcruise từ 2 lên 7 luật tầng
+        ✔ File vi phạm có chủ đích → cả 2 cổng chặn đủ 5 vi phạm
+
+[DONE ✔ 2026-08-18] R-05 · Sửa dev:web / dev:desktop
+        ✔ Filter khớp tên package thật; cả hai lệnh chạy
+        ✔ Thêm entry point cho web server (trước đó chỉ export, không listen)
+        ✔ curl POST /rpc/connection.list trả lời được
+        ✔ Chuyển updater.ts mồ côi vào apps/desktop/main
+
+[DONE ✔ 2026-08-18] R-09 · Bỏ CORS '*' ở web server
+        ✔ Allowlist theo CORVUS_BASE_URL + CORVUS_EXTRA_ORIGINS; dev chỉ localhost
+
+R-01 · Rà soát lại 213 dấu [DONE] còn lại
+        ⇦ R-02…R-05 (cần cổng xác minh trước mới rà soát được)
+        ✅ mỗi task còn [DONE] phải có lệnh chứng minh, hoặc bị đổi thành [SAI]/[MOT PHAN]
+
+R-06 · Xoá dữ liệu hard-code khỏi packages/driver-*
+        coding-rules §3.8
+        📁 packages/driver-{postgres,mysql,sqlite}/src/driver.ts
+        ✅ grep dữ liệu giả trong driver-* = 0; method chưa làm ném NOT_IMPLEMENTED
+
+R-07 · Làm lại driver-postgres với `pg` thật + conformance C1+C2
+        ⇦ R-06 · driver-spi.md §8
+        ✅ testcontainers postgres:16 xanh; listObjects 5000 bảng ≤ 800 ms; không N+1
+
+R-08 · 5 handler RPC đầu tiên chạy thật
+        ⇦ R-07
+        📁 packages/engine/src/handlers/{connection,introspect}.ts
+        ✅ connection.test/.open + introspect.databases/.objects/.tableMeta
+        ✅ UI hiện danh sách bảng THẬT từ PostgreSQL (e2e)
+        ✅ Hạ HANDLER_DEBT trong tools/check-contract.ts từ 76 xuống 71
+
+T-B01 · Trả nợ 66 chỗ ghép chuỗi SQL không an toàn (13 file)
+        security.md §7 · danh sách file nằm trong eslint.config.js
+        ✅ eslint.config.js không còn block override cho no-raw-sql-concat
+        ✅ Ưu tiên: schema-search.ts (nhúng tên bảng vào literal),
+           subquery-builder.ts (identifier thô), security-generator.ts (tên user vào literal)
+        ✅ engine/security-provider.ts: bỏ tự escape bằng .replace(), dùng quoteIdentifier()
+
+T-B02 · contract/src/uri.ts bỏ rẽ nhánh theo driverId (2 chỗ)
+        ADR-0003
+        ✅ Chuyển sang bảng tra scheme↔driver trong driver registry
+        ✅ eslint.config.js không còn override cho no-driver-id-branching
+
+T-B03 · Bundling thật cho 3 app Node (điều kiện để đóng gói được)
+        packaging-release.md §3 · liên quan T-500
+        📁 apps/web/server, apps/desktop/{main,preload}
+        ✅ emit dist chạy được bằng `node dist/index.js`; Dockerfile dùng được
+        ✅ Hiện tại 3 app này CHỈ có typecheck, không có build — không thể đóng gói
+
+T-B04 · Nối PreviewTokenManager vào handler + thêm schemaFingerprint
+        ADR-0010 · engine/src/guards.ts đã có khung
+        ⇦ R-08
+        ✅ apply* nào cũng consume token; schema đổi giữa preview và apply → STALE_PREVIEW
+```
 
 # E-001 · Nền tảng monorepo  `[W0]`
 
@@ -51,7 +141,7 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
         📁 packages/ui/src/store/shell.ts, packages/client/src/queries/*
         ✅ đổi tab không re-render grid; đổi theme không refetch; e2e hiện có vẫn xanh
 
-[DONE] T-006 · [W0] Dựng apps/web (Fastify + SPA) và apps/desktop (Electron 3 tiến trình)
+[MOT PHAN] T-006 · [W0] Dựng apps/web (Fastify + SPA) và apps/desktop (Electron 3 tiến trình)
         ADR-0001 · overview.md §3
         ⇦ T-002, T-012, T-013
         📁 apps/web/{client,server}, apps/desktop/{main,preload,renderer}
@@ -63,13 +153,13 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
         📁 apps/desktop/package.json, scripts/rebuild-native.mjs
         ✅ require('better-sqlite3') OK trong Electron đã đóng gói (smoke test)
 
-[DONE] T-008 · [W0] Thiết lập CI: lint + typecheck + unit + build + depcruise
+[DONE ✔ 2026-08-18] T-008 · [W0] Thiết lập CI: lint + typecheck + unit + build + depcruise
         packaging-release.md §5
         ⇦ T-001
         📁 .github/workflows/ci.yml, .dependency-cruiser.cjs, eslint.config.js
         ✅ PR vi phạm luật phụ thuộc bị chặn (test bằng PR có chủ đích)
 
-[DONE] T-009 · [W0] ESLint rule tuỳ biến: no-driver-id-branching, no-raw-sql-concat, no-node-in-ui
+[DONE ✔ 2026-08-18] T-009 · [W0] ESLint rule tuỳ biến: no-driver-id-branching, no-raw-sql-concat, no-node-in-ui
         ADR-0003 · coding-rules.md
         ⇦ T-008
         📁 tools/eslint-rules/*.js
@@ -108,7 +198,7 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
         📁 packages/transport-mock/src/index.ts, packages/client/src/createClient.ts
         ✅ toàn bộ UI chạy trên mock, không cần engine
 
-[DONE] T-015 · [W0] tools/check-contract.mjs
+[DONE ✔ 2026-08-18] T-015 · [W0] tools/check-contract.mjs
         rpc-contract.md §3
         ⇦ T-010
         📁 tools/check-contract.mjs
@@ -118,19 +208,19 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
         ⇦ T-010
         ✅ mọi method có trang tài liệu sinh tự động, kèm schema
 
-[DONE] T-017 · [W1] useQueryStream: ring buffer + huỷ + phát hiện lỗ hổng seq
+[MOT PHAN] T-017 · [W1] useQueryStream: ring buffer + huỷ + phát hiện lỗ hổng seq
         streaming-and-jobs.md §A
         ⇦ T-012, T-014
         📁 packages/client/src/useQueryStream.ts
         ✅ ring buffer giới hạn 200k dòng; huỷ ≤ 200 ms; seq không liên tục → báo lỗi
 
-[DONE] T-018 · [W0] Engine router: validate zod + AuthContext + audit + guard
+[MOT PHAN] T-018 · [W0] Engine router: validate zod + AuthContext + audit + guard
         rpc-contract.md · security.md §4
         ⇦ T-010
         📁 packages/engine/src/router.ts, auth/, audit.ts, guards.ts
         ✅ mọi method đi qua 4 bước; test khẳng định không bypass được
 
-[DONE] T-019 · [W0] Bảng lỗi CorvusError + i18n key + redaction middleware
+[MOT PHAN] T-019 · [W0] Bảng lỗi CorvusError + i18n key + redaction middleware
         overview.md §6 · security.md §3
         ⇦ T-010
         📁 packages/contract/src/errors.ts, packages/engine/src/redact.ts
@@ -151,28 +241,28 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
         ⇦ T-020
         📁 packages/driver-core/src/{types.ts,registry.ts}
 
-[DONE] T-022 · [W0] driver-conformance-suite: khung + C1 Connect + C2 Introspect
+[SAI — xem audit] T-022 · [W0] driver-conformance-suite: khung + C1 Connect + C2 Introspect
         driver-spi.md §8
         ⇦ T-021
         📁 packages/driver-core/src/conformance/**
         ✅ chạy được với testcontainers; báo cáo rõ nhóm nào fail
 
-[DONE] T-023 · [W0] driver-postgres: connect, pool, introspect, dialect
+[SAI — xem audit] T-023 · [W0] driver-postgres: connect, pool, introspect, dialect
         ⇦ T-022
         📁 packages/driver-postgres/src/**
         ✅ vượt C1+C2; listObjects 5000 bảng ≤ 800 ms; không N+1 (test đếm query)
 
-[DONE] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
+[SAI — xem audit] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
         ⇦ T-022
         📁 packages/driver-mysql/src/**
         ✅ vượt C1+C2; capabilities thu hẹp đúng theo version server
 
-[DONE] T-024b · [W0] driver-sqlite
+[SAI — xem audit] T-024b · [W0] driver-sqlite
         ⇦ T-022
         📁 packages/driver-sqlite/src/**
         ✅ vượt C1+C2
 
-[DONE] T-029 · [W0] @corvus/tunnel: SSH (ssh2) + known_hosts + TLS config
+[SAI — xem audit] T-029 · [W0] @corvus/tunnel: SSH (ssh2) + known_hosts + TLS config
         SPEC-01 FR-01.08–11 · security.md §8
         ⇦ T-021
         📁 packages/tunnel/src/**
@@ -183,7 +273,7 @@ T-030 · [W1] DataGrid: ảo hoá hàng + cột
 # E-004 · Storage & Security  `[W0]`
 
 ```
-[DONE] T-025 · [W0] @corvus/storage + migration runner có checksum
+[MOT PHAN] T-025 · [W0] @corvus/storage + migration runner có checksum
         ADR-0006 · workspace-storage.md
         ⇦ T-001
         📁 packages/storage/src/**, migrations/0001_init.sql
@@ -256,7 +346,7 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 # E-007 · DataGrid (ADR-0005)  `[W1]`
 
 ```
-[DONE] T-030 · [W1] DataGrid: ảo hoá hàng + cột, resize, chọn vùng
+[SAI — xem audit] T-030 · [W1] DataGrid: ảo hoá hàng + cột, resize, chọn vùng
         ✅ 1M dòng ≥ 55 fps (benchmark trong CI); resize ≤ 16 ms/frame
 [DONE] T-031 · [W1] CellEditor: 12 kiểu (text, memo, số, bool 3 trạng thái, date/time, enum, set,
         json, xml, blob/hex/image, uuid, array)
@@ -264,7 +354,7 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 [DONE] T-032 · [W1] Nạp tăng dần từ AsyncIterable<ResultChunk> + ring buffer 200k
 [DONE] T-033 · [W1] Copy/paste: TSV, INSERT, UPDATE, JSON, Markdown (chạy trong Web Worker)
         ✅ copy 100k cell ≤ 1 s
-[DONE] T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
+[SAI — xem audit] T-034 · [W1] Benchmark grid trong CI, cảnh báo khi tụt fps
 [DONE] T-035 · [W2] Ẩn/hiện cột, đóng băng N cột đầu, lưu theo (connection, bảng)
 [DONE] T-036 · [W2] Renderer NULL / chuỗi rỗng / BLOB / missing (Mongo) phân biệt trực quan
 [DONE] T-037 · [W1] Điều hướng bàn phím + ARIA role
@@ -299,11 +389,11 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 # E-009 · SQL Editor (SPEC-04)  `[W1-W2]`
 
 ```
-[DONE] T-040 · [W1] SqlEditor (CodeMirror 6) + corvusTheme buộc vào biến CSS
+[SAI — xem audit] T-040 · [W1] SqlEditor (CodeMirror 6) + corvusTheme buộc vào biến CSS
 [DONE] T-041 · [W2] Extension completion từ introspect.identifiers (debounce + cache)
 [DONE] T-042 · [W2] Extension diagnostics từ CorvusError.position
 [DONE] T-043 · [W1] Bảng phím tắt editor
-[DONE] T-044 · [W1] splitStatements cho PG/MySQL/SQLite + golden 60 case/dialect
+[SAI — xem audit] T-044 · [W1] splitStatements cho PG/MySQL/SQLite + golden 60 case/dialect
         ✅ đủ 8 trường hợp khó ở SPEC-04 §6
 [DONE] T-045 · [W1] query.execute + nhiều result set + ResultTabs
 [DONE] T-046 · [W1] MessagesPanel (notice, warning, affected rows theo statement)
@@ -349,7 +439,7 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 [DONE] T-051 · [W3] Upload theo chunk có resume + dọn file tạm (web)
 [DONE] T-052 · [W1] Cảnh báo localhost ở dialog kết nối (web)
 [DONE] T-054 · [W5] Tray mode desktop + cảnh báo lịch
-[DONE] T-055 · [W3] JobRunner trong worker thread + progress + log file + huỷ
+[SAI — xem audit] T-055 · [W3] JobRunner trong worker thread + progress + log file + huỷ
 [DONE] T-056 · [W3] JobProgressPanel + job.log stream (tail)
 [DONE] T-057 · [W3] Khoá theo target: 2 job không cùng ghi một bảng
 [DONE] T-058 · [W3] Khởi động lại → job đang chạy → failed/INTERRUPTED, không tự chạy lại
@@ -396,7 +486,7 @@ Mỗi task: SPEC-01 FR tương ứng; `✅` theo tiêu chí chấp nhận §12 c
 
 ```
 [DONE] T-200 · [W4] QueryModel + buildSelect(model, dialect) + golden 30 case/dialect
-[DONE] T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
+[MOT PHAN] T-201 · [W4] DiagramCanvas dùng chung (React Flow) + autoLayout (elkjs)
 [DONE] T-202 · [W4] BuilderCanvas + TableNode + JoinEdge
 [DONE] T-203 · [W4] ClauseTabs: FROM/SELECT/WHERE/GROUP BY/HAVING/ORDER BY
 [DONE] T-204 · [W4] Join tự sinh theo FK + đổi loại join

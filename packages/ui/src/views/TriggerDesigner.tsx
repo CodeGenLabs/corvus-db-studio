@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { selectValue } from '../utils/select-value'
 import { useStudio } from '../store/studio'
 
 export function TriggerDesigner() {
@@ -48,7 +49,7 @@ export function TriggerDesigner() {
               <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Thời điểm (Timing):</label>
               <select
                 value={timing}
-                onChange={(e) => setTiming(e.target.value as any)}
+                onChange={(e) => setTiming(selectValue(e.target.value, ['BEFORE', 'AFTER'], 'AFTER'))}
                 style={{ width: '100%', height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
               >
                 <option value="BEFORE">BEFORE</option>
@@ -60,7 +61,7 @@ export function TriggerDesigner() {
               <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Sự kiện (Event):</label>
               <select
                 value={event}
-                onChange={(e) => setEvent(e.target.value as any)}
+                onChange={(e) => setEvent(selectValue(e.target.value, ['INSERT', 'UPDATE', 'DELETE'], 'UPDATE'))}
                 style={{ width: '100%', height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
               >
                 <option value="INSERT">INSERT</option>

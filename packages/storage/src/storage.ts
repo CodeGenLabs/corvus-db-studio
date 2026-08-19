@@ -1,4 +1,5 @@
 import type { ConnectionProfile } from '@corvus/contract'
+import { type DriverId } from '@corvus/contract'
 import { MigrationRunner, type MigrationFile, type SqliteDbLike } from './migration'
 
 export const INITIAL_MIGRATIONS: MigrationFile[] = [
@@ -177,7 +178,7 @@ export class WorkspaceStorage {
       return {
         id: r.id,
         name: r.name,
-        driverId: r.driver_id as any,
+        driverId: r.driver_id as DriverId,
         color: r.color,
         ...config,
       }

@@ -8,6 +8,9 @@ interface FormColumn {
   isPrimaryKey: boolean
 }
 
+/** Giá trị một field trong Form View — luôn ở dạng có thể đưa thẳng vào <input>. */
+type FormFieldValue = string | number | boolean | null
+
 export function FormView() {
   const { s } = useStudio()
   const tableName = s.selTable || 'customer'
@@ -23,7 +26,7 @@ export function FormView() {
   const [currentRecordIndex, setCurrentRecordIndex] = useState(0)
   const totalRecords = 50
 
-  const [formData, setFormData] = useState<Record<string, any>>({
+  const [formData, setFormData] = useState<Record<string, FormFieldValue>>({
     customer_id: 1,
     first_name: 'MARY',
     last_name: 'SMITH',
@@ -32,7 +35,7 @@ export function FormView() {
     create_date: '2026-08-18 09:00:00',
   })
 
-  const handleChange = (colName: string, value: any) => {
+  const handleChange = (colName: string, value: FormFieldValue) => {
     setFormData((prev) => ({ ...prev, [colName]: value }))
   }
 
@@ -52,7 +55,7 @@ export function FormView() {
 
   const handleNew = () => {
     setCurrentRecordIndex(totalRecords)
-    const empty: Record<string, any> = {}
+    const empty: Record<string, FormFieldValue> = {}
     columns.forEach((c: FormColumn) => {
       empty[c.name] = c.isPrimaryKey ? totalRecords + 1 : ''
     })
@@ -145,7 +148,8 @@ export function FormView() {
                 <span style={{ fontSize: 10, color: 'var(--text3)' }}>({col.type})</span>
               </div>
               <input
-                value={formData[col.name] ?? ''}
+                // <input> chỉ nhận string; boolean/number được hiển thị dạng text.
+                value={formData[col.name] == null ? '' : String(formData[col.name])}
                 onChange={(e) => handleChange(col.name, e.target.value)}
                 disabled={col.isPrimaryKey && currentRecordIndex < totalRecords}
                 style={{

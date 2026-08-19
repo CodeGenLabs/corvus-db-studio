@@ -5,8 +5,8 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "build": "tsc -b --noEmit",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",

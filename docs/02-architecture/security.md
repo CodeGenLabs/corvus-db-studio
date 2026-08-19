@@ -65,12 +65,29 @@ ciphertext bí mật    → lưu trong bảng `secret` của workspace.db
 
 ```ts
 // packages/engine/src/redact.ts
-const SECRET_KEYS = /^(password|passwd|pwd|secret|token|apiKey|privateKey|passphrase|authorization|cookie)$/i
+/**
+ * Khớp theo kiểu CHỨA, KHÔNG neo `^...$`.
+ * Bản neo trước đây để lọt `sshPassphrase`, `secretKey`, `apiKeyHeader` — lỗi thật,
+ * phát hiện bởi test rò rỉ (audit 2026-08-18).
+ */
+const SECRET_TERMS = ['password', 'passwd', 'pwd', 'passphrase', 'secret', 'token',
+  'apikey', 'accesskey', 'privatekey', 'authorization', 'credential', 'bearer',
+  'cookie', 'sessionid']
+
+/** Bỏ ký tự không phải chữ/số trước khi so → snake_case và camelCase cùng khớp. */
+function isSecretKey(key) {
+  const k = key.replace(/[^a-z0-9]/gi, '').toLowerCase()
+  return SECRET_TERMS.some((t) => k.includes(t))
+}
 
 export function redact<T>(value: T): T   // thay giá trị bằng '«redacted»', đệ quy, giữ cấu trúc
 ```
 
 Áp dụng **bắt buộc** ở 4 chỗ: logger, audit log, telemetry, payload gửi cho AI provider.
+
+Nguyên tắc: **thà che thừa hơn để lọt.** Một field bị che oan chỉ gây bất tiện khi debug; một
+mật khẩu vào log là sự cố phải xoay khoá. `redact()` cũng phải chịu được object tự tham chiếu
+và giữ được `Error.cause` (đã che secret bên trong).
 
 ---
 

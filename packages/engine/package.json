@@ -24,7 +24,6 @@
     }
   },
   "scripts": {
-    "build": "tsc -b --noEmit",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {

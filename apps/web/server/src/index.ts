@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url'
 import http from 'node:http'
 import { HttpRpcServer } from '@corvus/transport-http/server'
 
@@ -13,12 +14,34 @@ const mockRouter = {
 
 export const rpcServer = new HttpRpcServer(mockRouter)
 
+/**
+ * Origin duoc phep goi RPC.
+ *
+ * KHONG dung '*': server nay giu thong tin dang nhap database production. Cho phep moi
+ * origin nghia la bat ky trang web nao nguoi dung dang mo cung goi duoc RPC bang cookie
+ * cua ho (security.md TM-4). Chi mo dung origin cua chinh app.
+ */
+function allowedOrigins(): string[] {
+  const base = process.env.CORVUS_BASE_URL
+  const extra = (process.env.CORVUS_EXTRA_ORIGINS ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const dev = process.env.NODE_ENV === 'production' ? [] : ['http://localhost:5173', 'http://127.0.0.1:5173']
+  return [...(base ? [base] : []), ...extra, ...dev]
+}
+
 export function createWebServer(port = 8080) {
+  const origins = allowedOrigins()
   const server = http.createServer(async (req, res) => {
-    // CORS headers for development
-    res.setHeader('Access-Control-Allow-Origin', '*')
+    const origin = req.headers.origin
+    if (origin && origins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+      res.setHeader('Access-Control-Allow-Credentials', 'true')
+      res.setHeader('Vary', 'Origin')
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Request-Id')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Request-Id, X-CSRF-Token')
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204)
@@ -54,5 +77,19 @@ export function createWebServer(port = 8080) {
     server.listen(port, () => {
       resolve(server)
     })
+  })
+}
+
+// ── Entry point ──────────────────────────────────────────────────────────────
+// Truoc day file nay chi export createWebServer ma khong ai goi, nen `pnpm dev:web`
+// khoi dong tsx roi khong listen gi ca (audit-2026-08-18.md).
+// Guard `import.meta.main` de import module trong test khong lam server chay len.
+const isEntry = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (isEntry) {
+  const port = Number(process.env.CORVUS_PORT ?? 8080)
+  createWebServer(port).then(() => {
+    // eslint-disable-next-line no-console -- entry point cua server, log khoi dong la dung
+    console.log(`[corvus] RPC server dang lang nghe tai http://127.0.0.1:${port}/rpc`)
   })
 }

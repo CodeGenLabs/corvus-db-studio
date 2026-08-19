@@ -1,1 +1,0 @@
-{"root":["./src/createclient.ts","./src/index.ts","./src/gateway/desktop.ts","./src/gateway/index.ts","./src/gateway/mock.ts","./src/gateway/web.ts","./src/queries/connection.ts","./src/queries/index.ts","./src/queries/introspect.ts","./src/queries/job.ts","./src/queries/security.ts","./src/queries/usequerystream.ts","./src/queries/workspace.ts"],"version":"5.9.3"}

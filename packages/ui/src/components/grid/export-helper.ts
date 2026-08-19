@@ -1,3 +1,4 @@
+import { quoteIdentifier, quoteLiteral, type SqlDialect } from '@corvus/sql'
 import type { CellValue, ColumnDef } from '@corvus/contract'
 import { renderCellValue } from './cell-formatter'
 import type { ExportFormat, GridSelection } from './types'
@@ -8,6 +9,7 @@ export function exportGridData(
   selection?: GridSelection | null,
   format: ExportFormat = 'tsv',
   tableName = 'exported_table',
+  dialect: SqlDialect = 'postgres',
 ): string {
   const targetCols = selection
     ? columns.slice(selection.startCol, selection.endCol + 1)
@@ -48,17 +50,22 @@ export function exportGridData(
     }
 
     case 'insert': {
-      const colList = targetCols.map((c) => `"${c.name}"`).join(', ')
+      // Identifier va literal di qua helper cua @corvus/sql thay vi tu escape tai cho:
+      // ten bang/cot co the chua dau nhay, va SQL nay se duoc nguoi dung dan di chay that.
+      const quotedTable = quoteIdentifier(tableName, dialect)
+      const quotedColList = targetCols.map((c) => quoteIdentifier(c.name, dialect)).join(', ')
       const lines = targetRows.map((r) => {
-        const vals = r.map((c) => {
-          if (!c || (typeof c === 'object' && c.k === 'null')) return 'NULL'
-          if (typeof c === 'object' && 'v' in c) {
-            if (typeof c.v === 'number' || typeof c.v === 'boolean') return String(c.v)
-            return `'${String(c.v).replace(/'/g, "''")}'`
-          }
-          return `'${String(c).replace(/'/g, "''")}'`
-        }).join(', ')
-        return `INSERT INTO "${tableName}" (${colList}) VALUES (${vals});`
+        const quotedVals = r
+          .map((c) => {
+            if (!c || (typeof c === 'object' && c.k === 'null')) return 'NULL'
+            if (typeof c === 'object' && 'v' in c) {
+              if (typeof c.v === 'number' || typeof c.v === 'boolean') return String(c.v)
+              return quoteLiteral(String(c.v), dialect)
+            }
+            return quoteLiteral(String(c), dialect)
+          })
+          .join(', ')
+        return `INSERT INTO ${quotedTable} (${quotedColList}) VALUES (${quotedVals});`
       })
       return lines.join('\n')
     }

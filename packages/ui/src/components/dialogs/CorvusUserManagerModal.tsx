@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { selectValue } from '../../utils/select-value'
 import { Modal } from './Modal'
 
 export interface CorvusUser {
@@ -82,7 +83,7 @@ export function CorvusUserManagerModal({
           />
           <select
             value={newRole}
-            onChange={(e) => setNewRole(e.target.value as any)}
+            onChange={(e) => setNewRole(selectValue(e.target.value, ['admin', 'developer', 'analyst', 'viewer'], 'developer'))}
             style={{ width: 130, height: 26, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border-strong)', borderRadius: 4, color: 'var(--text)', fontSize: 11 }}
           >
             <option value="admin">Quản trị viên (Admin)</option>
