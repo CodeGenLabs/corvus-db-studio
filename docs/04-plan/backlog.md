@@ -14,8 +14,10 @@
 > - `[DONE]` — **chưa rà soát**, không được tin
 >
 > **W-0 đã đạt mốc chứng minh** (2026-08-19): UI hiện bảng thật từ PostgreSQL.
-> Việc tiếp theo: **T-B01** (trả nợ SQL concat) → W-1.
+> Việc tiếp theo: **T-024 MySQL** → **T-B01** (trả nợ SQL concat) → W-1.
 > **T-B05 xong 2026-08-19**: WebSocket `/ws` chạy thật, `query.execute` là stream handler đầu tiên.
+> **T-C00 + T-024b xong 2026-08-19**: conformance suite đã trung lập engine; **SQLite là
+> engine thật thứ hai**. Kế hoạch đầy đủ cho cả 7 engine: [driver-roadmap.md](driver-roadmap.md).
 
 Đây là **danh sách việc thực thi được**. Mỗi task đủ nhỏ để một người (hoặc một AI agent) làm
 xong trong ≤ 2 ngày, và đủ rõ để không cần hỏi lại.
@@ -129,6 +131,44 @@ R-01 · Rà soát lại 213 dấu [DONE] còn lại
           `query.execute` trả 2 500 dòng thật, console không còn lỗi WebSocket
         ⚠ CHƯA làm: `data.browse`, `job.log`, `monitor.processes`, `ai.chat` vẫn chưa có
           stream handler; `permessage-deflate` (§5.1) chưa bật; UI SqlView chưa nối (W-1)
+
+[DONE ✔ 2026-08-19] T-C00 · Tổng quát hoá conformance suite theo engine
+        driver-spi.md §8 · driver-roadmap.md §2.1
+        📁 packages/driver-core/src/conformance/dialect.ts (mới), runner.ts, fixture.ts
+        ⚠ Trước đó runner giả định PostgreSQL ở 8 chỗ (schema luôn có, generate_series,
+          `$1::text`, port 5432, `::jsonb`) → không engine thứ hai nào chạy được
+        ✔ `ConformanceDialect` gom toàn bộ khác biệt engine: setupSql, qualify(), hasSchemas,
+          badProfiles, seriesSql(), echoParamSql, probe kiểu giá trị, nhóm skip
+        ✔ Nhóm bị skip in KÈM LÝ DO trong tên describe — không skip im lặng
+        ✔ PostgreSQL vẫn xanh đúng 32 test cũ, file test không phải sửa (dialect mặc định)
+
+[DONE ✔ 2026-08-19] T-024b · driver-sqlite: kết nối thật (engine thứ hai)
+        driver-roadmap.md §3 · ⇦ T-C00
+        📁 packages/driver-sqlite/src/{driver,introspect,value,errors,capabilities}.ts
+        ✔ `better-sqlite3@13` (đã có trong repo, không thêm rủi ro native mới)
+        ✔ Conformance C1·C2·C3·C5 xanh (44 test) + 20 unit test — **chạy trong `pnpm test`,
+          KHÔNG cần Docker**, nên mỗi lần chạy test đều kiểm lại tính trung lập engine
+        ✔ Introspect qua HÀM BẢNG `pragma_table_info(?)` thay vì `PRAGMA table_info("tên")`
+          → nhận bind param, không có một chỗ ghép chuỗi SQL nào trong file
+        ✔ `safeIntegers` + bù index PK cho `INTEGER PRIMARY KEY` (SQLite không tạo index
+          riêng cho nó → nếu không bù thì mọi bảng khoá tự tăng báo "không có PK")
+        ✔ Ánh xạ 44 mã lỗi (ngưỡng driver-spi §7 là 20), tra mã mở rộng trước mã cơ bản
+        ✔ Đã đăng ký vào `apps/web/server` → `connection.test`, introspect, `query.execute`
+          hoạt động cho tệp .db mà KHÔNG thêm handler nào (chứng minh ADR-0003)
+        ✔ SỬA KHAI KHỐNG: `cancelStatement`, `multipleStatements`, `profiling` từ true → false
+          (better-sqlite3 đồng bộ, một câu lệnh mỗi prepare, không có profiler server).
+          capability-matrix.md đã sửa theo, kèm chú thích ¹⁵ ¹⁶ ¹⁷
+        ✔ KHÔNG đổi `journal_mode` của tệp người dùng (WAL ghi vĩnh viễn vào tệp họ chỉ mở
+          ra xem); `fileMustExist` để gõ sai đường dẫn là LỖI, không phải tạo db rỗng im lặng
+        ⚠ Giới hạn THẬT đã ghi lại bằng test: SQLite không có số thập phân chính xác — cột
+          NUMERIC bị hạ thành REAL ngay lúc INSERT, nên trả `{k:'num'}` chứ không giả vờ
+          `{k:'big'}`. Muốn chính xác trên SQLite phải lưu ở cột TEXT.
+        ⚠ CHƯA làm: `ALTER TABLE` 12 bước tạo lại bảng (T-024b-ddl), C4/C6/C7/C8/C9
+
+T-024b-ddl · SQLite: chuỗi 12 bước tạo lại bảng cho ALTER
+        SPEC-06 §6 · driver-roadmap.md §3 · ⇦ T-024b
+        ✅ Đổi/xoá cột, đổi kiểu, thêm/xoá constraint đều đi qua chuỗi tạo lại bảng
+        ✅ Golden file cho từng kịch bản; rollback được vì SQLite có DDL transactional
 
 T-B06 · Conformance C4/C6/C7/C8/C9 cho driver-postgres
         driver-spi.md §8 — hiện mới có C1, C2, C3, C5
@@ -300,15 +340,15 @@ T-B04 · Nối PreviewTokenManager vào handler + thêm schemaFingerprint
         📁 packages/driver-postgres/src/**
         ✅ vượt C1+C2; listObjects 5000 bảng ≤ 800 ms; không N+1 (test đếm query)
 
-[HOÃN — R-06 đặt nền] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
-        ⇦ T-022
+[HOÃN — việc tiếp theo] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
+        ⇦ T-022, T-C00 · kế hoạch chi tiết: driver-roadmap.md §3 (T-024)
         📁 packages/driver-mysql/src/**
-        ✅ vượt C1+C2; capabilities thu hẹp đúng theo version server
+        ✅ vượt C1+C2+C3+C5 qua conformance với MYSQL_CONFORMANCE dialect
+        ✅ capabilities thu hẹp theo version server + `@@sql_mode` (ANSI_QUOTES đổi cả
+           identifierQuote) + `@@lower_case_table_names` (quyết định caseSensitivity)
 
-[HOÃN — R-06 đặt nền] T-024b · [W0] driver-sqlite
-        ⇦ T-022
-        📁 packages/driver-sqlite/src/**
-        ✅ vượt C1+C2
+[DONE ✔ 2026-08-19 — xem T-024b ở E-000] T-024b · [W0] driver-sqlite
+        ⇦ T-022 · chi tiết và giới hạn ghi ở mục T-024b trong E-000
 
 [SAI — xem audit] T-029 · [W0] @corvus/tunnel: SSH (ssh2) + known_hosts + TLS config
         SPEC-01 FR-01.08–11 · security.md §8

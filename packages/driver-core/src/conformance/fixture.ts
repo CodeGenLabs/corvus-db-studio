@@ -64,3 +64,60 @@ INSERT INTO ${CONFORMANCE_SCHEMA}.types_probe
   (1, 9223372036854775807, 12345678901234567890.0123456789, true,
    NULL, '', '{"a":[1,2,3]}'::jsonb, '\xdeadbeef'::bytea, '2026-08-18T09:00:00Z');
 `
+
+/**
+ * Cùng bộ dữ liệu như trên, viết lại cho SQLite.
+ *
+ * Tách sẵn thành mảng vì `better-sqlite3` chỉ chạy MỘT câu lệnh cho mỗi `prepare()`.
+ *
+ * Ba chỗ cố tình khác PostgreSQL, và lý do:
+ *   - `numeric_val` khai `NUMERIC(30,10)` nhưng giá trị nằm ở dạng TEXT: SQLite không có
+ *     số thập phân chính xác, chuyển sang REAL là mất chữ số. Đây là bài kiểm cho luật
+ *     "kiểu do cột KHAI BÁO quyết định" trong value.ts.
+ *   - `bool_val BOOLEAN` lưu 0/1 — kiểm việc driver đọc kiểu khai báo chứ không đọc giá trị.
+ *   - không có comment cột: SQLite không có `COMMENT ON`. Dialect khai
+ *     `supportsColumnComment: false` và runner bỏ test đó, KHÔNG giả vờ có.
+ */
+export const SQLITE_SETUP_SQL: readonly string[] = [
+  `CREATE TABLE country (
+     country_id  INTEGER PRIMARY KEY AUTOINCREMENT,
+     country     TEXT NOT NULL,
+     iso_code    TEXT,
+     last_update TEXT NOT NULL DEFAULT (datetime('now'))
+   )`,
+  `CREATE UNIQUE INDEX country_name_uq ON country (country)`,
+  `CREATE TABLE city (
+     city_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+     country_id INTEGER NOT NULL REFERENCES country(country_id) ON DELETE CASCADE,
+     city       TEXT NOT NULL,
+     note       TEXT
+   )`,
+  `CREATE INDEX city_country_idx ON city (country_id)`,
+  `CREATE TABLE "order details" (
+     id            INTEGER PRIMARY KEY,
+     "sản lượng" NUMERIC,
+     "select"      TEXT
+   )`,
+  `CREATE VIEW city_view AS
+     SELECT c.city_id, c.city, n.country
+       FROM city c JOIN country n ON n.country_id = c.country_id`,
+  `CREATE TABLE types_probe (
+     id          INTEGER PRIMARY KEY,
+     big_val     INTEGER,
+     numeric_val NUMERIC(30,10),
+     bool_val    BOOLEAN,
+     text_null   TEXT,
+     text_empty  TEXT,
+     json_val    JSON,
+     bytes_val   BLOB,
+     ts_val      DATETIME
+   )`,
+  `INSERT INTO country (country_id, country, iso_code)
+     VALUES (1, 'Việt Nam', 'VN'), (2, 'Japan', 'JP'), (3, 'Brazil', 'BR')`,
+  `INSERT INTO city (city_id, country_id, city, note)
+     VALUES (1, 1, 'Hà Nội', NULL), (2, 1, 'Đà Nẵng', ''), (3, 2, 'Tokyo', 'thủ đô')`,
+  `INSERT INTO types_probe
+     (id, big_val, numeric_val, bool_val, text_null, text_empty, json_val, bytes_val, ts_val)
+     VALUES (1, 9223372036854775807, '12345678901234567890.0123456789', 1,
+             NULL, '', '{"a":[1,2,3]}', X'deadbeef', '2026-08-18T09:00:00Z')`,
+]

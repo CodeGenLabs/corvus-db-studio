@@ -46,7 +46,7 @@ Ký hiệu: ✅ có · ❌ không · ⚠️ có nhưng hạn chế (xem ghi chú
 | `limitSyntax` | limit-offset | limit-offset | limit-offset | offset-fetch | offset-fetch⁹ |
 | `maxIdentifierLength` | 63 | 64 | ∞ | 128 | 128¹⁰ |
 | `caseSensitivity` | lower | ⚠️¹¹ | insensitive | insensitive | upper |
-| CTE | ✅ | ✅ 8.0+ | ✅ | ✅ | ✅ |
+| CTE | ✅ | ✅ 8.0+ | ✅ 3.8.3+ | ✅ | ✅ |
 | Window functions | ✅ | ✅ 8.0+ | ✅ 3.25+ | ✅ | ✅ |
 | `RETURNING` | ✅ | ❌ | ✅ 3.35+ | ⚠️ OUTPUT | ✅ |
 | Upsert | ✅ ON CONFLICT | ✅ ON DUP KEY | ✅ ON CONFLICT | ⚠️ MERGE | ⚠️ MERGE |
@@ -59,15 +59,20 @@ Ký hiệu: ✅ có · ❌ không · ⚠️ có nhưng hạn chế (xem ghi chú
 | | PG | MySQL | SQLite | MSSQL | Oracle | MongoDB | Redis |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | streamingCursor | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ SCAN |
-| multipleStatements | ✅ | ⚠️¹² | ✅ | ✅ | ❌ | — | ✅ |
+| multipleStatements | ✅ | ⚠️¹² | ❌¹⁵ | ✅ | ❌ | — | ✅ |
 | multipleResultSets | ✅ | ✅ | ❌ | ✅ | ⚠️ refcursor | — | — |
-| cancelStatement | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ⚠️ |
+| cancelStatement | ✅ | ✅ | ❌¹⁶ | ✅ | ✅ | ✅ | ⚠️ |
 | explain | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
 | explainAnalyze | ✅ | ✅ 8.0.18+ | ❌ | ⚠️ | ✅ | ✅ | ❌ |
 | preparedStatements | ✅ | ✅ | ✅ | ✅ | ✅ | — | — |
 
 ¹² MySQL cần bật `multipleStatements` khi connect — **mặc định TẮT vì rủi ro SQL injection**;
 chỉ bật cho session của SQL Editor, không bao giờ cho `data.*`.
+¹⁵ SQLite (đo 2026-08-19, T-024b): `better-sqlite3` chạy MỘT câu lệnh cho mỗi `prepare()`.
+Nhiều câu lệnh phải tách trước bằng `splitStatements`. Trước đây bảng này ghi ✅ — sai.
+¹⁶ SQLite: `better-sqlite3` là API **đồng bộ** và không có `interrupt()`, nên không cắt được
+một câu lệnh đang chạy. Huỷ giữa các dòng thì được, nhưng không đạt bảo đảm ≤ 200 ms của
+driver-spi §5 → khai `false`. Conformance C6 bị skip **có ghi lý do**, không skip im lặng.
 
 ## 5. Giao dịch
 
@@ -95,7 +100,10 @@ chỉ bật cho session của SQL Editor, không bao giờ cho `data.*`.
 | processMonitor | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ |
 | serverVariables | ✅ | ✅ | ⚠️ pragma | ✅ | ✅ | ✅ | ✅ |
 | dataGeneration | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| profiling | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| profiling | ✅ | ✅ | ❌¹⁷ | ✅ | ✅ | ✅ | ❌ |
+
+¹⁷ SQLite không có profiler phía server (`EXPLAIN QUERY PLAN` chỉ cho kế hoạch, không có số
+đo). Trước đây bảng ghi ✅ — sai; sửa cùng T-024b để UI không hiện tab Profiling trống.
 
 ## 7. Cách UI dùng bảng này
 

@@ -1,4 +1,5 @@
 import type { ResolvedProfile } from '../types'
+import type { ConformanceDialect } from './dialect'
 
 export interface ConformanceSuiteOptions {
   /** Profile trỏ tới server THẬT (thường do testcontainers cấp). */
@@ -12,4 +13,9 @@ export interface ConformanceSuiteOptions {
   schema?: string
   /** Bảng phải tồn tại sau setupSql — dùng cho C2. */
   fixtureTable?: string
+  /**
+   * Mô tả phần khác nhau của engine (`dialect.ts`). Mặc định là `POSTGRES_CONFORMANCE` để
+   * file test PostgreSQL viết trước T-C00 không phải sửa.
+   */
+  dialect?: ConformanceDialect
 }

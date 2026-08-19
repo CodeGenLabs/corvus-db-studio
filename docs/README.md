@@ -70,6 +70,8 @@ docs/
 ├── 04-plan/
 │   ├── roadmap.md                   ★ 10 wave, mốc phát hành, tiêu chí ra wave
 │   ├── backlog.md                   ★ Epic → Story → Task có mã, phụ thuộc, DoD
+│   ├── driver-roadmap.md            ★ Kế hoạch kết nối đủ 7 engine database
+│   ├── audit-2026-08-18.md          Rà soát 230 dấu [DONE] sai sự thật — đọc trước backlog
 │   ├── estimation.md                Ước lượng công sức & nhân lực
 │   ├── testing-strategy.md          Chiến lược kiểm thử 5 tầng
 │   └── definition-of-done.md        DoD chuẩn cho mọi task
