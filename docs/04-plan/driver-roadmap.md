@@ -229,8 +229,8 @@ T-C01 (ADR-0011 non-SQL) ──────┬─ T-D03 MongoDB (W-7)
 |---|---|---|---|
 | 1 | T-C00 tổng quát conformance | 2 ngày | mọi engine |
 | 2 | T-C02 bỏ rẽ nhánh `uri.ts` | 0,5 ngày | mọi engine |
-| 3 | **T-024b SQLite** | 2–3 ngày | — |
-| 4 | T-024 MySQL | 3–4 ngày | — |
+| 3 | **T-024b SQLite** `[DONE]` | 2–3 ngày | — |
+| 4 | **T-024 MySQL** `[DONE]` | 3–4 ngày | — |
 | 5 | T-C01 ADR-0011 | 1 ngày (quyết định) | MongoDB, Redis |
 | 6 | T-D01 MSSQL | 4–5 ngày | — |
 | 7 | T-D03 MongoDB | 6–8 ngày | — |

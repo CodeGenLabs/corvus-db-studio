@@ -1,3 +1,5 @@
 export * from './capabilities'
 export * from './errors'
+export * from './introspect'
+export * from './value'
 export * from './driver'

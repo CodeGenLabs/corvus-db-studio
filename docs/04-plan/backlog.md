@@ -14,7 +14,8 @@
 > - `[DONE]` — **chưa rà soát**, không được tin
 >
 > **W-0 đã đạt mốc chứng minh** (2026-08-19): UI hiện bảng thật từ PostgreSQL.
-> Việc tiếp theo: **T-024 MySQL** → **T-B01** (trả nợ SQL concat) → W-1.
+> **T-024 MySQL xong 2026-08-19**: Conformance C1·C2·C3·C5 xanh (36 tests) + NFR-03 stream 100k dòng + cancel KILL QUERY < 200ms; **MySQL là engine thật thứ ba**.
+> **T-B01 & T-B02 xong 2026-08-19**: 0 rule bị tắt, 0 nợ ghép chuỗi SQL.
 > **T-B05 xong 2026-08-19**: WebSocket `/ws` chạy thật, `query.execute` là stream handler đầu tiên.
 > **T-C00 + T-024b xong 2026-08-19**: conformance suite đã trung lập engine; **SQLite là
 > engine thật thứ hai**. Kế hoạch đầy đủ cho cả 7 engine: [driver-roadmap.md](driver-roadmap.md).
@@ -175,17 +176,17 @@ T-B06 · Conformance C4/C6/C7/C8/C9 cho driver-postgres
         ✅ C4 Types (round-trip mọi kiểu native) · C6 Cancel (≤ 200 ms, không rò session)
         ✅ C7 DDL golden file 40 kịch bản · C8 Errors ≥ 20 mã · C9 Resource (RAM 10M dòng)
 
-T-B01 · Trả nợ 66 chỗ ghép chuỗi SQL không an toàn (13 file)
+[DONE ✔ 2026-08-19] T-B01 · Trả nợ 66 chỗ ghép chuỗi SQL không an toàn (13 file)
         security.md §7 · danh sách file nằm trong eslint.config.js
-        ✅ eslint.config.js không còn block override cho no-raw-sql-concat
-        ✅ Ưu tiên: schema-search.ts (nhúng tên bảng vào literal),
-           subquery-builder.ts (identifier thô), security-generator.ts (tên user vào literal)
-        ✅ engine/security-provider.ts: bỏ tự escape bằng .replace(), dùng quoteIdentifier()
+        ✔ Đã xử lý toàn bộ 13 file qua quoteIdentifier, quoteLiteral, sqlKeyword, formatSqlValue
+        ✔ eslint.config.js đã xoá hoàn toàn block override no-raw-sql-concat
+        ✔ Test âm chứng minh vi phạm mới bị chặn ở mức error; test chống SQL injection cho các hàm
 
-T-B02 · contract/src/uri.ts bỏ rẽ nhánh theo driverId (2 chỗ)
+[DONE ✔ 2026-08-19] T-B02 · contract/src/uri.ts bỏ rẽ nhánh theo driverId
         ADR-0003
-        ✅ Chuyển sang bảng tra scheme↔driver trong driver registry
-        ✅ eslint.config.js không còn override cho no-driver-id-branching
+        ✔ Chuyển sang bảng tra tĩnh URI_SHAPE: Record<DriverId, UriShape> trong contract
+        ✔ eslint.config.js đã xoá block override no-driver-id-branching
+        ✔ 12 test unit kiểm tra round-trip cho cả 8 driverId, SQLite unicode và có dấu cách
 
 T-B03 · Bundling thật cho 3 app Node (điều kiện để đóng gói được)
         packaging-release.md §3 · liên quan T-500
@@ -340,12 +341,17 @@ T-B04 · Nối PreviewTokenManager vào handler + thêm schemaFingerprint
         📁 packages/driver-postgres/src/**
         ✅ vượt C1+C2; listObjects 5000 bảng ≤ 800 ms; không N+1 (test đếm query)
 
-[HOÃN — việc tiếp theo] T-024 · [W0] driver-mysql: tương tự + đọc lower_case_table_names lúc connect
-        ⇦ T-022, T-C00 · kế hoạch chi tiết: driver-roadmap.md §3 (T-024)
-        📁 packages/driver-mysql/src/**
-        ✅ vượt C1+C2+C3+C5 qua conformance với MYSQL_CONFORMANCE dialect
-        ✅ capabilities thu hẹp theo version server + `@@sql_mode` (ANSI_QUOTES đổi cả
-           identifierQuote) + `@@lower_case_table_names` (quyết định caseSensitivity)
+[DONE ✔ 2026-08-19] T-024 · [W0] driver-mysql: kết nối thật (engine thứ ba)
+        driver-roadmap.md §3 · ⇦ T-022, T-C00
+        📁 packages/driver-mysql/src/{driver,introspect,value,errors,capabilities}.ts
+        ✔ Conformance C1·C2·C3·C5 xanh (36 test) qua testcontainers mysql:8.0
+        ✔ Capabilities thu hẹp theo version server + `@@sql_mode` (ANSI_QUOTES đổi
+          identifierQuote thành ") + `@@lower_case_table_names` (0: platform, 1: lower, 2: insensitive)
+        ✔ Stream text protocol với query().stream(), maxRows & chunkSize chuẩn xác, stream 100k dòng RAM phẳng
+        ✔ Huỷ query qua `KILL QUERY <threadId>` từ kết nối khác nhả backend < 200ms
+        ✔ Phân biệt rõ NULL và chuỗi rỗng; BIGINT/DECIMAL giữ nguyên string trong `{k:'big'}`; BIT(1)/TINYINT(1) boolean
+        ✔ Ánh xạ 28 mã MySQL errno sang Corvus ErrorCode chuẩn
+        ✔ Đã đăng ký vào `apps/web/server` engine registry
 
 [DONE ✔ 2026-08-19 — xem T-024b ở E-000] T-024b · [W0] driver-sqlite
         ⇦ T-022 · chi tiết và giới hạn ghi ở mục T-024b trong E-000

@@ -121,3 +121,52 @@ export const SQLITE_SETUP_SQL: readonly string[] = [
      VALUES (1, 9223372036854775807, '12345678901234567890.0123456789', 1,
              NULL, '', '{"a":[1,2,3]}', X'deadbeef', '2026-08-18T09:00:00Z')`,
 ]
+
+/**
+ * Fixture chuẩn cho MySQL / MariaDB conformance.
+ */
+export const MYSQL_SETUP_SQL: readonly string[] = [
+  `CREATE TABLE country (
+     country_id   SMALLINT AUTO_INCREMENT PRIMARY KEY,
+     country      VARCHAR(50) NOT NULL,
+     iso_code     CHAR(2) COMMENT 'ISO 3166-1 alpha-2',
+     last_update  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     UNIQUE KEY country_name_uq (country)
+   ) COMMENT = 'Bảng quốc gia dùng cho conformance'`,
+  `CREATE TABLE city (
+     city_id    INT AUTO_INCREMENT PRIMARY KEY,
+     country_id SMALLINT NOT NULL,
+     city       VARCHAR(50) NOT NULL,
+     note       TEXT,
+     INDEX city_country_idx (country_id),
+     CONSTRAINT fk_city_country FOREIGN KEY (country_id) REFERENCES country (country_id) ON DELETE CASCADE
+   )`,
+  `CREATE TABLE \`order details\` (
+     id          INT PRIMARY KEY,
+     \`sản lượng\` DECIMAL(20,4),
+     \`select\`      TEXT
+   )`,
+  `CREATE VIEW city_view AS
+     SELECT c.city_id, c.city, n.country
+       FROM city c JOIN country n ON n.country_id = c.country_id`,
+  `CREATE TABLE types_probe (
+     id          INT PRIMARY KEY,
+     big_val     BIGINT,
+     numeric_val DECIMAL(30,10),
+     bool_val    BOOLEAN,
+     text_null   TEXT,
+     text_empty  TEXT,
+     json_val    JSON,
+     bytes_val   BLOB,
+     ts_val      DATETIME
+   )`,
+  `INSERT INTO country (country_id, country, iso_code)
+     VALUES (1, 'Việt Nam', 'VN'), (2, 'Japan', 'JP'), (3, 'Brazil', 'BR')`,
+  `INSERT INTO city (city_id, country_id, city, note)
+     VALUES (1, 1, 'Hà Nội', NULL), (2, 1, 'Đà Nẵng', ''), (3, 2, 'Tokyo', 'thủ đô')`,
+  `INSERT INTO types_probe
+     (id, big_val, numeric_val, bool_val, text_null, text_empty, json_val, bytes_val, ts_val)
+     VALUES (1, 9223372036854775807, 12345678901234567890.0123456789, 1,
+             NULL, '', '{"a":[1,2,3]}', X'deadbeef', '2026-08-18 09:00:00')`,
+]
+

@@ -1,6 +1,6 @@
 import type { CellValue, DriverId } from '@corvus/contract'
 import type { ResolvedProfile } from '../types'
-import { CONFORMANCE_SCHEMA, POSTGRES_SETUP_SQL, SQLITE_SETUP_SQL } from './fixture'
+import { CONFORMANCE_SCHEMA, MYSQL_SETUP_SQL, POSTGRES_SETUP_SQL, SQLITE_SETUP_SQL } from './fixture'
 
 /** Nhóm test của conformance suite — driver-spi.md §8. */
 export type ConformanceGroup = 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7' | 'C8' | 'C9'
@@ -144,3 +144,38 @@ export const SQLITE_CONFORMANCE: ConformanceDialect = {
     C6: 'better-sqlite3 đồng bộ, không có interrupt() → không cắt được câu lệnh đang chạy',
   },
 }
+
+export const MYSQL_CONFORMANCE: ConformanceDialect = {
+  id: 'mysql',
+  setupSql: MYSQL_SETUP_SQL,
+  schema: undefined,
+  qualify: (name) => `\`${name}\``,
+  hasDatabases: true,
+  hasSchemas: false,
+  supportsColumnComment: true,
+  badProfiles: [
+    {
+      label: 'sai mật khẩu',
+      make: (base) => ({ ...base, password: 'mat-khau-sai-chac-chan-khong-dung' }),
+    },
+    {
+      label: 'host không tồn tại',
+      make: (base) => ({ ...base, host: 'khong-ton-tai.corvus.invalid', port: 3306 }),
+      timeoutMs: 30_000,
+    },
+  ],
+  seriesSql: (n) =>
+    `WITH RECURSIVE s(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM s WHERE n < ${n}) SELECT n FROM s`,
+  echoParamSql: 'SELECT CAST(? AS CHAR) AS v',
+  syntaxErrorSql: 'SELEKT 1',
+  viewDdlContains: 'VIEW',
+  probe: {
+    big: { k: 'big', v: '9223372036854775807' },
+    numeric: { k: 'big', contains: '12345678901234567890' },
+    bool: { k: 'bool', v: true },
+    json: 'json',
+    bytes: 'bytes',
+    ts: 'date',
+  },
+}
+

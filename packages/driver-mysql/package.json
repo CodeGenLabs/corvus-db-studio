@@ -16,12 +16,14 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",
     "@corvus/driver-core": "workspace:*",
-    "@corvus/sql": "workspace:*"
+    "@corvus/sql": "workspace:*",
+    "mysql2": "^3.23.3"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

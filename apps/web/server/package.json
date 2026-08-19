@@ -17,7 +17,8 @@
     "@corvus/storage": "workspace:*",
     "@corvus/transport-http": "workspace:*",
     "ws": "^8.21.3",
-    "@corvus/driver-sqlite": "workspace:*"
+    "@corvus/driver-sqlite": "workspace:*",
+    "@corvus/driver-mysql": "workspace:*"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^12.1.0",
