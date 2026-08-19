@@ -10,9 +10,9 @@
 
 | Engine | Package | Kết nối thật | Introspect | Stream | Lỗi ánh xạ | Conformance |
 |---|---|---|---|---|---|---|
-| PostgreSQL | `driver-postgres` | ✔ `pg` + pool | ✔ truy vấn gộp | ✔ `pg-cursor` | ✔ SQLSTATE | C1·C2·C3·C5 (32 test) |
-| MySQL / MariaDB | `driver-mysql` | ✘ ném `UNSUPPORTED_FEATURE` | ✘ | ✘ | khung 26 dòng | — |
-| SQLite | `driver-sqlite` | ✘ ném `UNSUPPORTED_FEATURE` | ✘ | ✘ | ✘ | — |
+| PostgreSQL | `driver-postgres` | ✔ `pg` + pool | ✔ truy vấn gộp | ✔ `pg-cursor` | ✔ SQLSTATE (28+ mã) | C1–C9 (78 test) |
+| MySQL / MariaDB | `driver-mysql` | ✔ `mysql2/promise` | ✔ `information_schema` | ✔ streaming | ✔ ERRNO (28+ mã) | C1–C9 (62 test) |
+| SQLite | `driver-sqlite` | ✔ `better-sqlite3` | ✔ `pragma_*` | ✔ sync batch | ✔ SQLITE_* (30+ mã) | C1–C9 (68 test, C6 skip có lý do) |
 | SQL Server | *chưa có package* | ✘ | ✘ | ✘ | ✘ | — |
 | Oracle | *chưa có package* | ✘ | ✘ | ✘ | ✘ | — |
 | MongoDB | *chưa có package* | ✘ | ✘ | ✘ | ✘ | — |

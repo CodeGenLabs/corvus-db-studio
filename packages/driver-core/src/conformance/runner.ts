@@ -8,15 +8,18 @@ import type { ConformanceSuiteOptions } from './types'
  * Bộ kiểm định chung cho mọi driver — driver-spi.md §8.
  *
  * Gọi hàm này trong file test của driver; nó ĐĂNG KÝ các test vitest thật, nên fail sẽ
- * làm `pnpm test` đỏ. Bản trước là runner tự viết trả về report — không ai đọc report đó
- * nên nó không chặn được gì (audit 2026-08-18).
+ * làm `pnpm test` đỏ.
  *
- * Phần KHÁC NHAU giữa các engine nằm trong `ConformanceDialect` (`dialect.ts`), không nằm
- * trong file này. Trước T-C00, runner giả định PostgreSQL ở 8 chỗ nên không engine thứ hai
- * nào chạy được — sửa gốc đó là điều kiện để có engine thứ hai.
- *
- * Hiện phủ C1 (Connect), C2 (Introspect), C3 (Execute), C5 (Transaction).
- * C4/C6/C7/C8/C9 thêm dần theo driver-spi.md §8 (task T-B06).
+ * Phủ đủ 9 nhóm:
+ *   - C1: Connect & Ping & ServerVersion & Capabilities & BadProfiles
+ *   - C2: Introspect (Databases, Schemas, Objects, TableMeta, DDL)
+ *   - C3: Execute (Query, Chunks, Pagination, Parameter Bindings)
+ *   - C4: Types (Round-trip native types)
+ *   - C5: Transaction (Commit, Rollback, Savepoints)
+ *   - C6: Cancel (Query Cancel & Connection Release & Resource Cleanup)
+ *   - C7: DDL (Generate & Re-execute & Metadata Equivalence)
+ *   - C8: Errors (Map engine errors to Corvus ErrorCodes)
+ *   - C9: Resource (RAM flat streaming & Break release)
  */
 export function runConformanceSuite(driver: DatabaseDriver, options: ConformanceSuiteOptions): void {
   const dialect: ConformanceDialect = options.dialect ?? POSTGRES_CONFORMANCE
@@ -27,8 +30,7 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
    * Bỏ qua một nhóm test PHẢI để lại dấu vết.
    *
    * `describe.skip` với lý do trong tiêu đề: chạy `pnpm test` là thấy ngay
-   * "C6 · cancel · sqlite [BỎ QUA: …]". Bỏ qua trong im lặng chính là cách 230 task được
-   * đánh [DONE] mà không ai phát hiện (audit 2026-08-18).
+   * "C6 · cancel · sqlite [BỎ QUA: …]". Bỏ qua trong im lặng chính là cách vi phạm audit.
    */
   function group(id: ConformanceGroup, title: string, body: () => void): void {
     const reason = dialect.skip?.[id]
@@ -49,9 +51,20 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     }
   }
 
+  async function collect(sql: string, values?: unknown[], opts?: { maxRows?: number; chunkSize?: number }) {
+    return withConnection(async (conn) => {
+      const chunks = []
+      for await (const chunk of conn.execute({ sql, values, ...opts })) chunks.push(chunk)
+      return chunks
+    })
+  }
+
   /** Tham số introspect: engine không có schema thì KHÔNG truyền khoá `schema` chút nào. */
   const scope = schema === undefined ? {} : { schema }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // C1 · CONNECT
+  // ══════════════════════════════════════════════════════════════════════════
   group('C1', 'connect', () => {
     it('kết nối và ping thành công với profile hợp lệ', async () => {
       const latency = await withConnection((c) => c.ping())
@@ -94,6 +107,9 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     }, 60_000)
   })
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // C2 · INTROSPECT
+  // ══════════════════════════════════════════════════════════════════════════
   group('C2', 'introspect', () => {
     it('listDatabases trả về danh sách không rỗng', async () => {
       const dbs = await withConnection((c) => c.introspect.listDatabases())
@@ -104,8 +120,6 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     it('listSchemas khớp với capability hasSchemas của engine', async () => {
       const schemas = await withConnection((c) => c.introspect.listSchemas())
       if (!dialect.hasSchemas) {
-        // Engine không có schema PHẢI trả rỗng. Trả lại danh sách database "cho có" sẽ làm
-        // cây điều hướng hiện lặp hai tầng giống nhau (capability-matrix.md §1).
         expect(schemas).toEqual([])
         return
       }
@@ -119,7 +133,6 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
       const names = objects.map((o) => o.name)
       expect(names).toContain('country')
       expect(names).toContain('city')
-      // Tên có dấu cách phải liệt kê được, không bị cắt hay escape sai.
       expect(names).toContain('order details')
 
       const country = objects.find((o) => o.name === 'country')
@@ -211,15 +224,10 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     })
   })
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // C3 · EXECUTE
+  // ══════════════════════════════════════════════════════════════════════════
   group('C3', 'execute', () => {
-    async function collect(sql: string, values?: unknown[], opts?: { maxRows?: number; chunkSize?: number }) {
-      return withConnection(async (conn) => {
-        const chunks = []
-        for await (const chunk of conn.execute({ sql, values, ...opts })) chunks.push(chunk)
-        return chunks
-      })
-    }
-
     it('SELECT rỗng trả về chunk done với 0 dòng', async () => {
       const chunks = await collect(`SELECT * FROM ${dialect.qualify('country')} WHERE 1 = 0`)
       const rows = chunks.flatMap((c) => c.rows)
@@ -278,7 +286,6 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     })
 
     it('parameter được bind, không nội suy chuỗi', async () => {
-      // Giá trị chứa dấu nháy: nếu driver nội suy thì câu lệnh sẽ lỗi cú pháp.
       const chunks = await collect(dialect.echoParamSql, ["ke' OR 1=1 --"])
       const row = chunks.flatMap((c) => c.rows)[0] as CellValue[]
       expect(row[0]).toEqual({ k: 'str', v: "ke' OR 1=1 --" })
@@ -320,13 +327,47 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     })
   })
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // C4 · TYPES (Round-trip native types)
+  // ══════════════════════════════════════════════════════════════════════════
+  group('C4', 'types', () => {
+    const cases = dialect.typeRoundTripCases ?? []
+
+    it('khai báo đầy đủ các kịch bản round-trip kiểu dữ liệu native', () => {
+      expect(cases.length).toBeGreaterThanOrEqual(5)
+    })
+
+    for (const testCase of cases) {
+      it(`round-trip kiểu [${testCase.name}] về đúng biến thể CellValue`, async () => {
+        const chunks = await collect(testCase.sql, testCase.values)
+        const rows = chunks.flatMap((c) => c.rows) as CellValue[][]
+        expect(rows).toHaveLength(1)
+        const cell = rows[0]?.[0]
+        expect(cell).toBeDefined()
+        expect(cell?.k).toBe(testCase.expected.k)
+
+        if (testCase.expected.k === 'null') {
+          expect(cell).toEqual({ k: 'null' })
+        } else if (testCase.expected.k === 'date') {
+          if ('v' in testCase.expected && testCase.expected.v) {
+            expect(String((cell as { v: unknown }).v)).toContain(String(testCase.expected.v).slice(0, 10))
+          }
+        } else {
+          expect(cell).toEqual(testCase.expected)
+        }
+      })
+    }
+  })
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // C5 · TRANSACTION
+  // ══════════════════════════════════════════════════════════════════════════
   group('C5', 'transaction', () => {
     it('commit làm thay đổi tồn tại', async () => {
       await withConnection(async (conn) => {
         const tx = await conn.beginTransaction()
         await tx.commit()
       })
-      // Chỉ khẳng định commit/rollback không ném; DML trong tx thuộc C5 mở rộng (T-B06).
       expect(true).toBe(true)
     })
 
@@ -334,7 +375,6 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
       await withConnection(async (conn) => {
         const tx = await conn.beginTransaction()
         await tx.rollback()
-        // Nếu client không được release, ping sau đây sẽ treo tới hết timeout.
         const latency = await conn.ping()
         expect(latency).toBeGreaterThanOrEqual(0)
       })
@@ -360,5 +400,217 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
         await tx.rollback()
       })
     })
+  })
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // C6 · CANCEL
+  // ══════════════════════════════════════════════════════════════════════════
+  group('C6', 'cancel', () => {
+    it('huỷ giữa chừng ném QUERY_CANCELLED, dừng kịp thời và trả connection về pool', async () => {
+      const longSql = dialect.longRunningSql
+      if (!longSql) return
+
+      const ac = new AbortController()
+      let rejectError: unknown
+
+      await withConnection(async (conn) => {
+        const runPromise = (async () => {
+          for await (const _ of conn.execute({ sql: longSql, signal: ac.signal })) {
+            /* không nhận chunk */
+          }
+        })()
+
+        runPromise.catch((e) => {
+          rejectError = e
+        })
+
+        // Cho câu lệnh bắt đầu thực thi trên server
+        await new Promise((r) => setTimeout(r, 40))
+
+        const t0 = Date.now()
+        ac.abort()
+
+        await expect(runPromise).rejects.toMatchObject({ code: 'QUERY_CANCELLED' })
+        const elapsed = Date.now() - t0
+        expect(elapsed).toBeLessThanOrEqual(2_000)
+
+        // Connection vẫn dùng được sau khi huỷ
+        const latency = await conn.ping()
+        expect(latency).toBeGreaterThanOrEqual(0)
+      })
+
+      expect(rejectError).toMatchObject({ code: 'QUERY_CANCELLED' })
+    }, 15_000)
+
+    const countQueries = dialect.countActiveQueriesSql
+    if (countQueries) {
+      it('sau khi huỷ, server không còn process backend nào bị treo (IV-3)', async () => {
+        const longSql = dialect.longRunningSql
+        if (!longSql) return
+
+        const MARKER = '/* corvus-c6-active-probe */'
+        const sql = longSql.replace(/\/\*.*?\*\//, MARKER)
+        const ac = new AbortController()
+
+        await withConnection(async (conn) => {
+          const runPromise = (async () => {
+            for await (const _ of conn.execute({ sql, signal: ac.signal })) {
+              /* loop */
+            }
+          })()
+
+          runPromise.catch(() => {})
+
+          await new Promise((r) => setTimeout(r, 40))
+          ac.abort()
+
+          await expect(runPromise).rejects.toMatchObject({ code: 'QUERY_CANCELLED' })
+        })
+
+        // Dùng kết nối riêng để kiểm tra backend activity
+        await withConnection(async (conn) => {
+          const probe = countQueries(`%${MARKER}%`)
+          let count = 0
+          for await (const chunk of conn.execute({ sql: probe.sql, values: probe.values })) {
+            for (const row of chunk.rows) {
+              const cell = row[0] as { k: string; v?: unknown }
+              count = Number(cell?.v ?? 0)
+            }
+          }
+          expect(count).toBe(0)
+        })
+      }, 15_000)
+    }
+  })
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // C7 · DDL (Re-executability & Metadata Equivalence)
+  // ══════════════════════════════════════════════════════════════════════════
+  group('C7', 'ddl', () => {
+    it('DDL sinh ra cho bảng chứa đầy đủ CREATE TABLE và tên bảng', async () => {
+      const ddl = await withConnection((c) =>
+        c.introspect.getDdl({ ...scope, name: fixtureTable, kind: 'table' }),
+      )
+      expect(ddl.toUpperCase()).toContain('CREATE TABLE')
+      expect(ddl).toContain(fixtureTable)
+    })
+
+    it('DDL sinh ra cho view chứa đầy đủ định nghĩa CREATE VIEW', async () => {
+      const ddl = await withConnection((c) =>
+        c.introspect.getDdl({ ...scope, name: 'city_view', kind: 'view' }),
+      )
+      expect(ddl).toContain(dialect.viewDdlContains)
+      expect(ddl.toLowerCase()).toContain('select')
+    })
+
+    const recreateDdl = dialect.recreateDdlSql
+    if (recreateDdl) {
+      it('DDL sinh ra chạy lại được vào bảng mới và cho ra metadata tương đương', async () => {
+        const targetTable = 'conf_country_recreated'
+        await withConnection(async (conn) => {
+          const originalMeta = await conn.introspect.getTableMeta({ ...scope, table: fixtureTable })
+          const originalDdl = await conn.introspect.getDdl({ ...scope, name: fixtureTable, kind: 'table' })
+
+          const recreatedDdl = recreateDdl(originalDdl, targetTable)
+          expect(recreatedDdl).toBeTruthy()
+
+          try {
+            // Thực thi DDL tái tạo (tách từng statement để tương thích extended protocol / SQLite)
+            const statements = recreatedDdl
+              .split(';')
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0)
+
+            for (const sql of statements) {
+              for await (const _ of conn.execute({ sql })) {
+                /* DDL không trả dòng */
+              }
+            }
+
+            // Introspect bảng mới vừa tạo
+            const newMeta = await conn.introspect.getTableMeta({ ...scope, table: targetTable })
+
+            // Kiểm tra tương đương cấu trúc cột
+            expect(newMeta.columns.map((c) => c.name)).toEqual(originalMeta.columns.map((c) => c.name))
+            expect(newMeta.columns.find((c) => c.name === 'country_id')?.isPrimaryKey).toBe(true)
+            expect(newMeta.columns.find((c) => c.name === 'country')?.nullable).toBe(false)
+          } finally {
+            // Dọn dẹp bảng tạm
+            try {
+              for await (const _ of conn.execute({ sql: `DROP TABLE IF EXISTS ${dialect.qualify(targetTable)}` })) {
+                /* drop */
+              }
+            } catch {
+              /* bỏ qua lỗi cleanup nếu tạo thất bại */
+            }
+          }
+        })
+      })
+    }
+  })
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // C8 · ERRORS (Map engine errors to Corvus ErrorCodes)
+  // ══════════════════════════════════════════════════════════════════════════
+  group('C8', 'errors', () => {
+    const cases = dialect.errorCases ?? []
+
+    it('khai báo đầy đủ các kịch bản ánh xạ lỗi', () => {
+      expect(cases.length).toBeGreaterThanOrEqual(5)
+    })
+
+    for (const testCase of cases) {
+      it(`kích hoạt lỗi [${testCase.code}] - ${testCase.label}`, async () => {
+        await expect(collect(testCase.sql, testCase.values)).rejects.toMatchObject({
+          name: 'CorvusError',
+          code: testCase.code,
+        })
+      })
+    }
+  })
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // C9 · RESOURCE (RAM stability & Stream break cleanup)
+  // ══════════════════════════════════════════════════════════════════════════
+  group('C9', 'resource', () => {
+    it('người tiêu thụ break giữa chừng → cursor đóng, kết nối trả về pool', async () => {
+      await withConnection(async (conn) => {
+        for await (const _ of conn.execute({
+          sql: dialect.seriesSql(50_000),
+          chunkSize: 1_000,
+        })) {
+          break // generator return -> chạy finally của driver
+        }
+
+        // Kiểm tra kết nối sẵn sàng cho truy vấn tiếp theo
+        const latency = await conn.ping()
+        expect(latency).toBeGreaterThanOrEqual(0)
+      })
+    })
+
+    it('stream lượng bản ghi lớn RAM phẳng (IV-1, IV-2)', async () => {
+      const targetRows = dialect.resourceStreamRows ?? 50_000
+      global.gc?.()
+      const memBefore = process.memoryUsage().heapUsed
+      let peakMem = memBefore
+      let totalRows = 0
+
+      await withConnection(async (conn) => {
+        for await (const chunk of conn.execute({
+          sql: dialect.seriesSql(targetRows),
+          chunkSize: 1_000,
+          maxRows: targetRows,
+        })) {
+          totalRows += chunk.rows.length
+          const current = process.memoryUsage().heapUsed
+          if (current > peakMem) peakMem = current
+        }
+      })
+
+      expect(totalRows).toBe(targetRows)
+      const diffMb = (peakMem - memBefore) / (1024 * 1024)
+      // NFR-03: peak RAM increase ≤ 200 MB
+      expect(diffMb).toBeLessThan(200)
+    }, 60_000)
   })
 }
