@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { HttpRpcServer, type RouterLike, type StreamCallOptions, type WsConnection } from '../server'
-import type { Frame } from '../frames'
+import type { ErrorFrame, Frame } from '../frames'
 
 /**
  * T-B05 — kiểm tra tầng framing WebSocket của server, KHÔNG cần mạng và KHÔNG cần database.
@@ -47,6 +47,29 @@ async function until(cond: () => boolean, label: string, timeoutMs = 2_000): Pro
     if (Date.now() > deadline) throw new Error(`Quá hạn chờ: ${label}`)
     await new Promise((r) => setTimeout(r, 1))
   }
+}
+
+/**
+ * Chờ tới khi vòng chờ ack của server THẬT SỰ bị park.
+ *
+ * Dấu hiệu: generator đã sản xuất `n+1` chunk nhưng socket chỉ nhận được `n` — nghĩa là
+ * consumer đang GIỮ chunk kế tiếp mà không gửi được vì cửa sổ đã đầy.
+ *
+ * Vì sao phải có hàm này: bản test trước chỉ chờ `chunks.length === 8` rồi gửi `ack` ngay.
+ * Lúc đó consumer còn đang chờ `setTimeout` của generator và CHƯA vào vòng park, nên `ack`
+ * chỉ hạ bộ đếm và vòng lặp đi tiếp — cơ chế `wake` không bao giờ được chạy. Đo bằng log
+ * cho thấy cả 14 test cũ park đúng 2 lần và KHÔNG lần nào đánh thức; xoá hẳn lời gọi `wake`
+ * trong nhánh `ack` mà 14 test vẫn xanh (thí nghiệm 2026-08-19).
+ */
+async function untilParked(
+  socket: FakeSocket,
+  router: { produced: number },
+  windowSize: number,
+): Promise<void> {
+  await until(
+    () => socket.chunks().length === windowSize && router.produced === windowSize + 1,
+    `vòng chờ ack park ở ${windowSize} chunk`,
+  )
 }
 
 /** Router giả phát vô hạn chunk, ghi lại việc bị huỷ. */
@@ -129,15 +152,16 @@ describe('HttpRpcServer.handleWebSocket · backpressure', () => {
 
     socket.emit({ t: 'open', id: 's1', method: 'query.execute', params: {} })
 
-    // Không gửi ack nào. Server phải dừng ở đúng cửa sổ 8 chunk.
-    await until(() => socket.chunks().length >= 8, '8 chunk đầu')
-    const stalledAt = socket.chunks().length
+    // Không gửi ack nào. Server phải dừng ở đúng cửa sổ 8 chunk VÀ đang giữ chunk thứ 9.
+    await untilParked(socket, router, 8)
 
     // Cho event loop chạy thoải mái: nếu backpressure hỏng, số chunk sẽ tăng vọt.
     for (let i = 0; i < 50; i++) await new Promise((r) => setTimeout(r, 0))
 
-    expect(socket.chunks().length).toBe(stalledAt)
-    expect(stalledAt).toBe(8)
+    expect(socket.chunks().length).toBe(8)
+    // Generator không được đi xa hơn 1 chunk so với những gì đã gửi — đó là IV-1
+    // (engine không giữ quá vài chunk trong RAM).
+    expect(router.produced).toBe(9)
   })
 
   it('mỗi ack mở lại đúng 4 slot', async () => {
@@ -146,12 +170,16 @@ describe('HttpRpcServer.handleWebSocket · backpressure', () => {
     new HttpRpcServer(router).handleWebSocket(socket)
 
     socket.emit({ t: 'open', id: 's1', method: 'query.execute', params: {} })
-    await until(() => socket.chunks().length === 8, 'đầy cửa sổ')
+
+    // ĐỢI TỚI KHI PARK THẬT rồi mới ack — nếu ack trước lúc park thì test chỉ kiểm phép
+    // trừ của bộ đếm, không kiểm việc đánh thức.
+    await untilParked(socket, router, 8)
 
     socket.emit({ t: 'ack', id: 's1', seq: 7 })
     await until(() => socket.chunks().length === 12, '4 chunk nữa sau 1 ack')
 
     // Rồi lại dừng: cửa sổ đầy trở lại.
+    await untilParked(socket, router, 12)
     for (let i = 0; i < 30; i++) await new Promise((r) => setTimeout(r, 0))
     expect(socket.chunks().length).toBe(12)
   })
@@ -162,7 +190,7 @@ describe('HttpRpcServer.handleWebSocket · backpressure', () => {
     new HttpRpcServer(router).handleWebSocket(socket)
 
     socket.emit({ t: 'open', id: 's1', method: 'query.execute', params: {} })
-    await until(() => socket.chunks().length === 8, 'đầy cửa sổ')
+    await untilParked(socket, router, 8)
 
     socket.close()
 
@@ -192,6 +220,22 @@ describe('HttpRpcServer.handleWebSocket · huỷ và dọn dẹp', () => {
     expect(socket.sent.some((f) => f.t === 'error')).toBe(false)
   })
 
+  it('cancel TRONG LÚC ĐANG PARK vẫn dọn được tài nguyên', async () => {
+    // Đường này khác test trên: ở đây vòng lặp đang bị park vì cửa sổ đầy, nên `cancel`
+    // buộc phải đánh thức nó. Không đánh thức thì generator không bao giờ chạy tới `finally`
+    // — nghĩa là cursor không đóng và connection không về pool.
+    const router = infiniteRouter()
+    const socket = new FakeSocket()
+    new HttpRpcServer(router).handleWebSocket(socket)
+
+    socket.emit({ t: 'open', id: 's1', method: 'query.execute', params: {} })
+    await untilParked(socket, router, 8)
+
+    socket.emit({ t: 'cancel', id: 's1' })
+    await until(() => router.closed, 'generator dọn tài nguyên sau khi bị huỷ lúc đang park')
+    expect(router.aborted || router.closed).toBe(true)
+  })
+
   it('lỗi trong stream đi ra dưới dạng CorvusError có mã, không phải Error thô', async () => {
     const router: RouterLike = {
       async handleRequest() {
@@ -200,8 +244,8 @@ describe('HttpRpcServer.handleWebSocket · huỷ và dọn dẹp', () => {
       // eslint-disable-next-line require-yield -- stream này cố tình lỗi ngay lập tức
       async *handleStream() {
         throw Object.assign(new Error('relation "khong_ton_tai" does not exist'), {
-          code: 'OBJECT_NOT_FOUND',
-          i18nKey: 'error.objectNotFound',
+          code: 'TABLE_NOT_FOUND',
+          i18nKey: 'error.tableNotFound',
         })
       },
     }
@@ -211,9 +255,9 @@ describe('HttpRpcServer.handleWebSocket · huỷ và dọn dẹp', () => {
     socket.emit({ t: 'open', id: 's1', method: 'query.execute', params: {} })
     await until(() => socket.sent.some((f) => f.t === 'error'), 'khung error')
 
-    const frame = socket.sent.find((f) => f.t === 'error') as { error: Record<string, unknown> }
-    expect(frame.error.code).toBe('OBJECT_NOT_FOUND')
-    expect(frame.error.i18nKey).toBe('error.objectNotFound')
+    const frame = socket.sent.find((f) => f.t === 'error') as ErrorFrame
+    expect(frame.error.code).toBe('TABLE_NOT_FOUND')
+    expect(frame.error.i18nKey).toBe('error.tableNotFound')
     expect(typeof frame.error.message).toBe('string')
   })
 
@@ -233,9 +277,33 @@ describe('HttpRpcServer.handleWebSocket · huỷ và dọn dẹp', () => {
     socket.emit({ t: 'open', id: 's1', method: 'query.execute', params: {} })
     await until(() => socket.sent.some((f) => f.t === 'error'), 'khung error')
 
-    const frame = socket.sent.find((f) => f.t === 'error') as { error: Record<string, unknown> }
+    const frame = socket.sent.find((f) => f.t === 'error') as ErrorFrame
     expect(frame.error.code).toBe('INTERNAL_ERROR')
     expect(frame.error.message).toBe('vỡ ở đâu đó')
+  })
+
+  it('mã lỗi KHÔNG thuộc contract bị chuẩn hoá thành INTERNAL_ERROR', async () => {
+    // Bản trước để `code: string` nên một mã bịa (`CONNECTION_LOST`, `OBJECT_NOT_FOUND`)
+    // lọt lên dây; UI tra `error.<code>` ra chuỗi rỗng — lỗi im lặng, rất khó truy.
+    const router: RouterLike = {
+      async handleRequest() {
+        return {}
+      },
+      // eslint-disable-next-line require-yield -- stream này cố tình lỗi ngay lập tức
+      async *handleStream() {
+        throw Object.assign(new Error('mã bịa'), { code: 'MA_KHONG_CO_TRONG_CONTRACT' })
+      },
+    }
+    const socket = new FakeSocket()
+    new HttpRpcServer(router).handleWebSocket(socket)
+
+    socket.emit({ t: 'open', id: 's1', method: 'query.execute', params: {} })
+    await until(() => socket.sent.some((f) => f.t === 'error'), 'khung error')
+
+    const frame = socket.sent.find((f) => f.t === 'error') as ErrorFrame
+    expect(frame.error.code).toBe('INTERNAL_ERROR')
+    // Thông báo gốc vẫn giữ để còn debug được.
+    expect(frame.error.message).toBe('mã bịa')
   })
 
   it('khung error KHÔNG mang theo `cause` (nơi mật khẩu hay lọt ra)', async () => {

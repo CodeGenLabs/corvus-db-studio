@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url'
+import { timingSafeEqual } from 'node:crypto'
 import http from 'node:http'
 import { WebSocketServer, type WebSocket } from 'ws'
 import { HttpRpcServer, type WsConnection, toWireError } from '@corvus/transport-http/server'
@@ -26,8 +27,76 @@ function allowedOrigins(): string[] {
   return [...(base ? [base] : []), ...extra, ...dev]
 }
 
-export function createWebServer(port = 8080) {
+/**
+ * Địa chỉ lắng nghe.
+ *
+ * Mặc định **loopback**. Bản trước gọi `server.listen(port)` không truyền host, nên Node bind
+ * `0.0.0.0` — server mở ra toàn mạng LAN trong khi dòng log lại in `127.0.0.1`. Với một
+ * process giữ mật khẩu database production và KHÔNG có xác thực, đó là mở cửa cho bất kỳ máy
+ * nào cùng mạng chạy SQL tuỳ ý (security.md §8).
+ */
+function resolveHost(): string {
+  return process.env.CORVUS_HOST ?? '127.0.0.1'
+}
+
+const LOOPBACK = new Set(['127.0.0.1', '::1', 'localhost'])
+
+/**
+ * Token xác thực cho `/rpc` và `/ws`.
+ *
+ * Bind ra ngoài loopback mà không có token thì server TỪ CHỐI khởi động — cùng nguyên tắc với
+ * `CORVUS_MASTER_KEY`: thà không chạy còn hơn chạy ở trạng thái không an toàn mà không ai biết.
+ */
+function resolveAuthToken(host: string): string | undefined {
+  const token = process.env.CORVUS_AUTH_TOKEN
+  if (token && token.length > 0) {
+    if (token.length < 32) {
+      throw new Error('CORVUS_AUTH_TOKEN phải dài ít nhất 32 ký tự.')
+    }
+    return token
+  }
+  if (!LOOPBACK.has(host)) {
+    throw new Error(
+      `Server được yêu cầu lắng nghe tại '${host}' (ngoài loopback) nhưng thiếu CORVUS_AUTH_TOKEN. ` +
+        'Từ chối khởi động: /rpc và /ws chạy SQL trên database production và không có lớp xác thực nào khác.',
+    )
+  }
+  return undefined
+}
+
+/** So sánh token chống tấn công đo thời gian. Độ dài khác nhau → sai ngay. */
+function tokenMatches(expected: string, got: string | undefined): boolean {
+  if (got === undefined) return false
+  const a = Buffer.from(expected)
+  const b = Buffer.from(got)
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
+
+/**
+ * Lấy token client gửi lên.
+ *
+ * Chấp nhận header (client không phải trình duyệt) và query `?token=` (trình duyệt KHÔNG đặt
+ * được header khi mở WebSocket). Query param đi vào access log của proxy nên chỉ là phương án
+ * dự phòng — khi có luồng đăng nhập thật thì bỏ nhánh này.
+ */
+function extractToken(req: http.IncomingMessage): string | undefined {
+  const auth = req.headers.authorization
+  if (typeof auth === 'string' && auth.startsWith('Bearer ')) return auth.slice(7)
+  const header = req.headers['x-corvus-token']
+  if (typeof header === 'string' && header.length > 0) return header
+  const url = req.url ?? ''
+  const q = url.indexOf('?')
+  if (q !== -1) {
+    const value = new URLSearchParams(url.slice(q + 1)).get('token')
+    if (value) return value
+  }
+  return undefined
+}
+
+export function createWebServer(port = 8080, host = resolveHost()) {
   const origins = allowedOrigins()
+  const authToken = resolveAuthToken(host)
   const server = http.createServer(async (req, res) => {
     const origin = req.headers.origin
     if (origin && origins.includes(origin)) {
@@ -36,11 +105,20 @@ export function createWebServer(port = 8080) {
       res.setHeader('Vary', 'Origin')
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Request-Id, X-CSRF-Token')
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, X-Request-Id, X-CSRF-Token, X-Corvus-Token, Authorization',
+    )
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204)
       res.end()
+      return
+    }
+
+    if (authToken !== undefined && !tokenMatches(authToken, extractToken(req))) {
+      res.writeHead(401, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ code: 'UNAUTHORIZED', message: 'Thiếu hoặc sai token' }))
       return
     }
 
@@ -69,10 +147,11 @@ export function createWebServer(port = 8080) {
     res.end('Not Found')
   })
 
-  attachWebSocket(server, origins)
+  attachWebSocket(server, origins, authToken)
 
   return new Promise<http.Server>((resolve) => {
-    server.listen(port, () => {
+    // Truyền host TƯỜNG MINH: thiếu tham số này Node bind mọi interface.
+    server.listen(port, host, () => {
       resolve(server)
     })
   })
@@ -120,7 +199,7 @@ function toWsConnection(socket: WebSocket): WsConnection {
  */
 const wsServers = new WeakMap<http.Server, WebSocketServer>()
 
-function attachWebSocket(server: http.Server, origins: string[]): void {
+function attachWebSocket(server: http.Server, origins: string[], authToken?: string): void {
   const wss = new WebSocketServer({ noServer: true })
   wsServers.set(server, wss)
 
@@ -139,6 +218,13 @@ function attachWebSocket(server: http.Server, origins: string[]): void {
     const origin = req.headers.origin
     if (origin !== undefined && !origins.includes(origin)) {
       socket.write('HTTP/1.1 403 Forbidden\r\n\r\n')
+      socket.destroy()
+      return
+    }
+
+    // Xác thực TRƯỚC khi nâng cấp: sau khi đã thành WebSocket thì không còn cách trả mã HTTP.
+    if (authToken !== undefined && !tokenMatches(authToken, extractToken(req))) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n')
       socket.destroy()
       return
     }
@@ -180,11 +266,15 @@ export async function shutdown(server?: http.Server): Promise<void> {
 
 if (isEntry) {
   const port = Number(process.env.CORVUS_PORT ?? 8080)
-  createWebServer(port).then((server) => {
+  const host = resolveHost()
+  createWebServer(port, host).then((server) => {
+    // In ĐÚNG địa chỉ đang bind. Dòng log cũ luôn in 127.0.0.1 trong khi server bind
+    // 0.0.0.0 — sai lệch kiểu này làm người vận hành tưởng mình đang an toàn.
     // eslint-disable-next-line no-console -- entry point cua server, log khoi dong la dung
     console.log(
-      `[corvus] RPC server dang lang nghe tai http://127.0.0.1:${port}/rpc ` +
-        `va WebSocket tai ws://127.0.0.1:${port}/ws`,
+      `[corvus] RPC server dang lang nghe tai http://${host}:${port}/rpc ` +
+        `va WebSocket tai ws://${host}:${port}/ws` +
+        (process.env.CORVUS_AUTH_TOKEN ? ' (co xac thuc token)' : ' (loopback, khong token)'),
     )
 
     for (const signal of ['SIGINT', 'SIGTERM'] as const) {

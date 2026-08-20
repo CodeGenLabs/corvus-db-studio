@@ -99,7 +99,10 @@ export function createHttpTransport(options: HttpTransportOptions = {}): Transpo
         // chập chờn nghĩa là ghi dữ liệu hai lần. Chỉ người dùng mới được bấm "Thử lại".
         for (const [id, stream] of activeStreams) {
           stream.onError({
-            code: 'CONNECTION_LOST',
+            // 'CONNECTION_LOST' KHÔNG có trong `ErrorCode` của contract — dùng mã hợp lệ và
+            // giữ sự khác biệt ở `i18nKey`, để UI vẫn phân biệt được "mất kết nối giữa
+            // stream" với "không kết nối được".
+            code: 'CONNECTION_FAILED',
             message: 'Mất kết nối tới server giữa lúc đang nhận kết quả',
             i18nKey: 'error.streamInterrupted',
           })

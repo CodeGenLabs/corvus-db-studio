@@ -35,7 +35,11 @@ export const queryExecute = defineStream({
     sql: z.string().max(4_000_000),
     params: z.array(z.unknown()).optional(),
     chunkSize: z.number().int().min(1).max(10_000).default(1_000),
-    maxRows: z.number().int().positive().optional(),
+    // Trần trên là BẮT BUỘC, không chỉ có mặc định: streaming-and-jobs §A.4 đặt mặc định
+    // 500 000 cho query.execute, nhưng nếu schema không chặn thì client tự gửi
+    // `maxRows: 100_000_000` là vô hiệu hoá giới hạn an toàn đó. 10 triệu là mốc mà IV-2
+    // (RAM ≤ 400 MB) đã được đo tới.
+    maxRows: z.number().int().positive().max(10_000_000).optional(),
     transactionId: z.string().optional(),
   }),
   chunk: ResultChunkSchema,

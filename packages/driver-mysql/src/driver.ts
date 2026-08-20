@@ -21,6 +21,12 @@ import { mysqlErrorToCorvus } from './errors'
 import { MysqlIntrospector } from './introspect'
 import { alignForMysqlType, MYSQL_TYPE, toCellValue } from './value'
 
+/** Xem ghi chú cùng tên ở driver-postgres: mặc định TẮT, bật qua CORVUS_QUERY_TIMEOUT_MS. */
+function queryTimeoutMs(): number {
+  const raw = Number(process.env.CORVUS_QUERY_TIMEOUT_MS ?? 0)
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0
+}
+
 const DEFAULT_CHUNK_SIZE = 1_000
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000
 const CONNECT_TIMEOUT_MS = 15_000
@@ -418,6 +424,26 @@ export class MysqlDriver implements DatabaseDriver {
         bigNumberStrings: true,
         dateStrings: true,
       })
+
+      const timeoutMs = queryTimeoutMs()
+      if (timeoutMs > 0) {
+        pool.on('connection', (c) => {
+          // `max_execution_time` chỉ áp cho SELECT — đúng phạm vi ta cần chặn.
+          void c.query(`SET SESSION max_execution_time = ${timeoutMs}`).catch(() => {
+            /* MariaDB và MySQL < 5.7.8 không có biến này */
+          })
+        })
+      }
+
+      // Lớp 2 của chế độ read-only (security.md §5 mục 2): đặt ở tầng SESSION cho MỌI kết
+      // nối trong pool. Bộ phân loại SQL ở engine là lớp 1; hai lớp bù nhau, không thay nhau.
+      if (profile.readOnly) {
+        pool.on('connection', (conn) => {
+          void conn.query('SET SESSION TRANSACTION READ ONLY').catch(() => {
+            /* server cũ không hỗ trợ thì bỏ qua — lớp 1 vẫn chặn */
+          })
+        })
+      }
 
       // Đọc runtime server variables lúc connect để thu hẹp capability
       const [rows] = await pool.query<ServerVarsRow[]>(

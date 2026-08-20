@@ -21,6 +21,9 @@ import type { ConformanceSuiteOptions } from './types'
  *   - C8: Errors (Map engine errors to Corvus ErrorCodes)
  *   - C9: Resource (RAM flat streaming & Break release)
  */
+/** streaming-and-jobs.md IV-3: huỷ stream → cursor đóng và CANCEL tới server ≤ 200 ms. */
+const CANCEL_BUDGET_MS = 200
+
 export function runConformanceSuite(driver: DatabaseDriver, options: ConformanceSuiteOptions): void {
   const dialect: ConformanceDialect = options.dialect ?? POSTGRES_CONFORMANCE
   const schema = options.schema ?? dialect.schema
@@ -406,9 +409,23 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
   // C6 · CANCEL
   // ══════════════════════════════════════════════════════════════════════════
   group('C6', 'cancel', () => {
+    it('dialect khai đủ dữ liệu để kiểm nhóm C6', () => {
+      // Skip PHẢI đi qua `dialect.skip` để in ra lý do. `if (!longSql) return` bên trong
+      // `it()` là skip IM LẶNG: test xanh mà không chạy gì, đúng cơ chế đã tạo ra 230 dấu
+      // [DONE] sai sự thật (audit 2026-08-18).
+      expect(
+        dialect.longRunningSql,
+        `dialect '${dialect.id}' phải khai longRunningSql, hoặc khai skip.C6 kèm lý do`,
+      ).toBeTruthy()
+      expect(
+        dialect.countActiveQueriesSql,
+        `dialect '${dialect.id}' phải khai countActiveQueriesSql để kiểm IV-3 (không còn backend treo), hoặc khai skip.C6 kèm lý do`,
+      ).toBeTruthy()
+    })
+
     it('huỷ giữa chừng ném QUERY_CANCELLED, dừng kịp thời và trả connection về pool', async () => {
       const longSql = dialect.longRunningSql
-      if (!longSql) return
+      if (!longSql) throw new Error('dialect thiếu longRunningSql — xem test khai báo ở trên')
 
       const ac = new AbortController()
       let rejectError: unknown
@@ -432,7 +449,9 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
 
         await expect(runPromise).rejects.toMatchObject({ code: 'QUERY_CANCELLED' })
         const elapsed = Date.now() - t0
-        expect(elapsed).toBeLessThanOrEqual(2_000)
+        // streaming-and-jobs.md IV-3 nói ≤ 200 ms. Bản trước để 2 000 ms — test có đo thời
+        // gian nhưng nới gấp 10 lần, nên nó KHÔNG kiểm được bất biến mà nó dẫn.
+        expect(elapsed).toBeLessThanOrEqual(CANCEL_BUDGET_MS)
 
         // Connection vẫn dùng được sau khi huỷ
         const latency = await conn.ping()
@@ -446,7 +465,7 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     if (countQueries) {
       it('sau khi huỷ, server không còn process backend nào bị treo (IV-3)', async () => {
         const longSql = dialect.longRunningSql
-        if (!longSql) return
+        if (!longSql) throw new Error('dialect thiếu longRunningSql — xem test khai báo ở trên')
 
         const MARKER = '/* corvus-c6-active-probe */'
         const sql = longSql.replace(/\/\*.*?\*\//, MARKER)

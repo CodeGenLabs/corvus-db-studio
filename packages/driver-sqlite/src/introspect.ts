@@ -1,5 +1,6 @@
 import { corvusError, type TableMeta } from '@corvus/contract'
 import type { Introspector } from '@corvus/driver-core'
+import { quoteIdentifier } from '@corvus/sql'
 import { sqliteErrorToCorvus } from './errors'
 
 /**
@@ -91,22 +92,59 @@ export class SqliteIntrospector implements Introspector {
     return []
   }
 
+  /**
+   * Đổi tên database do người gọi truyền thành tên schema dùng được, có KIỂM DANH SÁCH.
+   *
+   * Bản trước nhận `opts.database` rồi bỏ qua hoàn toàn (grep `opts.database` trong thân hàm
+   * = 0 lần), trong khi `listDatabases()` lại trả về cả tệp đã ATTACH. Hệ quả: người dùng
+   * bấm vào bảng của database thứ hai và nhận metadata của bảng TRÙNG TÊN trong `main` —
+   * rồi sửa dữ liệu dựa trên đó. Đây là loại sai âm thầm tệ nhất.
+   *
+   * Tên đi qua allowlist từ `pragma_database_list` TRƯỚC khi được quote: `sqlite_master`
+   * không có dạng nhận tham số bind cho tiền tố schema, nên tên buộc phải nhúng vào SQL.
+   */
+  private resolveSchema(database?: string): string {
+    if (database === undefined || database === '' || database === 'main') return 'main'
+    const known = (
+      this.db.prepare('SELECT name FROM pragma_database_list').all() as Array<{ name: string }>
+    ).map((r) => r.name)
+    if (!known.includes(database)) {
+      throw corvusError('NOT_FOUND', `Không có database '${database}' trong kết nối này`)
+    }
+    return database
+  }
+
+  /** `"<schema>".sqlite_master` — schema đã qua allowlist và đã quote. */
+  private masterTable(database?: string): string {
+    const quotedSchema = quoteIdentifier(this.resolveSchema(database), 'sqlite')
+    return `${quotedSchema}.sqlite_master`
+  }
+
+  /**
+   * Liệt kê object.
+   *
+   * Trả về CẢ trigger và index, không chỉ table/view. Bản trước lọc
+   * `type IN ('table','view')` trong khi `capabilities.objects.trigger` và `.index` đều khai
+   * `true` — nên UI hiện nhánh "Triggers" rồi luôn rỗng, kể cả trên database có trigger thật.
+   * Khai capability và hiện thực phải khớp; ở đây chọn sửa hiện thực vì SQLite có cả hai.
+   */
   async listObjects(opts: {
     database?: string
     schema?: string
     kind?: string
   }): Promise<Array<{ name: string; kind: string; rows?: string; size?: string; engine?: string; modified?: string }>> {
     try {
+      const quotedMaster = this.masterTable(opts.database)
       const rows = this.db
         .prepare(
-          `SELECT name, type FROM sqlite_master
-            WHERE type IN ('table', 'view')
+          `SELECT name, type FROM ${quotedMaster}
+            WHERE type IN ('table', 'view', 'trigger', 'index')
               AND substr(name, 1, length(?)) <> ?
             ORDER BY type, name`,
         )
         .all(INTERNAL_PREFIX, INTERNAL_PREFIX) as Array<{ name: string; type: string }>
 
-      const mapped = rows.map((r) => ({ name: r.name, kind: r.type === 'view' ? 'view' : 'table' }))
+      const mapped = rows.map((r) => ({ name: r.name, kind: r.type }))
       return opts.kind ? mapped.filter((o) => o.kind === opts.kind) : mapped
     } catch (err) {
       throw sqliteErrorToCorvus(err)
@@ -116,9 +154,11 @@ export class SqliteIntrospector implements Introspector {
   async getTableMeta(opts: { database?: string; schema?: string; table: string }): Promise<TableMeta> {
     const table = opts.table
     try {
+      // Hàm bảng pragma nhận schema làm tham số THỨ HAI — vẫn bind được, không ghép chuỗi.
+      const schema = this.resolveSchema(opts.database)
       const cols = this.db
-        .prepare('SELECT cid, name, type, "notnull", dflt_value, pk FROM pragma_table_info(?)')
-        .all(table) as TableInfoRow[]
+        .prepare('SELECT cid, name, type, "notnull", dflt_value, pk FROM pragma_table_info(?, ?)')
+        .all(table, schema) as TableInfoRow[]
 
       // pragma_table_info trên bảng không tồn tại trả 0 dòng chứ không ném — phải tự dựng
       // lỗi, nếu không UI hiện một bảng rỗng và người dùng tưởng bảng thật sự không có cột.
@@ -126,8 +166,9 @@ export class SqliteIntrospector implements Introspector {
         throw corvusError('TABLE_NOT_FOUND', `Không tìm thấy bảng '${table}'`)
       }
 
+      const quotedMaster = this.masterTable(opts.database)
       const master = this.db
-        .prepare(`SELECT name, type, sql FROM sqlite_master WHERE name = ?`)
+        .prepare(`SELECT name, type, sql FROM ${quotedMaster} WHERE name = ?`)
         .get(table) as MasterRow | undefined
 
       const pkColumns = cols.filter((c) => c.pk > 0).sort((a, b) => a.pk - b.pk).map((c) => c.name)
@@ -136,11 +177,11 @@ export class SqliteIntrospector implements Introspector {
         .prepare(
           `SELECT il.name AS idx_name, il."unique" AS is_unique, il.origin AS origin,
                   ii.name AS col_name, ii.seqno AS seqno
-             FROM pragma_index_list(?) il
-             LEFT JOIN pragma_index_info(il.name) ii
+             FROM pragma_index_list(?, ?) il
+             LEFT JOIN pragma_index_info(il.name, ?) ii
              ORDER BY il.name, ii.seqno`,
         )
-        .all(table) as IndexRow[]
+        .all(table, schema, schema) as IndexRow[]
 
       const byIndex = new Map<string, { unique: boolean; origin: string; columns: string[] }>()
       for (const r of indexRows) {
@@ -177,9 +218,9 @@ export class SqliteIntrospector implements Introspector {
       const fkRows = this.db
         .prepare(
           `SELECT id, seq, "table", "from", "to", on_update, on_delete
-             FROM pragma_foreign_key_list(?) ORDER BY id, seq`,
+             FROM pragma_foreign_key_list(?, ?) ORDER BY id, seq`,
         )
-        .all(table) as FkRow[]
+        .all(table, schema) as FkRow[]
 
       const foreignKeys = fkRows.map((r) => ({
         // SQLite không đặt tên cho khoá ngoại; dựng tên ổn định để UI có khoá React và
@@ -226,8 +267,9 @@ export class SqliteIntrospector implements Introspector {
    */
   async getDdl(opts: { database?: string; schema?: string; name: string; kind: string }): Promise<string> {
     try {
+      const quotedMaster = this.masterTable(opts.database)
       const row = this.db
-        .prepare(`SELECT name, type, sql FROM sqlite_master WHERE name = ?`)
+        .prepare(`SELECT name, type, sql FROM ${quotedMaster} WHERE name = ?`)
         .get(opts.name) as MasterRow | undefined
 
       if (!row) throw corvusError('TABLE_NOT_FOUND', `Không tìm thấy object '${opts.name}'`)

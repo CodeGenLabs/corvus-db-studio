@@ -1,7 +1,13 @@
 import { corvusError, errorMessage } from '@corvus/contract'
 import { getDriver } from '@corvus/driver-core'
+import { assertReadOnlySql } from '@corvus/sql'
 import type { EngineRouter } from '../router'
-import { draftToResolvedProfile, resolveConnection, type HandlerDeps } from './context'
+import {
+  draftToResolvedProfile,
+  requireProfile,
+  resolveConnection,
+  type HandlerDeps,
+} from './context'
 
 /**
  * Trần mặc định cho `query.execute` (streaming-and-jobs.md §A.4).
@@ -11,6 +17,15 @@ import { draftToResolvedProfile, resolveConnection, type HandlerDeps } from './c
  * để UI hiện banner, thay vì im lặng kéo cả bảng về.
  */
 const DEFAULT_QUERY_MAX_ROWS = 500_000
+
+/**
+ * Số stream chạy đồng thời tối đa trên MỘT connection (streaming-and-jobs.md §A.4).
+ *
+ * Không có giới hạn này, mỗi khung `open` mở thêm một cursor: pool PostgreSQL chỉ có 8 slot
+ * nên stream thứ 9 trở đi xếp hàng vô hạn, còn RAM engine phình theo số stream × cửa sổ 8
+ * chunk. Một client lỗi (hoặc cố ý) gửi 1 000 khung `open` là đủ làm server ngừng phục vụ.
+ */
+const MAX_CONCURRENT_STREAMS_PER_CONNECTION = 4
 
 export type { ConnectionStore, HandlerDeps } from './context'
 
@@ -24,6 +39,8 @@ export type { ConnectionStore, HandlerDeps } from './context'
  * Mỗi khi thêm handler, hạ `HANDLER_DEBT` trong `tools/check-contract.ts`.
  */
 export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void {
+  /** connectionId → số stream đang chạy. Sống theo router, tức theo tiến trình engine. */
+  const activeStreamsPerConnection = new Map<string, number>()
   // ── connection.list ────────────────────────────────────────────────────────
   // Gốc của cây điều hướng. KHÔNG trả về mật khẩu — profile trong store vốn không chứa
   // secret (security.md §2, bất biến 2).
@@ -147,13 +164,41 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
       chunkSize?: number
       maxRows?: number
     }
+    const profile = await requireProfile(deps, p.connectionId)
     const conn = await resolveConnection(deps, p.connectionId, ctx.actor.id)
-    yield* conn.execute({
-      sql: p.sql,
-      values: p.params,
-      chunkSize: p.chunkSize,
-      maxRows: p.maxRows ?? DEFAULT_QUERY_MAX_ROWS,
-      signal: opts.signal,
-    })
+
+    // Lớp 1 của chế độ read-only (security.md §5 mục 1). Phải chặn TRƯỚC khi câu lệnh tới
+    // driver: trước bản này, `profile.readOnly` chỉ được đọc trong `beginTransaction()`, nên
+    // `DELETE` gõ tay trong SQL Editor vẫn xoá dữ liệu thật trên connection đã bật read-only.
+    // `conn.dialect` chứ không phải `profile.driverId` — không rẽ nhánh theo engine (ADR-0003).
+    if (profile.readOnly) {
+      assertReadOnlySql(p.sql, conn.dialect)
+    }
+
+    const running = activeStreamsPerConnection.get(p.connectionId) ?? 0
+    if (running >= MAX_CONCURRENT_STREAMS_PER_CONNECTION) {
+      throw corvusError(
+        'UNSUPPORTED_FEATURE',
+        `Kết nối này đã có ${running} truy vấn đang chạy (tối đa ${MAX_CONCURRENT_STREAMS_PER_CONNECTION}). Hãy chờ hoặc huỷ một truy vấn.`,
+        { i18nKey: 'error.tooManyConcurrentStreams' },
+      )
+    }
+    activeStreamsPerConnection.set(p.connectionId, running + 1)
+
+    try {
+      yield* conn.execute({
+        sql: p.sql,
+        values: p.params,
+        chunkSize: p.chunkSize,
+        maxRows: p.maxRows ?? DEFAULT_QUERY_MAX_ROWS,
+        signal: opts.signal,
+      })
+    } finally {
+      // `finally` chạy cả khi người tiêu thụ break giữa chừng hoặc stream bị huỷ — nếu
+      // giảm ở chỗ khác, một stream bị huỷ sẽ chiếm slot mãi mãi.
+      const left = (activeStreamsPerConnection.get(p.connectionId) ?? 1) - 1
+      if (left <= 0) activeStreamsPerConnection.delete(p.connectionId)
+      else activeStreamsPerConnection.set(p.connectionId, left)
+    }
   })
 }

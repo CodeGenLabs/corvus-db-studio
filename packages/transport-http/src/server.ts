@@ -1,4 +1,5 @@
-import type { Frame } from './frames'
+import { isErrorCode } from '@corvus/contract'
+import type { Frame, WireError } from './frames'
 
 export interface StreamCallOptions {
   signal?: AbortSignal
@@ -34,11 +35,14 @@ const ACK_RELEASE = 4
  * object thường nên stringify được, nhưng vẫn phải lọc tay để KHÔNG bao giờ để `cause`
  * (có thể chứa chuỗi kết nối kèm mật khẩu) lọt ra ngoài (security.md §2, coding-rules 6.1).
  */
-export function toWireError(err: unknown): { code: string; message: string; i18nKey?: string; detail?: string } {
+export function toWireError(err: unknown): WireError {
   if (typeof err === 'object' && err !== null && 'code' in err) {
     const e = err as { code: unknown; message?: unknown; i18nKey?: unknown; detail?: unknown }
     return {
-      code: typeof e.code === 'string' ? e.code : 'INTERNAL_ERROR',
+      // Kiểm mã theo DANH SÁCH của contract, không chỉ theo `typeof === 'string'`. UI tra
+      // `error.<code>` để lấy chuỗi i18n; một mã không có trong contract cho ra thông báo
+      // trống — im lặng và khó truy.
+      code: isErrorCode(e.code) ? e.code : 'INTERNAL_ERROR',
       message: typeof e.message === 'string' ? e.message : String(err),
       ...(typeof e.i18nKey === 'string' ? { i18nKey: e.i18nKey } : {}),
       ...(typeof e.detail === 'string' ? { detail: e.detail } : {}),

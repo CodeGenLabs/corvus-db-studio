@@ -321,6 +321,14 @@ export const MYSQL_CONFORMANCE: ConformanceDialect = {
 
   // ── C6 Cancel ──────────────────────────────────────────────────────────────
   longRunningSql: '/* corvus-mysql-cancel-probe */ SELECT SLEEP(10) AS s',
+  // Thiếu trường này thì test "sau khi huỷ, server không còn backend treo (IV-3)" KHÔNG
+  // được đăng ký cho MySQL — nhóm C6 vẫn xanh nhưng chỉ kiểm được nửa bất biến.
+  // `information_schema.processlist` là bản MySQL của `pg_stat_activity`.
+  countActiveQueriesSql: (pattern: string) => ({
+    sql: `SELECT CAST(COUNT(*) AS CHAR) AS cnt FROM information_schema.processlist
+           WHERE info LIKE ? AND id <> CONNECTION_ID()`,
+    values: [pattern],
+  }),
 
   // ── C7 DDL ─────────────────────────────────────────────────────────────────
   recreateDdlSql: (originalDdl: string, targetName: string) => {

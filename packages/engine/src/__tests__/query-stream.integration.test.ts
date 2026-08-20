@@ -274,3 +274,194 @@ describe('T-B05 · query.execute qua EngineRouter.handleStream', () => {
     expect(peakMb).toBeLessThan(200)
   }, 120_000)
 })
+
+/**
+ * Chế độ read-only — security.md §5.
+ *
+ * Trước bản vá 2026-08-19, `profile.readOnly` chỉ được đọc trong `beginTransaction()`, nên
+ * một `DELETE` đi qua `query.execute` XOÁ DỮ LIỆU THẬT trên connection đã bật read-only
+ * (đo được: 2 dòng → 1 dòng, không lỗi nào được ném). Bộ test này ghim cả hai lớp phòng thủ.
+ */
+describe('read-only · query.execute trên connection chỉ đọc', () => {
+  const RO_ID = 'conn-readonly'
+
+  const roProfile: ConnectionProfile = {
+    ...profile,
+    id: RO_ID,
+    name: 'PostgreSQL read-only',
+    readOnly: true,
+  }
+
+  let roRouter: EngineRouter
+  let roSessions: SessionManager
+
+  beforeAll(async () => {
+    roProfile.host = profile.host
+    roProfile.port = profile.port
+    await vault.set({ kind: 'db-password', ownerId: 'local-owner', connectionId: RO_ID }, 'corvus')
+
+    roSessions = new SessionManager()
+    roRouter = new EngineRouter()
+    registerHandlers(roRouter, {
+      sessions: roSessions,
+      connections: {
+        async list() {
+          return [roProfile]
+        },
+        async get(id) {
+          return id === RO_ID ? roProfile : undefined
+        },
+      },
+      vault,
+    })
+
+    // Dữ liệu thử, dựng bằng kết nối read-write riêng.
+    for (const sql of [
+      'DROP TABLE IF EXISTS ro_guard',
+      'CREATE TABLE ro_guard (id int primary key, note text)',
+      "INSERT INTO ro_guard VALUES (1, 'phai con lai'), (2, 'phai con lai')",
+    ]) {
+      for await (const _ of probe.execute({ sql })) {
+        /* DDL */
+      }
+    }
+  }, 60_000)
+
+  afterAll(async () => {
+    await roSessions?.closeAll?.()
+  })
+
+  async function runRo(sql: string): Promise<ResultChunk[]> {
+    const out: ResultChunk[] = []
+    for await (const c of roRouter.handleStream('query.execute', { connectionId: RO_ID, sql })) {
+      out.push(c as ResultChunk)
+    }
+    return out
+  }
+
+  async function countRows(): Promise<number> {
+    let n = -1
+    for await (const chunk of probe.execute({ sql: 'SELECT count(*)::int AS n FROM ro_guard' })) {
+      for (const row of chunk.rows) {
+        n = Number((row[0] as { v?: unknown }).v ?? -1)
+      }
+    }
+    return n
+  }
+
+  it('SELECT vẫn chạy bình thường', async () => {
+    const chunks = await runRo('SELECT id FROM ro_guard ORDER BY id')
+    expect(chunks.flatMap((c) => c.rows)).toHaveLength(2)
+  })
+
+  it('DELETE bị từ chối bằng READ_ONLY và KHÔNG xoá dòng nào', async () => {
+    await expect(runRo('DELETE FROM ro_guard WHERE id = 1')).rejects.toMatchObject({
+      code: 'READ_ONLY',
+    })
+    // Khẳng định dương: dữ liệu còn nguyên. Chỉ kiểm "có ném lỗi" là không đủ — bản lỗi
+    // trước đây KHÔNG ném gì cả mà vẫn xoá.
+    expect(await countRows()).toBe(2)
+  })
+
+  it('UPDATE, INSERT, DROP đều bị từ chối và dữ liệu không đổi', async () => {
+    for (const sql of [
+      "UPDATE ro_guard SET note = 'bi sua' WHERE id = 1",
+      "INSERT INTO ro_guard VALUES (3, 'moi')",
+      'DROP TABLE ro_guard',
+      'TRUNCATE ro_guard',
+    ]) {
+      await expect(runRo(sql)).rejects.toMatchObject({ code: 'READ_ONLY' })
+    }
+    expect(await countRows()).toBe(2)
+  })
+
+  it('CTE ghi dữ liệu của PostgreSQL bị chặn — mở đầu WITH, kết thúc SELECT', async () => {
+    await expect(
+      runRo('WITH d AS (DELETE FROM ro_guard RETURNING *) SELECT count(*) FROM d'),
+    ).rejects.toMatchObject({ code: 'READ_ONLY' })
+    expect(await countRows()).toBe(2)
+  })
+
+  it('lớp 2 độc lập: server từ chối ghi ngay cả khi bỏ qua bộ phân loại của engine', async () => {
+    // Gọi thẳng driver, không đi qua handler — chứng minh `default_transaction_read_only`
+    // đã được đặt ở tầng session, chứ không phải chỉ có lớp phân loại SQL.
+    const conn = await postgresDriver.connect({ ...roProfile, password: 'corvus' })
+    try {
+      await expect(
+        (async () => {
+          for await (const _ of conn.execute({ sql: 'DELETE FROM ro_guard WHERE id = 2' })) {
+            /* chờ lỗi từ server */
+          }
+        })(),
+      ).rejects.toMatchObject({ name: 'CorvusError' })
+    } finally {
+      await conn.close()
+    }
+    expect(await countRows()).toBe(2)
+  })
+})
+
+/**
+ * Giới hạn an toàn của streaming-and-jobs.md §A.4 — trước bản vá KHÔNG cái nào được thực thi
+ * (`grep -rn "MAX_CONCURRENT|maxStreams|statement_timeout"` trên engine + transport + driver
+ * trả về rỗng).
+ */
+describe('giới hạn an toàn của stream (§A.4)', () => {
+  it('quá 4 stream đồng thời trên một connection thì bị từ chối, không xếp hàng vô hạn', async () => {
+    // Pool PostgreSQL chỉ có 8 slot: không có trần thì stream thứ 9 chờ mãi, còn RAM engine
+    // phình theo số stream × cửa sổ 8 chunk.
+    const iterators = []
+    try {
+      for (let i = 0; i < 4; i++) {
+        const stream = router.handleStream('query.execute', {
+          connectionId: CONNECTION_ID,
+          sql: 'SELECT generate_series(1, 200000) AS n',
+          chunkSize: 1,
+        })
+        const it = stream[Symbol.asyncIterator]()
+        // Kéo đúng 1 chunk để stream thật sự đang mở, rồi giữ nguyên.
+        await it.next()
+        iterators.push(it)
+      }
+
+      await expect(
+        (async () => {
+          for await (const _ of router.handleStream('query.execute', {
+            connectionId: CONNECTION_ID,
+            sql: 'SELECT 1',
+          })) {
+            /* không nên tới đây */
+          }
+        })(),
+      ).rejects.toMatchObject({ code: 'UNSUPPORTED_FEATURE' })
+    } finally {
+      // Đóng cả 4 → slot phải được trả lại.
+      for (const it of iterators) await it.return?.()
+    }
+
+    // Sau khi giải phóng, stream mới chạy được bình thường. Nếu bộ đếm không giảm trong
+    // `finally`, connection sẽ bị khoá vĩnh viễn — lỗi tệ hơn cả việc không có trần.
+    const chunks = []
+    for await (const c of router.handleStream('query.execute', {
+      connectionId: CONNECTION_ID,
+      sql: 'SELECT 1 AS n',
+    })) {
+      chunks.push(c)
+    }
+    expect(chunks.length).toBeGreaterThan(0)
+  }, 60_000)
+
+  it('maxRows vượt trần bị contract chặn ở tầng validate params', async () => {
+    await expect(
+      (async () => {
+        for await (const _ of router.handleStream('query.execute', {
+          connectionId: CONNECTION_ID,
+          sql: 'SELECT 1',
+          maxRows: 100_000_000,
+        })) {
+          /* không nên tới đây */
+        }
+      })(),
+    ).rejects.toMatchObject({ code: 'INVALID_INPUT' })
+  })
+})

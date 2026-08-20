@@ -1,3 +1,18 @@
+import type { ErrorCode } from '@corvus/contract'
+
+/**
+ * Hình dạng lỗi đi trên dây.
+ *
+ * Cố ý KHÔNG mang `cause`: `cause` là chỗ chuỗi kết nối kèm mật khẩu hay lọt ra
+ * (security.md §2). `HttpRpcServer.toWireError()` là nơi duy nhất dựng object này.
+ */
+export interface WireError {
+  code: ErrorCode
+  message: string
+  i18nKey?: string
+  detail?: string
+}
+
 export interface OpenFrame {
   t: 'open'
   id: string
@@ -27,7 +42,14 @@ export interface EndFrame {
 export interface ErrorFrame {
   t: 'error'
   id: string
-  error: unknown
+  /**
+   * Lỗi trên dây. `code` phải là `ErrorCode` của contract, KHÔNG phải string tự do.
+   *
+   * Bản trước khai `unknown` nên client phát `code: 'CONNECTION_LOST'` — một mã KHÔNG có
+   * trong `ErrorCode` — mà không ai phát hiện. UI tra `error.<code>` để lấy chuỗi i18n, nên
+   * mã lạ dẫn tới thông báo trống. Ràng buộc kiểu ở đây là chỗ rẻ nhất để chặn.
+   */
+  error: WireError
 }
 
 export interface CancelFrame {

@@ -22,6 +22,21 @@ import { alignForOid, toCellValue } from './value'
 /** OID của 2 kiểu ngày tháng ta cố tình không cho pg parse. */
 const PG_OID = { date: 1082, timestamp: 1114 } as const
 
+/**
+ * Timeout cho một câu lệnh, đặt ở tầng SESSION (streaming-and-jobs.md §A.4).
+ *
+ * MẶC ĐỊNH TẮT (0), không phải 30 s như tài liệu nêu — có chủ ý:
+ *   - `statement_timeout` tính cho cả quá trình đọc cursor, nên 30 s sẽ giết một stream
+ *     10 triệu dòng đang chạy đúng (chính bộ test C9 vượt mốc đó).
+ *   - Tài liệu nói timeout "cấu hình được theo connection", mà `ConnectionProfile` chưa có
+ *     trường đó — thêm trường vào contract là quyết định kiến trúc, cần người chủ dự án chốt.
+ * Cơ chế đã sẵn và bật được qua `CORVUS_QUERY_TIMEOUT_MS`.
+ */
+function queryTimeoutMs(): number {
+  const raw = Number(process.env.CORVUS_QUERY_TIMEOUT_MS ?? 0)
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0
+}
+
 const DEFAULT_CHUNK_SIZE = 1_000
 /** Kết nối rỗi quá ngưỡng này bị đóng (SPEC-01 FR-01.16). */
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000
@@ -293,6 +308,31 @@ export class PostgresDriver implements DatabaseDriver {
       },
       application_name: 'corvus-db-studio',
     })
+
+    // Lớp 2 của chế độ read-only (security.md §5 mục 2): đặt ở tầng SESSION cho MỌI kết nối
+    // trong pool, không chỉ trong transaction. Nhờ vậy ngay cả khi bộ phân loại SQL ở engine
+    // bỏ sót (ví dụ hàm do người dùng viết có ghi dữ liệu), server vẫn từ chối.
+    // Phải gắn vào sự kiện 'connect': pool mở kết nối dần, đặt một lần lúc connect là không đủ.
+    if (profile.readOnly) {
+      pool.on('connect', (client) => {
+        void client.query('SET default_transaction_read_only = on').catch((err: unknown) => {
+          ctx?.logger?.warn('khong dat duoc default_transaction_read_only', {
+            message: err instanceof Error ? err.message : String(err),
+          })
+        })
+      })
+    }
+
+    const timeoutMs = queryTimeoutMs()
+    if (timeoutMs > 0) {
+      pool.on('connect', (client) => {
+        // `SET` không nhận bind param; giá trị là số nguyên do chính ta dựng từ env,
+        // không phải input của người dùng.
+        void client.query(`SET statement_timeout = ${timeoutMs}`).catch(() => {
+          /* server từ chối thì bỏ qua: đây là lớp bảo vệ thêm, không phải điều kiện chạy */
+        })
+      })
+    }
 
     // pool phát 'error' cho client rỗi bị server đóng — không bắt thì process crash.
     pool.on('error', (err) => {

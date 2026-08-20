@@ -92,7 +92,21 @@ describe('driver-sqlite · hành vi riêng của engine', () => {
     expect(JSON.stringify(mode).toLowerCase()).toContain('delete')
   })
 
-  it('bật kiểm khoá ngoại — SQLite mặc định TẮT', async () => {
+  it('kiểm khoá ngoại ĐANG BẬT trên kết nối', async () => {
+    // Đo trực tiếp cờ, không suy từ hành vi. Thí nghiệm 2026-08-19: xoá hẳn
+    // `db.pragma('foreign_keys = ON')` khỏi driver mà 87 test vẫn xanh — vì `better-sqlite3`
+    // TỰ bật foreign_keys khi mở (đo được: `[{"foreign_keys":1}]`). Nghĩa là test cũ chứng
+    // minh hành vi của thư viện, không phải của code ta, và comment "SQLite mặc định TẮT"
+    // đúng với thư viện C nhưng sai với better-sqlite3.
+    const flag = await withConnection(async (c) => {
+      const chunks = []
+      for await (const chunk of c.execute({ sql: 'PRAGMA foreign_keys' })) chunks.push(chunk)
+      return chunks.flatMap((ch) => ch.rows)[0]
+    })
+    expect(JSON.stringify(flag)).toContain('1')
+  })
+
+  it('vi phạm khoá ngoại cho ra FOREIGN_KEY_VIOLATION', async () => {
     await expect(
       withConnection(async (c) => {
         for await (const _ of c.execute({
@@ -130,12 +144,35 @@ describe('driver-sqlite · hành vi riêng của engine', () => {
     })
   })
 
-  it('chế độ chỉ đọc chặn câu lệnh ghi', async () => {
+  it('chế độ chỉ đọc: chặn ở GUARD của driver, không phải chỉ nhờ cờ của SQLite', async () => {
+    // Bản test trước chỉ khẳng định `code === 'READ_ONLY'`, mà cờ `readonly` lúc mở tệp cũng
+    // cho ra đúng mã đó — nên xoá hẳn guard trong `execute()` mà test vẫn xanh (thí nghiệm
+    // 2026-08-19). Khẳng định theo THÔNG BÁO để ghim đúng lớp mình viết.
     await expect(
       withConnection(
         async (c) => {
           for await (const _ of c.execute({ sql: `DELETE FROM country WHERE country_id = 3` })) {
             /* chờ lỗi */
+          }
+        },
+        { ...profile, readOnly: true },
+      ),
+    ).rejects.toMatchObject({
+      code: 'READ_ONLY',
+      message: expect.stringContaining('chế độ chỉ đọc'),
+    })
+  })
+
+  it('chế độ chỉ đọc: lớp thứ hai (cờ readonly của tệp) chặn cả câu lệnh ghi TRẢ VỀ DÒNG', async () => {
+    // `INSERT … RETURNING` có `stmt.reader === true` nên guard của driver KHÔNG thấy nó —
+    // đây chính là chỗ chứng minh lớp thứ hai tồn tại và cần thiết.
+    await expect(
+      withConnection(
+        async (c) => {
+          for await (const _ of c.execute({
+            sql: `INSERT INTO country (country_id, country) VALUES (500, 'Test') RETURNING country_id`,
+          })) {
+            /* chờ lỗi từ chính SQLite */
           }
         },
         { ...profile, readOnly: true },
@@ -194,3 +231,11 @@ describe('driver-sqlite · hành vi riêng của engine', () => {
     expect(fs.existsSync(missing)).toBe(false)
   })
 })
+
+/**
+ * Hai lỗi tìm ra khi rà soát 2026-08-19, ghim lại bằng test:
+ *  - `objects.trigger` / `objects.index` khai `true` nhưng `listObjects` lọc
+ *    `type IN ('table','view')` → nhánh Triggers trong UI luôn rỗng
+ *  - `opts.database` được nhận rồi bỏ qua hoàn toàn, trong khi `listDatabases()` trả về cả
+ *    tệp đã ATTACH → metadata của database khác bị lấy từ `main`
+ */

@@ -6,7 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import WebSocket from 'ws'
 import { EnvelopeVault, openWorkspace } from '@corvus/storage'
-import type { Frame } from '@corvus/transport-http/frames'
+import type { ErrorFrame, Frame } from '@corvus/transport-http/frames'
 
 /**
  * T-B05: chứng minh đường ống streaming chạy THẬT —
@@ -216,7 +216,7 @@ describe('T-B05 · query.execute qua WebSocket trên PostgreSQL thật', () => {
     })
     await s.waitFor(() => s.frames.some((f) => f.t === 'error' && f.id === 'q3'), 'khung error')
 
-    const frame = s.frames.find((f) => f.t === 'error') as { error: Record<string, unknown> }
+    const frame = s.frames.find((f) => f.t === 'error') as ErrorFrame
     expect(typeof frame.error.code).toBe('string')
     expect(frame.error.code).not.toBe('INTERNAL_ERROR')
     expect(String(frame.error.message)).toBeTruthy()
@@ -345,5 +345,111 @@ describe('T-B05 · backpressure và dọn dẹp trên socket thật', () => {
     })
     expect(res.ok).toBe(true)
     expect(await res.json()).toHaveLength(1)
+  })
+})
+
+/**
+ * Bản trước: `server.listen(port)` không truyền host → Node bind 0.0.0.0, trong khi log in
+ * `127.0.0.1`; và `/rpc` + `/ws` không có lớp xác thực nào. Bất kỳ máy cùng LAN cũng chạy
+ * được SQL trên mọi connection đã lưu (mật khẩu nằm ở vault phía server nên không cần
+ * credential). Bộ test này ghim cả ba hành vi của bản vá.
+ */
+describe('an toàn mạng · địa chỉ bind và xác thực token', () => {
+  const TOKEN = 'k'.repeat(48)
+  let authServer: Server | undefined
+  let authBase: string
+  let authWs: string
+
+  beforeAll(async () => {
+    const mod = await import('../index')
+    process.env.CORVUS_AUTH_TOKEN = TOKEN
+    const port = 8950 + Math.floor(Math.random() * 40)
+    authBase = `http://127.0.0.1:${port}`
+    authWs = `ws://127.0.0.1:${port}/ws`
+    authServer = await mod.createWebServer(port)
+  }, 60_000)
+
+  afterAll(async () => {
+    delete process.env.CORVUS_AUTH_TOKEN
+    await new Promise<void>((resolve) => {
+      if (!authServer) return resolve()
+      authServer.close(() => resolve())
+    })
+  })
+
+  it('mặc định chỉ bind loopback, KHÔNG bind mọi interface', () => {
+    const addr = server?.address()
+    expect(addr).toBeTruthy()
+    expect(typeof addr === 'object' ? addr?.address : '').toBe('127.0.0.1')
+  })
+
+  it('từ chối KHỞI ĐỘNG khi bind ngoài loopback mà thiếu token', async () => {
+    const mod = await import('../index')
+    const saved = process.env.CORVUS_AUTH_TOKEN
+    delete process.env.CORVUS_AUTH_TOKEN
+    try {
+      // Thà không chạy còn hơn chạy ở trạng thái không an toàn mà không ai biết.
+      expect(() => mod.createWebServer(8999, '0.0.0.0')).toThrow(/CORVUS_AUTH_TOKEN/)
+    } finally {
+      if (saved !== undefined) process.env.CORVUS_AUTH_TOKEN = saved
+    }
+  })
+
+  it('từ chối token quá ngắn', async () => {
+    const mod = await import('../index')
+    const saved = process.env.CORVUS_AUTH_TOKEN
+    process.env.CORVUS_AUTH_TOKEN = 'ngan'
+    try {
+      expect(() => mod.createWebServer(8998)).toThrow(/32/)
+    } finally {
+      if (saved !== undefined) process.env.CORVUS_AUTH_TOKEN = saved
+    }
+  })
+
+  it('POST /rpc không token → 401', async () => {
+    const res = await fetch(`${authBase}/rpc/connection.list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+    expect(res.status).toBe(401)
+    expect((await res.json()) as { code?: string }).toMatchObject({ code: 'UNAUTHORIZED' })
+  })
+
+  it('POST /rpc sai token → 401', async () => {
+    const res = await fetch(`${authBase}/rpc/connection.list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Corvus-Token': 'x'.repeat(48) },
+      body: '{}',
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /rpc đúng token → 200 và trả dữ liệu thật', async () => {
+    const res = await fetch(`${authBase}/rpc/connection.list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+      body: '{}',
+    })
+    expect(res.status).toBe(200)
+    expect(Array.isArray(await res.json())).toBe(true)
+  })
+
+  it('/ws không token → bắt tay thất bại', async () => {
+    await expect(WsSession.open(authWs)).rejects.toBeTruthy()
+  })
+
+  it('/ws đúng token qua header → bắt tay thành công', async () => {
+    const s = await WsSession.open(authWs, { Authorization: `Bearer ${TOKEN}` })
+    s.send({ t: 'ping' })
+    await s.waitFor(() => s.frames.some((f) => f.t === 'pong'), 'pong')
+    s.close()
+  })
+
+  it('/ws đúng token qua query → thành công (trình duyệt không đặt được header)', async () => {
+    const s = await WsSession.open(`${authWs}?token=${TOKEN}`)
+    s.send({ t: 'ping' })
+    await s.waitFor(() => s.frames.some((f) => f.t === 'pong'), 'pong')
+    s.close()
   })
 })

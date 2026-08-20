@@ -63,6 +63,24 @@ export async function resolveConnection(
   return session.connection
 }
 
+/**
+ * Lấy profile đã lưu, ném NOT_FOUND nếu không có.
+ *
+ * Handler cần profile (không chỉ cần connection) để biết `readOnly` — bản trước chỉ có
+ * `resolveConnection()` nên `query.execute` không có cách nào biết connection đang ở chế độ
+ * chỉ đọc, và một `DELETE` đi qua trót lọt (security.md §5).
+ */
+export async function requireProfile(
+  deps: HandlerDeps,
+  connectionId: string,
+): Promise<ConnectionProfile> {
+  const profile = await deps.connections.get(connectionId)
+  if (!profile) {
+    throw corvusError('NOT_FOUND', `Không tìm thấy kết nối '${connectionId}'`)
+  }
+  return profile
+}
+
 /** Ghép profile chưa lưu (từ dialog "Test") thành ResolvedProfile để thử kết nối. */
 export function draftToResolvedProfile(
   draft: Partial<ConnectionProfile> & { password?: string },

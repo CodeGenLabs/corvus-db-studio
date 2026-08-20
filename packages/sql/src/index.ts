@@ -1,6 +1,7 @@
 export * from './dialect'
 export * from './sql'
 export * from './split'
+export * from './statement-kind'
 export * from './ddl'
 export * from './builder'
 export * from './import-parser'

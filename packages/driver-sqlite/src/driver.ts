@@ -308,8 +308,11 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     try {
-      // SQLite mặc định TẮT kiểm khoá ngoại — không bật thì FK trong lược đồ chỉ là
-      // trang trí và xoá dòng cha không báo lỗi gì.
+      // Thư viện C của SQLite mặc định TẮT kiểm khoá ngoại, nhưng `better-sqlite3` đã tự bật
+      // khi mở (đo được: `PRAGMA foreign_keys` → 1 ngay sau `new Database()`). Dòng này vì
+      // vậy là DƯ — giữ lại có chủ ý để hành vi không phụ thuộc mặc định của thư viện, nhưng
+      // đừng tưởng nó đang gánh việc: xoá nó đi không test nào đỏ, và đúng là không nên đỏ.
+      // Bảo đảm thật ("FK đang bật") được kiểm trực tiếp bằng test đọc PRAGMA.
       if (!profile.readOnly) db.pragma('foreign_keys = ON')
       db.pragma(`busy_timeout = ${BUSY_TIMEOUT_MS}`)
 
