@@ -25,6 +25,7 @@ export type ObjectKind = (typeof OBJECT_KINDS)[number]
 export type ObjectCapabilities = Record<ObjectKind, boolean>
 
 export interface SqlCapabilities {
+  supported?: boolean
   parameterStyle: 'dollar' | 'question' | 'at' | 'colon'
   identifierQuote: '"' | '`' | '[]'
   limitSyntax: 'limit-offset' | 'offset-fetch' | 'rownum'

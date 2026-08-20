@@ -160,7 +160,8 @@ export class MssqlConnection implements DriverConnection {
       pushEvent({ type: 'error', error: err })
     })
 
-    void request.query(req.sql).catch((err) => {
+    const sql = req.sql ?? (typeof req.command === 'string' ? req.command : '')
+    void request.query(sql).catch((err) => {
       if (!streamEnded) {
         streamEnded = true
         pushEvent({ type: 'error', error: err })

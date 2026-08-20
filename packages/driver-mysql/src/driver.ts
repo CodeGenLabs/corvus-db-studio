@@ -159,10 +159,11 @@ export class MysqlConnection implements DriverConnection {
         throw corvusError('CONNECTION_FAILED', 'Không lấy được kết nối socket MySQL nội bộ')
       }
 
+      const sql = req.sql ?? (typeof req.command === 'string' ? req.command : '')
       // Dùng connection.query({ rowsAsArray: true }).stream()
       const queryStream = rawConn
         .query({
-          sql: req.sql,
+          sql,
           values: req.values,
           rowsAsArray: true,
         })

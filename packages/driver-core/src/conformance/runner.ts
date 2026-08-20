@@ -77,8 +77,8 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
 
     it('phơi serverVersion đã parse đúng', async () => {
       const v = await withConnection(async (c) => c.serverVersion)
-      expect(v.raw).toBeTruthy()
-      expect(v.major).toBeGreaterThan(0)
+      expect(v?.raw).toBeTruthy()
+      expect(v?.major).toBeGreaterThan(0)
     })
 
     it('capabilities của connection được thu hẹp theo server thật', async () => {

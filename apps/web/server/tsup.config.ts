@@ -17,6 +17,12 @@ export default defineConfig({
     'pg-native',
     'mysql2',
     'mysql2/promise',
+    'mssql',
+    'tedious',
+    'tarn',
+    'oracledb',
+    'mongodb',
+    'ioredis',
     'ws',
   ],
 })

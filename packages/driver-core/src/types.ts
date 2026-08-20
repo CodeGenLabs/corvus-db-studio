@@ -34,7 +34,8 @@ export interface ResolvedProfile extends ConnectionProfile {
 }
 
 export interface ExecuteRequest {
-  sql: string
+  sql?: string
+  command?: string | Record<string, unknown>
   values?: unknown[]
   maxRows?: number
   chunkSize?: number
@@ -77,7 +78,7 @@ export interface DriverConnection {
   readonly serverVersion: ServerVersion
   readonly capabilities: CapabilitySet
   readonly introspect: Introspector
-  readonly dialect: SqlDialect
+  readonly dialect?: SqlDialect
   readonly ddl?: DdlGenerator
 
   execute(req: ExecuteRequest): AsyncIterable<ResultChunk>

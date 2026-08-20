@@ -125,7 +125,8 @@ export class PostgresConnection implements DriverConnection {
 
       // rowMode 'array' là bắt buộc: mặc định pg trả row dạng object nên `row[i]` là
       // undefined và mọi giá trị biến thành NULL (lỗi đã gặp khi chạy conformance).
-      cursor = client.query(new Cursor(req.sql, req.values ?? [], { rowMode: 'array' }))
+      const sql = req.sql ?? (typeof req.command === 'string' ? req.command : '')
+      cursor = client.query(new Cursor(sql, req.values ?? [], { rowMode: 'array' }))
 
       for (;;) {
         if (req.signal?.aborted) {
