@@ -1,13 +1,23 @@
+import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url))
+const rootDir = path.resolve(currentDir, '../../../../')
 const mainDist = path.resolve(currentDir, '../../dist/index.cjs')
 const preloadDist = path.resolve(currentDir, '../../../preload/dist/index.cjs')
 
 describe('T-B03 · Desktop Production Dist Smoke Test', () => {
+  beforeAll(() => {
+    if (!fs.existsSync(mainDist) || !fs.existsSync(preloadDist)) {
+      execSync('pnpm --filter @corvus/app-desktop-main --filter @corvus/app-desktop-preload build', {
+        cwd: rootDir,
+        stdio: 'inherit',
+      })
+    }
+  })
   it('apps/desktop/main/dist/index.cjs được build đầy đủ và hợp lệ', () => {
     expect(fs.existsSync(mainDist)).toBe(true)
     const content = fs.readFileSync(mainDist, 'utf8')

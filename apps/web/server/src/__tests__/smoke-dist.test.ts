@@ -1,14 +1,23 @@
-import { spawn } from 'node:child_process'
+import { execSync, spawn } from 'node:child_process'
+import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { WebSocket } from 'ws'
 
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url))
 const distEntry = path.resolve(currentDir, '../../dist/index.js')
 
 describe('T-B03 · Production Dist Smoke Test (apps/web/server/dist/index.js)', () => {
+  beforeAll(() => {
+    if (!fs.existsSync(distEntry)) {
+      execSync('pnpm --filter @corvus/app-web-server build', {
+        cwd: path.resolve(currentDir, '../../..'),
+        stdio: 'inherit',
+      })
+    }
+  })
   it('khởi động node dist/index.js, phục vụ /rpc và /ws, rồi shutdown sạch bằng SIGTERM', async () => {
     const port = 8091
     const serverProc = spawn('node', [distEntry], {

@@ -42,11 +42,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
+      - name: Build
+        run: pnpm build
+
+      - name: Unit tests & Smoke tests
         run: pnpm test
 
       - name: Contract integrity (rpc-contract.md §3 · ADR-0010)
         run: pnpm check:contract
-
-      - name: Build
-        run: pnpm build
