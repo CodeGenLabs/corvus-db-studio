@@ -107,6 +107,53 @@ export class MysqlIntrospector implements Introspector {
     }
 
     try {
+      if (opts.kind === 'procedure' || opts.kind === 'function') {
+        const [rows] = await this.pool.query<RowDataPacket[]>(
+          `SELECT ROUTINE_NAME AS name, ROUTINE_TYPE AS kind, ROUTINE_COMMENT AS comment
+           FROM information_schema.ROUTINES
+           WHERE ROUTINE_SCHEMA = ? AND ROUTINE_TYPE = ?
+           ORDER BY ROUTINE_NAME`,
+          [targetDb, opts.kind.toUpperCase()],
+        )
+        return rows.map((r) => ({
+          name: String(r.name),
+          kind: String(r.kind).toLowerCase(),
+        }))
+      }
+
+      if (opts.kind === 'trigger') {
+        const [rows] = await this.pool.query<RowDataPacket[]>(
+          `SELECT TRIGGER_NAME AS name
+           FROM information_schema.TRIGGERS
+           WHERE TRIGGER_SCHEMA = ?
+           ORDER BY TRIGGER_NAME`,
+          [targetDb],
+        )
+        return rows.map((r) => ({ name: String(r.name), kind: 'trigger' }))
+      }
+
+      if (opts.kind === 'event') {
+        const [rows] = await this.pool.query<RowDataPacket[]>(
+          `SELECT EVENT_NAME AS name
+           FROM information_schema.EVENTS
+           WHERE EVENT_SCHEMA = ?
+           ORDER BY EVENT_NAME`,
+          [targetDb],
+        )
+        return rows.map((r) => ({ name: String(r.name), kind: 'event' }))
+      }
+
+      if (opts.kind === 'index') {
+        const [rows] = await this.pool.query<RowDataPacket[]>(
+          `SELECT DISTINCT INDEX_NAME AS name
+           FROM information_schema.STATISTICS
+           WHERE TABLE_SCHEMA = ?
+           ORDER BY INDEX_NAME`,
+          [targetDb],
+        )
+        return rows.map((r) => ({ name: String(r.name), kind: 'index' }))
+      }
+
       const [rows] = await this.pool.query<TableRow[]>(
         `SELECT TABLE_NAME AS name,
                 TABLE_TYPE AS table_type,

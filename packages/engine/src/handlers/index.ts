@@ -149,6 +149,47 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
     return conn.introspect.listSchemas(p.database)
   })
 
+  // ── introspect.routineMeta ─────────────────────────────────────────────────
+  router.registerUnary('introspect.routineMeta', async (params, ctx) => {
+    const p = params as { connectionId: string; database?: string; schema?: string; name: string }
+    const conn = await resolveConnection(deps, p.connectionId, ctx.actor.id)
+    let ddl = ''
+    try {
+      ddl = await conn.introspect.getDdl({
+        database: p.database,
+        schema: p.schema,
+        name: p.name,
+        kind: 'function',
+      })
+    } catch {
+      ddl = `-- Không tìm thấy định nghĩa cho ${p.name}`
+    }
+    return {
+      name: p.name,
+      params: [],
+      body: ddl,
+    }
+  })
+
+  // ── introspect.ddl ─────────────────────────────────────────────────────────
+  router.registerUnary('introspect.ddl', async (params, ctx) => {
+    const p = params as {
+      connectionId: string
+      database?: string
+      schema?: string
+      name: string
+      kind: string
+    }
+    const conn = await resolveConnection(deps, p.connectionId, ctx.actor.id)
+    const ddl = await conn.introspect.getDdl({
+      database: p.database,
+      schema: p.schema,
+      name: p.name,
+      kind: p.kind,
+    })
+    return { ddl }
+  })
+
   // ── query.execute (STREAM) ─────────────────────────────────────────────────
   // Handler stream đầu tiên của hệ thống. `yield*` đi thẳng vào cursor của driver: engine
   // KHÔNG gom chunk lại, không đếm, không đệm — đó là điều kiện để `SELECT *` trên bảng

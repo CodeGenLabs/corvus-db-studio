@@ -3,24 +3,29 @@ export interface HierarchyCapabilities {
   hasSchemas: boolean
 }
 
-export interface ObjectCapabilities {
-  table: boolean
-  view: boolean
-  materializedView: boolean
-  procedure: boolean
-  function: boolean
-  package: boolean
-  trigger: boolean
-  sequence: boolean
-  index: boolean
-  domain: boolean
-  type: boolean
-  event: boolean
-  collection: boolean
-  keyspace: boolean
-}
+export const OBJECT_KINDS = [
+  'table',
+  'view',
+  'materializedView',
+  'procedure',
+  'function',
+  'package',
+  'trigger',
+  'sequence',
+  'index',
+  'domain',
+  'type',
+  'event',
+  'collection',
+  'keyspace',
+] as const
+
+export type ObjectKind = (typeof OBJECT_KINDS)[number]
+
+export type ObjectCapabilities = Record<ObjectKind, boolean>
 
 export interface SqlCapabilities {
+  supported?: boolean
   parameterStyle: 'dollar' | 'question' | 'at' | 'colon'
   identifierQuote: '"' | '`' | '[]'
   limitSyntax: 'limit-offset' | 'offset-fetch' | 'rownum'

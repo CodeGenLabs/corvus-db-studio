@@ -11,7 +11,9 @@ import type { ServerVersion } from '@corvus/driver-core'
  */
 export const SQLITE_CAPABILITIES: CapabilitySet = {
   hierarchy: {
-    hasCatalogs: false,
+    // ODQ-1: Đặt true vì listDatabases() trả về 'main' cùng các tệp đã ATTACH.
+    // Nếu đặt false thì các database attach không có đường nào tới được trong cây điều hướng.
+    hasCatalogs: true,
     // SQLite không có schema. `ATTACH` cho ra nhiều "database" nhưng đó là tầng catalog
     // theo cách UI hiểu, không phải schema.
     hasSchemas: false,

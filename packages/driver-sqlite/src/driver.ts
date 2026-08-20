@@ -106,8 +106,9 @@ export class SqliteConnection implements DriverConnection {
     const startedAt = Date.now()
     let iterator: Iterator<unknown[]> | undefined
 
+    const sql = req.sql ?? (typeof req.command === 'string' ? req.command : '')
     try {
-      const stmt = this.db.prepare(req.sql)
+      const stmt = this.db.prepare(sql)
 
       // Câu lệnh không trả dòng (INSERT/UPDATE/DDL): chạy một lần, báo affectedRows.
       if (!stmt.reader) {

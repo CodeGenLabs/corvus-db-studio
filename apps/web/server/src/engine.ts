@@ -3,6 +3,10 @@ import { registerDriver, driverRegistry } from '@corvus/driver-core'
 import { postgresDriver } from '@corvus/driver-postgres'
 import { sqliteDriver } from '@corvus/driver-sqlite'
 import { mysqlDriver } from '@corvus/driver-mysql'
+import { mssqlDriver } from '@corvus/driver-mssql'
+import { oracleDriver } from '@corvus/driver-oracle'
+import { mongoDriver } from '@corvus/driver-mongodb'
+import { redisDriver } from '@corvus/driver-redis'
 import {
   EngineRouter,
   SessionManager,
@@ -48,11 +52,12 @@ export function buildEngine(): BuiltEngine {
   const ownerId = workspace.storage.ensureLocalOwner()
 
   if (!driverRegistry.has('postgres')) registerDriver(postgresDriver)
-  // SQLite: driver thật thứ hai (T-024b). Đăng ký ở đây thì `connection.test` và toàn bộ
-  // introspect/query hoạt động cho tệp .db mà KHÔNG cần thêm handler nào — đó là điểm kiểm
-  // chứng rằng tầng handler thật sự trung lập engine (ADR-0003).
   if (!driverRegistry.has('sqlite')) registerDriver(sqliteDriver)
   if (!driverRegistry.has('mysql')) registerDriver(mysqlDriver)
+  if (!driverRegistry.has('mssql')) registerDriver(mssqlDriver)
+  if (!driverRegistry.has('oracle')) registerDriver(oracleDriver)
+  if (!driverRegistry.has('mongodb')) registerDriver(mongoDriver)
+  if (!driverRegistry.has('redis')) registerDriver(redisDriver)
 
   // PHẢI truyền db: không có nó EnvelopeVault chỉ giữ trong RAM và secret mất sau mỗi
   // lần restart — hỏng âm thầm, người dùng phải nhập lại mật khẩu mà không hiểu vì sao.

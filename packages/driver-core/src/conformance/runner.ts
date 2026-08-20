@@ -77,8 +77,8 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
 
     it('phơi serverVersion đã parse đúng', async () => {
       const v = await withConnection(async (c) => c.serverVersion)
-      expect(v.raw).toBeTruthy()
-      expect(v.major).toBeGreaterThan(0)
+      expect(v?.raw).toBeTruthy()
+      expect(v?.major).toBeGreaterThan(0)
     })
 
     it('capabilities của connection được thu hẹp theo server thật', async () => {
@@ -147,6 +147,18 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     it('listObjects lọc theo kind', async () => {
       const views = await withConnection((c) => c.introspect.listObjects({ ...scope, kind: 'view' }))
       expect(views.map((v) => v.name)).toEqual(['city_view'])
+    })
+
+    it('mọi kind khai true trong capabilities.objects đều liệt kê được qua listObjects (Bất biến IV-A)', async () => {
+      await withConnection(async (c) => {
+        const caps = c.capabilities.objects
+        for (const [kind, supported] of Object.entries(caps)) {
+          if (supported) {
+            const list = await c.introspect.listObjects({ ...scope, kind })
+            expect(Array.isArray(list)).toBe(true)
+          }
+        }
+      })
     })
 
     it('getTableMeta trả đủ cột, PK, index và FK', async () => {

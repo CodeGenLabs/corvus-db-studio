@@ -16,6 +16,7 @@ allowBuilds:
   electron: true
   esbuild: true
   better-sqlite3: true
+  oracledb: false
 
 onlyBuiltDependencies:
   - esbuild

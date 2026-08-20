@@ -23,14 +23,25 @@ import { ErView } from './views/ErView'
 import { JobsView } from './views/JobsView'
 import { ObjectsView } from './views/ObjectsView'
 import { SqlView } from './views/SqlView'
+import { DefinitionView } from './views/DefinitionView'
+import { MonitorView } from './views/MonitorView'
+import { WelcomeView } from './views/WelcomeView'
 
 function ActiveView() {
   const { s } = useStudio()
+
+  if (s.tabs.length === 0 && !s.selTable && !s.selNode) {
+    return <WelcomeView />
+  }
+
   switch (s.view) {
     case 'objects':
+    case 'objectList':
       return <ObjectsView />
     case 'data':
       return <DataView />
+    case 'definition':
+      return <DefinitionView />
     case 'sql':
       return <SqlView />
     case 'compare':
@@ -43,6 +54,10 @@ function ActiveView() {
       return <BackupView />
     case 'jobs':
       return <JobsView />
+    case 'monitor':
+      return <MonitorView />
+    default:
+      return <WelcomeView />
   }
 }
 

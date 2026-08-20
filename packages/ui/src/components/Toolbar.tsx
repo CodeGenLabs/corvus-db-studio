@@ -11,18 +11,40 @@ interface Item {
 }
 
 export function Toolbar() {
-  const { s, set, t, setView } = useStudio()
+  const { s, set, t, setView, openTab } = useStudio()
   const view = s.view
 
   const items: Item[] = [
     { key: 'conn', label: t.tbConnection, d: ['M7 3v5M13 3v5', 'M4 8h12v3a6 6 0 01-12 0z', 'M10 17v-3'], onClick: () => set({ showConn: true }) },
-    { key: 'newq', label: t.tbNewQuery, d: ['M5 3h7l3 3v11H5z', 'M8 10h5M8 13h4'], onClick: setView('sql') },
+    {
+      key: 'newq',
+      label: t.tbNewQuery,
+      d: ['M5 3h7l3 3v11H5z', 'M8 10h5M8 13h4'],
+      onClick: () => {
+        const sqlCount = s.tabs.filter((t) => t.identity.type === 'tool' && t.identity.toolKind === 'sql').length
+        openTab({ type: 'tool', toolKind: 'sql', seq: sqlCount + 1 })
+      },
+    },
     { key: 'table', label: t.tbTable, d: ['M3 4h14v12H3z', 'M3 8h14M8 8v8M12 8v8'], onClick: setView('objects'), activeFor: 'objects' },
     { key: 'view', label: t.tbView, d: ['M2 10s3-4 8-4 8 4 8 4-3 4-8 4-8-4-8-4z', 'M10 8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z'], onClick: setView('objects') },
     { key: 'fn', label: t.tbFunction, d: ['M12 4h-1a2 2 0 00-2 2v8a2 2 0 01-2 2H6', 'M6 10h6'], onClick: setView('objects') },
-    { key: 'user', label: t.tbUser, d: ['M10 4a3 3 0 100 6 3 3 0 000-6z', 'M4 17c0-3 2.7-5 6-5s6 2 6 5'], onClick: setView('objects') },
-    { key: 'sql', label: t.tbQuery, d: ['M4 5h12v10H4z', 'M6.5 8l2 2-2 2M10.5 12h3'], onClick: setView('sql'), activeFor: 'sql' },
-    { key: 'bk', label: t.tbBackup, d: ['M10 3v8M7 8l3 3 3-3', 'M4 14v3h12v-3'], onClick: setView('backup') },
+    { key: 'user', label: t.tbUser, d: ['M10 4a3 3 0 100 6 3 3 0 000-6z', 'M4 17c0-3 2.7-5 6-5s6 2 6 5'], onClick: () => set({ dialog: 'users' }) },
+    {
+      key: 'sql',
+      label: t.tbQuery,
+      d: ['M4 5h12v10H4z', 'M6.5 8l2 2-2 2M10.5 12h3'],
+      onClick: () => {
+        const sqlCount = s.tabs.filter((t) => t.identity.type === 'tool' && t.identity.toolKind === 'sql').length
+        openTab({ type: 'tool', toolKind: 'sql', seq: sqlCount + 1 })
+      },
+      activeFor: 'sql',
+    },
+    {
+      key: 'bk',
+      label: t.tbBackup,
+      d: ['M10 3v8M7 8l3 3 3-3', 'M4 14v3h12v-3'],
+      onClick: () => openTab({ type: 'tool', toolKind: 'backup', seq: 1 }),
+    },
     {
       key: 'auto',
       label: t.tbAutomation,
@@ -30,11 +52,17 @@ export function Toolbar() {
         'M10 7.2a2.8 2.8 0 100 5.6 2.8 2.8 0 000-5.6z',
         'M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M15.3 4.7l-1.4 1.4M6.1 13.9l-1.4 1.4',
       ],
-      onClick: setView('jobs'),
+      onClick: () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 }),
       activeFor: 'jobs',
     },
     { key: 'model', label: t.tbModel, d: ['M3 4h5v4H3zM12 12h5v4h-5z', 'M5.5 8v4h9'], onClick: setView('er'), activeFor: 'er' },
-    { key: 'cmp', label: t.tbCompare, d: ['M3 7h9l-2.5-2.5M17 13H8l2.5 2.5'], onClick: setView('compare'), activeFor: 'compare' },
+    {
+      key: 'cmp',
+      label: t.tbCompare,
+      d: ['M3 7h9l-2.5-2.5M17 13H8l2.5 2.5'],
+      onClick: () => openTab({ type: 'tool', toolKind: 'compare', seq: 1 }),
+      activeFor: 'compare',
+    },
   ]
 
   return (

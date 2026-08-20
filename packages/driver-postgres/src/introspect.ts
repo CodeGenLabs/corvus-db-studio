@@ -20,6 +20,7 @@ const KIND_TO_RELKIND: Record<string, string[]> = {
   view: ['v'],
   materializedView: ['m'],
   sequence: ['S'],
+  index: ['i'],
 }
 
 export class PostgresIntrospector implements Introspector {
@@ -44,7 +45,7 @@ export class PostgresIntrospector implements Introspector {
   }
 
   /**
-   * Liệt kê object trong một schema bằng **một truy vấn duy nhất**.
+   * Liệt kê object trong một schema bằng **một truy vấn duy nhất** cho mỗi loại đối tượng.
    *
    * Chống N+1 (SPEC-02 FR-02 §6): tuyệt đối không gọi `getTableMeta` cho từng bảng để
    * dựng danh sách. `reltuples` là số dòng ƯỚC LƯỢNG do planner giữ — rẻ, đúng mục đích
@@ -54,6 +55,65 @@ export class PostgresIntrospector implements Introspector {
     Array<{ name: string; kind: string; rows?: string; size?: string; modified?: string; comment?: string }>
   > {
     const schema = opts.schema ?? 'public'
+
+    if (opts.kind === 'procedure' || opts.kind === 'function') {
+      const { rows } = await this.pool.query<{ proname: string; kind: string; comment: string | null }>(
+        `SELECT p.proname,
+                CASE WHEN p.prokind = 'p' THEN 'procedure' ELSE 'function' END AS kind,
+                obj_description(p.oid, 'pg_proc') AS comment
+           FROM pg_proc p
+           JOIN pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname = $1
+            AND (($2 = 'procedure' AND p.prokind = 'p') OR ($2 = 'function' AND p.prokind <> 'p'))
+          ORDER BY p.proname`,
+        [schema, opts.kind],
+      )
+      return rows.map((r) => ({
+        name: r.proname,
+        kind: r.kind,
+        comment: r.comment ?? undefined,
+      }))
+    }
+
+    if (opts.kind === 'trigger') {
+      const { rows } = await this.pool.query<{ tgname: string; comment: string | null }>(
+        `SELECT DISTINCT t.tgname,
+                obj_description(t.oid, 'pg_trigger') AS comment
+           FROM pg_trigger t
+           JOIN pg_class c ON c.oid = t.tgrelid
+           JOIN pg_namespace n ON n.oid = c.relnamespace
+          WHERE n.nspname = $1
+            AND NOT t.tgisinternal
+          ORDER BY t.tgname`,
+        [schema],
+      )
+      return rows.map((r) => ({
+        name: r.tgname,
+        kind: 'trigger',
+        comment: r.comment ?? undefined,
+      }))
+    }
+
+    if (opts.kind === 'domain' || opts.kind === 'type') {
+      const { rows } = await this.pool.query<{ typname: string; kind: string; comment: string | null }>(
+        `SELECT t.typname,
+                CASE WHEN t.typtype = 'd' THEN 'domain' ELSE 'type' END AS kind,
+                obj_description(t.oid, 'pg_type') AS comment
+           FROM pg_type t
+           JOIN pg_namespace n ON n.oid = t.typnamespace
+          WHERE n.nspname = $1
+            AND (($2 = 'domain' AND t.typtype = 'd') OR ($2 = 'type' AND t.typtype = 'e'))
+            AND NOT EXISTS (SELECT 1 FROM pg_class c WHERE c.oid = t.typrelid AND c.relkind != 'c')
+          ORDER BY t.typname`,
+        [schema, opts.kind],
+      )
+      return rows.map((r) => ({
+        name: r.typname,
+        kind: r.kind,
+        comment: r.comment ?? undefined,
+      }))
+    }
+
     const relkinds = opts.kind ? (KIND_TO_RELKIND[opts.kind] ?? [opts.kind]) : Object.keys(RELKIND).filter((k) => k !== 'i')
 
     const { rows } = await this.pool.query<{
