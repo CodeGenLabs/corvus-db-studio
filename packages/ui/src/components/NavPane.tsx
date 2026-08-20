@@ -1,25 +1,80 @@
+import { useRef } from 'react'
 import { dbMark, ICON_COLOR, ICONS } from '../data/icons'
 import { SearchIcon } from './SearchIcon'
 import { useClient, useStudio } from '../store/studio'
-import { useNavTree, type NavKind, type NavRow } from './useNavTree'
+import { useNavTree, type NavRow } from './useNavTree'
+import { CONTENT_FOR_KIND } from '../navigation/contentForKind'
 
-/** Icon key theo loại node của cây THẬT (khác `iconKey` cũ vốn dựa trên nhãn folder tĩnh). */
-function iconFor(kind: NavKind, label: string): string {
-  if (kind === 'folder') return label === 'Views' ? 'view' : 'table'
+function iconFor(kind: string, label: string): string {
+  if (kind === 'folder') return label.toLowerCase().includes('view') ? 'view' : 'table'
   if (kind === 'schema') return 'folder'
   if (kind === 'view' || kind === 'materializedView') return 'view'
   if (kind === 'sequence') return 'query'
+  if (kind === 'function' || kind === 'procedure') return 'function'
+  if (kind === 'trigger') return 'trigger'
   return kind
 }
 
-function colorFor(kind: NavKind, label: string): string {
+function colorFor(kind: string, label: string): string {
   return ICON_COLOR[iconFor(kind, label)] ?? 'var(--text3)'
 }
 
 export function NavPane() {
-  const { s, set, t, rowH, navOpen, beginDrag } = useStudio()
+  const { s, set, t, rowH, navOpen, beginDrag, openTab } = useStudio()
   const client = useClient()
-  const tree = useNavTree(client, s.open)
+  const tree = useNavTree(client, s.open, t as unknown as Record<string, string>)
+  const treeContainerRef = useRef<HTMLDivElement>(null)
+
+  const handleRowClick = (row: NavRow) => {
+    set((prev) => ({
+      selNode: row.path,
+      open: row.expandable
+        ? { ...prev.open, [row.path]: !prev.open[row.path] }
+        : prev.open,
+    }))
+
+    if (row.level === 'object' && row.ref.object) {
+      const objectKind = row.objectKind ?? 'table'
+      const contentKind = CONTENT_FOR_KIND[objectKind] ?? 'data'
+      openTab({
+        type: 'object',
+        contentKind,
+        connectionId: row.ref.connectionId,
+        database: row.ref.database,
+        namespace: row.ref.namespace,
+        objectKind,
+        name: row.ref.object,
+      })
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const row = tree.rows[index]
+    if (!row) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      const next = treeContainerRef.current?.querySelector<HTMLElement>(`[data-nav-index="${index + 1}"]`)
+      next?.focus()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      const prev = treeContainerRef.current?.querySelector<HTMLElement>(`[data-nav-index="${index - 1}"]`)
+      prev?.focus()
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      if (row.expandable && !row.open) {
+        set((prev) => ({ open: { ...prev.open, [row.path]: true } }))
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      if (row.expandable && row.open) {
+        set((prev) => ({ open: { ...prev.open, [row.path]: false } }))
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      handleRowClick(row)
+    }
+  }
 
   return (
     <>
@@ -35,6 +90,7 @@ export function NavPane() {
           background: 'var(--pane2)',
         }}
       >
+        {/* Header */}
         <div
           style={{
             height: 26,
@@ -65,42 +121,55 @@ export function NavPane() {
               <path d="M2.2 3.4h11.6M2.2 8h11.6M2.2 12.6h11.6M5.2 1.9v12.2" />
             </svg>
           </span>
-          <span style={{ fontFamily: 'var(--mono)', textTransform: 'none', letterSpacing: 0 }}>{tree.connectionCount}</span>
+          <span style={{ fontFamily: 'var(--mono)', textTransform: 'none', letterSpacing: 0 }}>
+            {tree.connectionCount}
+          </span>
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: '4px 0' }}>
+        {/* Tree Container */}
+        <div
+          ref={treeContainerRef}
+          role="tree"
+          aria-label={t.navPane}
+          style={{ flex: 1, overflow: 'auto', padding: '4px 0', outline: 'none' }}
+        >
           {tree.isLoading && <NavMessage text={t.loading} />}
           {tree.error && <NavMessage text={tree.error} tone="error" />}
+
           {!tree.isLoading && !tree.error && tree.rows.length === 0 && (
-            <NavMessage text={t.navEmpty} />
+            <div style={{ padding: '16px 12px', textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8 }}>{t.navEmpty}</div>
+              <button
+                onClick={() => set({ showConn: true })}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  borderRadius: 4,
+                  border: '1px solid var(--accent)',
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                + {t.newConnection}
+              </button>
+            </div>
           )}
 
-          {tree.rows.map((row) => (
+          {tree.rows.map((row, index) => (
             <NavRowView
               key={row.path}
               row={row}
+              index={index}
               rowH={rowH}
               selected={s.selNode === row.path}
-              onToggle={() =>
-                set((prev) => ({
-                  selNode: row.path,
-                  // Bảng được chọn thì mở luôn view dữ liệu; folder/schema thì về danh sách object.
-                  selTable: row.ref.object ?? prev.selTable,
-                  view:
-                    row.kind === 'table' || row.kind === 'view'
-                      ? 'data'
-                      : row.kind === 'folder' || row.kind === 'schema'
-                        ? 'objects'
-                        : prev.view,
-                  open: row.expandable
-                    ? { ...prev.open, [row.path]: !prev.open[row.path] }
-                    : prev.open,
-                }))
-              }
+              onToggle={() => handleRowClick(row)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
             />
           ))}
         </div>
 
+        {/* Filter bar */}
         <div
           style={{
             height: 28,
@@ -150,12 +219,14 @@ function NavMessage({ text, tone }: { text: string; tone?: 'error' }) {
 
 interface NavRowViewProps {
   row: NavRow
+  index: number
   rowH: number
   selected: boolean
   onToggle: () => void
+  onKeyDown: (e: React.KeyboardEvent) => void
 }
 
-function NavRowView({ row, rowH, selected, onToggle }: NavRowViewProps) {
+function NavRowView({ row, index, rowH, selected, onToggle, onKeyDown }: NavRowViewProps) {
   const mark = row.kind === 'conn' ? dbMark(row.meta) : null
   const iconKey = iconFor(row.kind, row.label)
 
@@ -163,7 +234,14 @@ function NavRowView({ row, rowH, selected, onToggle }: NavRowViewProps) {
     <div
       className="hv-pane2"
       data-testid={`nav-row-${row.path}`}
+      data-nav-index={index}
+      role="treeitem"
+      tabIndex={0}
+      aria-expanded={row.expandable ? row.open : undefined}
+      aria-level={row.depth + 1}
+      aria-selected={selected}
       onClick={onToggle}
+      onKeyDown={onKeyDown}
       title={row.error ?? row.path}
       style={{
         display: 'flex',
@@ -174,6 +252,7 @@ function NavRowView({ row, rowH, selected, onToggle }: NavRowViewProps) {
         cursor: 'pointer',
         background: selected ? 'var(--sel)' : 'transparent',
         borderLeft: '2px solid ' + (selected ? 'var(--accent)' : 'transparent'),
+        outline: 'none',
       }}
     >
       <span

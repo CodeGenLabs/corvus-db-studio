@@ -13,6 +13,7 @@
   "dependencies": {
     "@corvus/contract": "workspace:*",
     "@corvus/driver-core": "workspace:*",
+    "@corvus/driver-mssql": "workspace:*",
     "@corvus/driver-mysql": "workspace:*",
     "@corvus/driver-postgres": "workspace:*",
     "@corvus/driver-sqlite": "workspace:*",

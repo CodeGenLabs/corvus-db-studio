@@ -1,6 +1,6 @@
 import type { CellValue, DriverId, ErrorCode } from '@corvus/contract'
 import type { ResolvedProfile } from '../types'
-import { CONFORMANCE_SCHEMA, MYSQL_SETUP_SQL, POSTGRES_SETUP_SQL, SQLITE_SETUP_SQL } from './fixture'
+import { CONFORMANCE_SCHEMA, MYSQL_SETUP_SQL, POSTGRES_SETUP_SQL, SQLITE_SETUP_SQL, MSSQL_SETUP_SQL } from './fixture'
 
 /** Nhóm test của conformance suite — driver-spi.md §8. */
 export type ConformanceGroup = 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7' | 'C8' | 'C9'
@@ -344,6 +344,81 @@ export const MYSQL_CONFORMANCE: ConformanceDialect = {
     { code: 'FOREIGN_KEY_VIOLATION', label: 'fk constraint violation', sql: "INSERT INTO city (country_id, city) VALUES (9999, 'City')" },
     { code: 'INVALID_INPUT', label: 'not null violation', sql: 'INSERT INTO country (country) VALUES (NULL)' },
     { code: 'DUPLICATE_KEY', label: 'duplicate table', sql: 'CREATE TABLE country (id INT)' },
+  ],
+
+  // ── C9 Resource ────────────────────────────────────────────────────────────
+  resourceStreamRows: 100_000,
+}
+
+export const MSSQL_CONFORMANCE: ConformanceDialect = {
+  id: 'mssql',
+  setupSql: MSSQL_SETUP_SQL,
+  schema: CONFORMANCE_SCHEMA,
+  qualify: (name) => `${CONFORMANCE_SCHEMA}.[${name}]`,
+  hasDatabases: true,
+  hasSchemas: true,
+  supportsColumnComment: true,
+  badProfiles: [
+    {
+      label: 'sai mật khẩu',
+      make: (base) => ({ ...base, password: 'mat-khau-sai-chac-chan-khong-dung' }),
+    },
+    {
+      label: 'host không tồn tại',
+      make: (base) => ({ ...base, host: 'khong-ton-tai.corvus.invalid', port: 1433 }),
+      timeoutMs: 30_000,
+    },
+  ],
+  seriesSql: (n) =>
+    `WITH s(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM s WHERE n < ${n}) SELECT n FROM s OPTION (MAXRECURSION 0)`,
+  echoParamSql: 'SELECT CAST(@p1 AS NVARCHAR(MAX)) AS v',
+  syntaxErrorSql: 'SELEKT 1',
+  viewDdlContains: 'VIEW',
+  probe: {
+    big: { k: 'big', v: '9223372036854775807' },
+    numeric: { k: 'big', contains: '12345678901234567890' },
+    bool: { k: 'bool', v: true },
+    json: 'json',
+    bytes: 'bytes',
+    ts: 'date',
+  },
+
+  // ── C4 Types ───────────────────────────────────────────────────────────────
+  typeRoundTripCases: [
+    { name: 'bigint max (+2^63-1)', sql: 'SELECT CAST(9223372036854775807 AS BIGINT) AS v', expected: { k: 'big', v: '9223372036854775807' } },
+    { name: 'bigint min (-2^63)', sql: 'SELECT CAST(-9223372036854775808 AS BIGINT) AS v', expected: { k: 'big', v: '-9223372036854775808' } },
+    { name: 'decimal high precision', sql: "SELECT CAST('12345678901234567890.12345678901234567890' AS DECIMAL(38,20)) AS v", expected: { k: 'big', v: '12345678901234567890.12345678901234567890' } },
+    { name: 'float / real', sql: 'SELECT CAST(3.141592653589793 AS FLOAT) AS v', expected: { k: 'num', v: 3.141592653589793 } },
+    { name: 'text unicode & emoji', sql: "SELECT N'Xin chào thế giới 🌍 🚀' AS v", expected: { k: 'str', v: 'Xin chào thế giới 🌍 🚀' } },
+    { name: 'empty string', sql: "SELECT N'' AS v", expected: { k: 'str', v: '' } },
+    { name: 'null value', sql: 'SELECT NULL AS v', expected: { k: 'null' } },
+    { name: 'boolean bit', sql: 'SELECT CAST(1 AS BIT) AS v', expected: { k: 'bool', v: true } },
+    { name: 'varbinary with null byte', sql: 'SELECT 0x00deadbeef00 AS v', expected: { k: 'bytes', v: '00deadbeef00' } },
+  ],
+
+  // ── C6 Cancel ──────────────────────────────────────────────────────────────
+  longRunningSql: '/* corvus-mssql-cancel-probe */ WAITFOR DELAY \'00:00:10\'',
+  countActiveQueriesSql: (pattern: string) => ({
+    sql: `SELECT CAST(COUNT(*) AS NVARCHAR(20)) AS cnt
+            FROM sys.dm_exec_requests r
+           CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+           WHERE t.text LIKE @p1 AND r.session_id <> @@SPID`,
+    values: [pattern],
+  }),
+
+  // ── C7 DDL ─────────────────────────────────────────────────────────────────
+  recreateDdlSql: (originalDdl: string, targetName: string) => {
+    return originalDdl.replace(/CREATE TABLE [^ (]+/i, `CREATE TABLE ${CONFORMANCE_SCHEMA}.[${targetName}]`)
+  },
+
+  // ── C8 Errors ──────────────────────────────────────────────────────────────
+  errorCases: [
+    { code: 'SYNTAX_ERROR', label: 'syntax error', sql: 'SELEKT 1' },
+    { code: 'TABLE_NOT_FOUND', label: 'table not found', sql: 'SELECT * FROM corvus_conf.table_khong_ton_tai_123' },
+    { code: 'COLUMN_NOT_FOUND', label: 'column not found', sql: 'SELECT cot_khong_ton_tai FROM corvus_conf.country' },
+    { code: 'DUPLICATE_KEY', label: 'unique constraint violation', sql: "SET IDENTITY_INSERT corvus_conf.country ON; INSERT INTO corvus_conf.country (country_id, country) VALUES (1, N'Việt Nam'); SET IDENTITY_INSERT corvus_conf.country OFF;" },
+    { code: 'FOREIGN_KEY_VIOLATION', label: 'fk constraint violation', sql: "INSERT INTO corvus_conf.city (country_id, city) VALUES (9999, N'City')" },
+    { code: 'INVALID_INPUT', label: 'not null violation', sql: 'INSERT INTO corvus_conf.country (country) VALUES (NULL)' },
   ],
 
   // ── C9 Resource ────────────────────────────────────────────────────────────

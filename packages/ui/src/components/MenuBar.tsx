@@ -5,7 +5,7 @@ import type { MenuKey } from '../types'
 type MenuEntry = '-' | [label: string, hint: string, action: (() => void) | null, checked?: boolean]
 
 export function MenuBar() {
-  const { s, set, t, tr } = useStudio()
+  const { s, set, t, tr, openTab, closeTab } = useStudio()
   const view = s.view
 
   const menus: { key: MenuKey; label: string; items: MenuEntry[] }[] = [
@@ -14,14 +14,27 @@ export function MenuBar() {
       label: t.mFile,
       items: [
         [tr('Kết nối mới…', 'New connection…'), '⌘⇧N', () => set({ showConn: true })],
-        [tr('Truy vấn mới', 'New query'), '⌘N', () => set({ view: 'sql' })],
+        [
+          tr('Truy vấn mới', 'New query'),
+          '⌘N',
+          () => {
+            const sqlCount = s.tabs.filter((t) => t.identity.type === 'tool' && t.identity.toolKind === 'sql').length
+            openTab({ type: 'tool', toolKind: 'sql', seq: sqlCount + 1 })
+          },
+        ],
         [tr('Mở gần đây', 'Open recent'), '▸', null],
         '-',
-        [tr('Nhập dữ liệu…', 'Import wizard…'), '', () => set({ view: 'jobs' })],
-        [tr('Xuất dữ liệu…', 'Export wizard…'), '', () => set({ view: 'jobs' })],
+        [tr('Nhập dữ liệu…', 'Import wizard…'), '', () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 })],
+        [tr('Xuất dữ liệu…', 'Export wizard…'), '', () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 })],
         '-',
         [tr('In…', 'Print…'), '⌘P', null],
-        [tr('Đóng tab', 'Close tab'), '⌘W', null],
+        [
+          tr('Đóng tab', 'Close tab'),
+          '⌘W',
+          () => {
+            if (s.activeTabId) closeTab(s.activeTabId)
+          },
+        ],
       ],
     },
     {
@@ -59,9 +72,9 @@ export function MenuBar() {
       key: 'tools',
       label: t.mTools,
       items: [
-        [t.captureSnap + '…', '⌘⇧C', () => set({ view: 'compare' })],
-        [tr('Sao lưu…', 'Backup…'), '', () => set({ view: 'backup' })],
-        [t.tbAutomation + '…', '', () => set({ view: 'jobs' })],
+        [t.captureSnap + '…', '⌘⇧C', () => openTab({ type: 'tool', toolKind: 'compare', seq: 1 })],
+        [tr('Sao lưu…', 'Backup…'), '', () => openTab({ type: 'tool', toolKind: 'backup', seq: 1 })],
+        [t.tbAutomation + '…', '', () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 })],
         '-',
         [tr('Bảng lệnh', 'Command palette'), '⌘K', () => set({ showPalette: true })],
         '-',

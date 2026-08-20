@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { defineUnary } from '../define'
+import { OBJECT_KINDS } from '../capabilities'
 
 const ColumnMetaSchema = z.object({
   name: z.string(),
@@ -63,7 +64,7 @@ export const introspectObjects = defineUnary({
     connectionId: z.string(),
     database: z.string().optional(),
     schema: z.string().optional(),
-    kind: z.enum(['table', 'view', 'function', 'procedure', 'trigger']).optional(),
+    kind: z.enum(OBJECT_KINDS).optional(),
   }),
   result: z.array(
     z.object({

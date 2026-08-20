@@ -3,6 +3,7 @@ import { registerDriver, driverRegistry } from '@corvus/driver-core'
 import { postgresDriver } from '@corvus/driver-postgres'
 import { sqliteDriver } from '@corvus/driver-sqlite'
 import { mysqlDriver } from '@corvus/driver-mysql'
+import { mssqlDriver } from '@corvus/driver-mssql'
 import {
   EngineRouter,
   SessionManager,
@@ -53,6 +54,7 @@ export function buildEngine(): BuiltEngine {
   // chứng rằng tầng handler thật sự trung lập engine (ADR-0003).
   if (!driverRegistry.has('sqlite')) registerDriver(sqliteDriver)
   if (!driverRegistry.has('mysql')) registerDriver(mysqlDriver)
+  if (!driverRegistry.has('mssql')) registerDriver(mssqlDriver)
 
   // PHẢI truyền db: không có nó EnvelopeVault chỉ giữ trong RAM và secret mất sau mỗi
   // lần restart — hỏng âm thầm, người dùng phải nhập lại mật khẩu mà không hiểu vì sao.

@@ -17,6 +17,7 @@ import type {
 } from '@corvus/contract'
 import { createMockTransport } from '@corvus/transport-mock'
 import { createClient, type Client } from '@corvus/client'
+import type { Tab, TabIdentity } from '../tabs'
 import { useShellStore, type ShellState } from './shell'
 
 export type { ShellState, ShellState as StudioState }
@@ -48,6 +49,11 @@ export interface Studio {
   tr: (vi: string, en: string) => string
   setCfg: <K extends keyof Config>(key: K, value: Config[K]) => void
   setView: (v: View) => () => void
+  openTab: (identity: TabIdentity, options?: { title?: string }) => void
+  closeTab: (tabId: string) => void
+  focusTab: (tabId: string) => void
+  setTabDirty: (tabId: string, dirty: boolean) => void
+  activeTab: () => Tab | undefined
   rowH: number
   row: (extra?: CSSProperties) => CSSProperties
   beginDrag: (e: React.MouseEvent, pane: 'nav' | 'info') => void
@@ -109,6 +115,11 @@ export function useStudio(): Studio {
     rowH: store.rowH(),
     setCfg: store.setCfg,
     setView: store.setView,
+    openTab: store.openTab,
+    closeTab: store.closeTab,
+    focusTab: store.focusTab,
+    setTabDirty: store.setTabDirty,
+    activeTab: store.activeTab,
     row: store.row,
     beginDrag: store.beginDrag,
     cycleLang: store.cycleLang,

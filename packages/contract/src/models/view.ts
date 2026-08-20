@@ -1,4 +1,8 @@
-export type View = 'objects' | 'data' | 'sql' | 'design' | 'er' | 'compare' | 'backup' | 'jobs'
+export type ContentKind = 'objectList' | 'data' | 'design' | 'definition' | 'er' | 'objects'
+
+export type ToolKind = 'sql' | 'compare' | 'backup' | 'jobs' | 'monitor'
+
+export type View = ContentKind | ToolKind
 
 export type InfoTab = 'info' | 'ddl' | 'activity' | 'ai'
 

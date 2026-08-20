@@ -1,20 +1,64 @@
 import { useStudio } from '../store/studio'
-import type { View } from '../types'
+import type { Tab } from '../tabs'
+
+function colorForTab(tab: Tab): string {
+  if (tab.identity.type === 'object') {
+    switch (tab.identity.contentKind) {
+      case 'data':
+        return 'var(--amber, #f59e0b)'
+      case 'design':
+        return 'var(--accent, #3b82f6)'
+      case 'definition':
+        return 'var(--teal, #14b8a6)'
+      case 'er':
+        return 'var(--green, #10b981)'
+      case 'objectList':
+        return 'var(--purple, #8b5cf6)'
+      default:
+        return 'var(--accent, #3b82f6)'
+    }
+  }
+  switch (tab.identity.toolKind) {
+    case 'sql':
+      return 'var(--coral, #f97316)'
+    case 'compare':
+      return 'var(--red, #ef4444)'
+    case 'backup':
+      return 'var(--coral, #f97316)'
+    case 'jobs':
+      return 'var(--text3, #6b7280)'
+    case 'monitor':
+      return 'var(--green, #10b981)'
+    default:
+      return 'var(--accent, #3b82f6)'
+  }
+}
 
 export function TabStrip() {
-  const { s, t, tr, setView } = useStudio()
-  const view = s.view
+  const { s, focusTab, closeTab, openTab } = useStudio()
 
-  const tabs: { v: View; label: string; c: string }[] = [
-    { v: 'objects', label: t.tabObjects, c: 'var(--accent)' },
-    { v: 'data', label: s.selTable + ' @sakila', c: 'var(--amber)' },
-    { v: 'sql', label: t.tabSql, c: 'var(--coral)' },
-    { v: 'design', label: tr('Thiết kế: ', 'Design: ') + s.selTable, c: 'var(--accent)' },
-    { v: 'er', label: t.tabEr, c: 'var(--green)' },
-    { v: 'compare', label: t.tabCompare, c: 'var(--red)' },
-    { v: 'backup', label: t.tbBackup, c: 'var(--coral)' },
-    { v: 'jobs', label: t.tabJobs, c: 'var(--text3)' },
-  ]
+  const handleNewSqlTab = () => {
+    const existingSqlTabs = s.tabs.filter(
+      (t) => t.identity.type === 'tool' && t.identity.toolKind === 'sql',
+    )
+    const nextSeq = existingSqlTabs.length + 1
+    openTab({
+      type: 'tool',
+      toolKind: 'sql',
+      seq: nextSeq,
+    })
+  }
+
+  const handleClose = (e: React.MouseEvent, tab: Tab) => {
+    e.stopPropagation()
+    if (tab.dirty) {
+      const ok = window.confirm(
+        `Tab "${tab.title}" có thay đổi chưa lưu. Bạn có chắc muốn đóng không?`,
+      )
+      if (!ok) return
+    }
+    closeTab(tab.id)
+  }
 
   return (
     <div
@@ -28,19 +72,23 @@ export function TabStrip() {
         overflow: 'hidden',
       }}
     >
-      {tabs.map((d) => {
-        const active = view === d.v
+      {s.tabs.map((tab) => {
+        const active = s.activeTabId === tab.id
+        const color = colorForTab(tab)
+
         return (
           <div
-            key={d.v}
+            key={tab.id}
             className="hv-text"
-            onClick={setView(d.v)}
+            onClick={() => focusTab(tab.id)}
+            data-testid={`tab-${tab.id}`}
+            title={tab.title}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 6,
               padding: '0 9px',
-              maxWidth: 160,
+              maxWidth: 180,
               minWidth: 0,
               flexShrink: 1,
               cursor: 'pointer',
@@ -51,14 +99,48 @@ export function TabStrip() {
               boxShadow: active ? 'inset 0 2px 0 var(--accent)' : 'none',
             }}
           >
-            <span style={{ width: 7, height: 7, borderRadius: 2, flex: 'none', background: d.c }} />
-            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.label}</span>
-            <span style={{ color: 'var(--text3)', fontSize: 13, lineHeight: 1 }}>×</span>
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: 2,
+                flex: 'none',
+                background: color,
+              }}
+            />
+            <span
+              style={{
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                fontStyle: tab.missing ? 'italic' : 'normal',
+                opacity: tab.missing ? 0.7 : 1,
+              }}
+            >
+              {tab.dirty ? `${tab.title} *` : tab.title}
+            </span>
+            <span
+              onClick={(e) => handleClose(e, tab)}
+              title="Đóng tab"
+              style={{
+                color: 'var(--text3)',
+                fontSize: 13,
+                lineHeight: 1,
+                padding: '2px 4px',
+                borderRadius: 2,
+                cursor: 'pointer',
+              }}
+            >
+              ×
+            </span>
           </div>
         )
       })}
+
       <div
         className="hv-accent"
+        onClick={handleNewSqlTab}
+        title="Mở trình soạn SQL mới"
         style={{
           width: 28,
           flex: 'none',
@@ -68,6 +150,7 @@ export function TabStrip() {
           color: 'var(--text3)',
           cursor: 'pointer',
           borderRight: '1px solid var(--border)',
+          userSelect: 'none',
         }}
       >
         +

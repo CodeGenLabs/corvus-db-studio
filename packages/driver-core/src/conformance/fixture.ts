@@ -170,3 +170,58 @@ export const MYSQL_SETUP_SQL: readonly string[] = [
              NULL, '', '{"a":[1,2,3]}', X'deadbeef', '2026-08-18 09:00:00')`,
 ]
 
+/**
+ * Fixture chuẩn cho SQL Server conformance (T060).
+ */
+export const MSSQL_SETUP_SQL: readonly string[] = [
+  `IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = '${CONFORMANCE_SCHEMA}')
+     EXEC('CREATE SCHEMA ${CONFORMANCE_SCHEMA}')`,
+  `CREATE TABLE ${CONFORMANCE_SCHEMA}.country (
+     country_id   SMALLINT IDENTITY(1,1) PRIMARY KEY,
+     country      NVARCHAR(50) NOT NULL,
+     iso_code     NCHAR(2),
+     last_update  DATETIMEOFFSET NOT NULL DEFAULT SYSDATETIMEOFFSET()
+   )`,
+  `CREATE UNIQUE INDEX country_name_uq ON ${CONFORMANCE_SCHEMA}.country (country)`,
+  `CREATE TABLE ${CONFORMANCE_SCHEMA}.city (
+     city_id    INT IDENTITY(1,1) PRIMARY KEY,
+     country_id SMALLINT NOT NULL,
+     city       NVARCHAR(50) NOT NULL,
+     note       NVARCHAR(MAX),
+     INDEX city_country_idx (country_id),
+     CONSTRAINT fk_city_country FOREIGN KEY (country_id) REFERENCES ${CONFORMANCE_SCHEMA}.country (country_id) ON DELETE CASCADE
+   )`,
+  `CREATE TABLE ${CONFORMANCE_SCHEMA}.[order details] (
+     id          INT PRIMARY KEY,
+     [sản lượng] DECIMAL(20,4),
+     [select]    NVARCHAR(MAX)
+   )`,
+  `CREATE VIEW ${CONFORMANCE_SCHEMA}.city_view AS
+     SELECT c.city_id, c.city, n.country
+       FROM ${CONFORMANCE_SCHEMA}.city c
+       JOIN ${CONFORMANCE_SCHEMA}.country n ON n.country_id = c.country_id`,
+  `CREATE TABLE ${CONFORMANCE_SCHEMA}.types_probe (
+     id          INT PRIMARY KEY,
+     big_val     BIGINT,
+     numeric_val DECIMAL(30,10),
+     bool_val    BIT,
+     text_null   NVARCHAR(MAX),
+     text_empty  NVARCHAR(MAX),
+     json_val    NVARCHAR(MAX),
+     bytes_val   VARBINARY(MAX),
+     ts_val      DATETIMEOFFSET
+   )`,
+  `SET IDENTITY_INSERT ${CONFORMANCE_SCHEMA}.country ON;
+   INSERT INTO ${CONFORMANCE_SCHEMA}.country (country_id, country, iso_code)
+     VALUES (1, N'Việt Nam', 'VN'), (2, N'Japan', 'JP'), (3, N'Brazil', 'BR');
+   SET IDENTITY_INSERT ${CONFORMANCE_SCHEMA}.country OFF;`,
+  `SET IDENTITY_INSERT ${CONFORMANCE_SCHEMA}.city ON;
+   INSERT INTO ${CONFORMANCE_SCHEMA}.city (city_id, country_id, city, note)
+     VALUES (1, 1, N'Hà Nội', NULL), (2, 1, N'Đà Nẵng', ''), (3, 2, N'Tokyo', N'thủ đô');
+   SET IDENTITY_INSERT ${CONFORMANCE_SCHEMA}.city OFF;`,
+  `INSERT INTO ${CONFORMANCE_SCHEMA}.types_probe
+     (id, big_val, numeric_val, bool_val, text_null, text_empty, json_val, bytes_val, ts_val)
+     VALUES (1, 9223372036854775807, 12345678901234567890.0123456789, 1,
+             NULL, '', '{"a":[1,2,3]}', 0xdeadbeef, '2026-08-18 09:00:00 +00:00')`,
+]
+

@@ -149,6 +149,18 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
       expect(views.map((v) => v.name)).toEqual(['city_view'])
     })
 
+    it('mọi kind khai true trong capabilities.objects đều liệt kê được qua listObjects (Bất biến IV-A)', async () => {
+      await withConnection(async (c) => {
+        const caps = c.capabilities.objects
+        for (const [kind, supported] of Object.entries(caps)) {
+          if (supported) {
+            const list = await c.introspect.listObjects({ ...scope, kind })
+            expect(Array.isArray(list)).toBe(true)
+          }
+        }
+      })
+    })
+
     it('getTableMeta trả đủ cột, PK, index và FK', async () => {
       const meta = await withConnection((c) => c.introspect.getTableMeta({ ...scope, table: 'city' }))
 

@@ -26,6 +26,20 @@ export const VI = {
   updates: 'Cập nhật', updateReady: 'Đã có bản 3.3.0', whatsNew: 'Có gì mới trong', autoUpdate: 'Tự động tải bản mới',
   later: 'Để sau', checkUpdates: 'Kiểm tra cập nhật',
   usersTitle: 'Người dùng & quyền', usersNew: 'Thêm người dùng', usersRoles: 'Quản lý vai trò', usersUser: 'Người dùng', usersHost: 'Host', usersRole: 'Vai trò', usersLast: 'Lần đăng nhập', usersState: 'Trạng thái', usersEdit: 'Sửa', usersHint: 'Quyền được lấy từ vai trò; thay đổi cần GRANT/REVOKE',
+  'group.tables': 'Bảng',
+  'group.views': 'Views',
+  'group.materializedViews': 'Materialized Views',
+  'group.collections': 'Collections',
+  'group.keyspaces': 'Keyspaces',
+  'group.procedures': 'Procedures',
+  'group.functions': 'Functions',
+  'group.packages': 'Packages',
+  'group.triggers': 'Triggers',
+  'group.sequences': 'Sequences',
+  'group.indexes': 'Chỉ mục',
+  'group.domains': 'Domains',
+  'group.types': 'Kiểu dữ liệu',
+  'group.events': 'Events',
 } as const
 
 export type Dict = Record<keyof typeof VI, string>
@@ -58,6 +72,20 @@ export const EN: Dict = {
   updates: 'Updates', updateReady: 'Version 3.3.0 is available', whatsNew: "What's new in", autoUpdate: 'Download updates automatically',
   later: 'Later', checkUpdates: 'Check for updates',
   usersTitle: 'Users & privileges', usersNew: 'Add user', usersRoles: 'Manage roles', usersUser: 'User', usersHost: 'Host', usersRole: 'Role', usersLast: 'Last login', usersState: 'Status', usersEdit: 'Edit', usersHint: 'Privileges come from roles; changes require GRANT/REVOKE',
+  'group.tables': 'Tables',
+  'group.views': 'Views',
+  'group.materializedViews': 'Materialized Views',
+  'group.collections': 'Collections',
+  'group.keyspaces': 'Keyspaces',
+  'group.procedures': 'Procedures',
+  'group.functions': 'Functions',
+  'group.packages': 'Packages',
+  'group.triggers': 'Triggers',
+  'group.sequences': 'Sequences',
+  'group.indexes': 'Indexes',
+  'group.domains': 'Domains',
+  'group.types': 'Types',
+  'group.events': 'Events',
 }
 
 export const JA: Dict = {
@@ -88,6 +116,20 @@ export const JA: Dict = {
   updates: 'アップデート', updateReady: 'バージョン 3.3.0 が利用可能です', whatsNew: '新機能 —', autoUpdate: 'アップデートを自動でダウンロード',
   later: '後で', checkUpdates: 'アップデートを確認',
   usersTitle: 'ユーザーと権限', usersNew: 'ユーザーを追加', usersRoles: 'ロールを管理', usersUser: 'ユーザー', usersHost: 'ホスト', usersRole: 'ロール', usersLast: '最終ログイン', usersState: '状態', usersEdit: '編集', usersHint: '権限はロールに基づきます。変更には GRANT/REVOKE が必要です',
+  'group.tables': 'テーブル',
+  'group.views': 'ビュー',
+  'group.materializedViews': 'マテリアライズドビュー',
+  'group.collections': 'コレクション',
+  'group.keyspaces': 'キースペース',
+  'group.procedures': 'ストアドプロシージャ',
+  'group.functions': '関数',
+  'group.packages': 'パッケージ',
+  'group.triggers': 'トリガー',
+  'group.sequences': 'シーケンス',
+  'group.indexes': 'インデックス',
+  'group.domains': 'ドメイン',
+  'group.types': '型',
+  'group.events': 'イベント',
 }
 
 /**

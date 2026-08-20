@@ -14,6 +14,13 @@ import type {
 } from '@corvus/contract'
 import { DICTS, JA_X, LANG_NEXT, type Dict, type Lang } from '../i18n/dictionaries'
 import { fieldsFor } from '../data/schema'
+import {
+  closeTabInState,
+  openTabInState,
+  updateTabInState,
+  type Tab,
+  type TabIdentity,
+} from '../tabs'
 
 export const DEFAULT_CONFIG: Config = {
   autoCommit: true,
@@ -43,6 +50,8 @@ export interface ShellState {
   selNode: string
   selField: string
   open: Record<string, boolean>
+  tabs: Tab[]
+  activeTabId: string | null
   showConn: boolean
   showPalette: boolean
   diffOnly: boolean
@@ -76,10 +85,12 @@ const INITIAL_SHELL_STATE: ShellState = {
   theme: 'light',
   view: 'objects',
   infoTab: 'info',
-  selTable: 'country',
-  selNode: 'sakila/Tables',
-  selField: 'country',
-  open: { 'Local Dev': true, sakila: true },
+  selTable: '',
+  selNode: '',
+  selField: '',
+  open: {},
+  tabs: [],
+  activeTabId: null,
   showConn: false,
   showPalette: false,
   diffOnly: true,
@@ -114,6 +125,11 @@ export interface ShellStore extends ShellState {
   set: (patch: Patch) => void
   setCfg: <K extends keyof Config>(key: K, value: Config[K]) => void
   setView: (v: View) => () => void
+  openTab: (identity: TabIdentity, options?: { title?: string }) => void
+  closeTab: (tabId: string) => void
+  focusTab: (tabId: string) => void
+  setTabDirty: (tabId: string, dirty: boolean) => void
+  activeTab: () => Tab | undefined
   cycleLang: () => void
   toggleTheme: () => void
   startUpdate: () => void
@@ -153,6 +169,68 @@ export const useShellStore = create<ShellStore>((setState, getState) => ({
 
   setView: (v: View) => () => {
     setState({ view: v, showPalette: false })
+  },
+
+  openTab: (identity: TabIdentity, options?: { title?: string }) => {
+    const s = getState()
+    const { nextState } = openTabInState(
+      { tabs: s.tabs, activeTabId: s.activeTabId },
+      identity,
+      options,
+    )
+    const view = identity.type === 'object' ? identity.contentKind : identity.toolKind
+    const selTable = identity.type === 'object' ? identity.name : s.selTable
+    setState({
+      tabs: nextState.tabs,
+      activeTabId: nextState.activeTabId,
+      view,
+      selTable,
+      showPalette: false,
+    })
+  },
+
+  closeTab: (tabId: string) => {
+    const s = getState()
+    const { nextState } = closeTabInState({ tabs: s.tabs, activeTabId: s.activeTabId }, tabId)
+    let nextView = s.view
+    let nextTable = s.selTable
+    if (nextState.activeTabId) {
+      const current = nextState.tabs.find((t) => t.id === nextState.activeTabId)
+      if (current) {
+        nextView = current.identity.type === 'object' ? current.identity.contentKind : current.identity.toolKind
+        if (current.identity.type === 'object') nextTable = current.identity.name
+      }
+    }
+    setState({
+      tabs: nextState.tabs,
+      activeTabId: nextState.activeTabId,
+      view: nextView,
+      selTable: nextTable,
+    })
+  },
+
+  focusTab: (tabId: string) => {
+    const s = getState()
+    const target = s.tabs.find((t) => t.id === tabId)
+    if (!target) return
+    const view = target.identity.type === 'object' ? target.identity.contentKind : target.identity.toolKind
+    const selTable = target.identity.type === 'object' ? target.identity.name : s.selTable
+    setState({
+      activeTabId: tabId,
+      view,
+      selTable,
+    })
+  },
+
+  setTabDirty: (tabId: string, dirty: boolean) => {
+    const s = getState()
+    const nextState = updateTabInState({ tabs: s.tabs, activeTabId: s.activeTabId }, tabId, { dirty })
+    setState({ tabs: nextState.tabs })
+  },
+
+  activeTab: () => {
+    const s = getState()
+    return s.tabs.find((t) => t.id === s.activeTabId)
   },
 
   cycleLang: () => {
