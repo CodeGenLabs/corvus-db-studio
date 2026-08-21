@@ -8,8 +8,11 @@ import {
   resolveConnection,
   type HandlerDeps,
 } from './context'
+import { registerAiHandlers } from './ai'
 import { registerDataHandlers } from './data'
 import { registerDdlHandlers } from './ddl'
+import { registerFileHandlers } from './file'
+import { registerJobHandlers } from './job'
 import { registerMonitorHandlers } from './monitor'
 import { registerQueryToolsHandlers, recordQueryHistory } from './query-tools'
 import { registerSecurityHandlers } from './security'
@@ -284,4 +287,13 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
 
   // ── workspace.* handlers ──────────────────────────────────────────────────
   registerWorkspaceHandlers(router, deps)
+
+  // ── file.* handlers ───────────────────────────────────────────────────────
+  registerFileHandlers(router, deps)
+
+  // ── ai.* handlers ─────────────────────────────────────────────────────────
+  registerAiHandlers(router, deps)
+
+  // ── job.* & schedule.* handlers ───────────────────────────────────────────
+  registerJobHandlers(router, deps)
 }
