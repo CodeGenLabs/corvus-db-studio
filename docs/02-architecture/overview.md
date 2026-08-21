@@ -104,8 +104,8 @@ driver-*  → driver-core, sql
 ```
 apps/web/
 ├── client/          Vite SPA  → import @corvus/ui + transport-http
-└── server/          Fastify   → import @corvus/engine + transport-http/server
-                                 phục vụ luôn static build của client
+└── server/          Node HTTP → import @corvus/engine + transport-http/server
+                                 phục vụ RPC (/rpc), WebSocket (/ws) & static client
 ```
 
 Chạy: `docker run -p 8080:8080 corvus/studio:1.0`

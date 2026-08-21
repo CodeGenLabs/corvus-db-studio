@@ -56,7 +56,11 @@ class WsSession {
   async waitFor(pred: () => boolean, label: string, timeoutMs = 20_000): Promise<void> {
     const deadline = Date.now() + timeoutMs
     while (!pred()) {
-      if (Date.now() > deadline) throw new Error(`Quá hạn chờ: ${label}`)
+      if (Date.now() > deadline) {
+        const errors = this.frames.filter((f) => f.t === 'error')
+        const errDetail = errors.length > 0 ? ` (đã nhận khung error: ${JSON.stringify(errors)})` : ''
+        throw new Error(`Quá hạn chờ: ${label}${errDetail}`)
+      }
       await new Promise((r) => setTimeout(r, 5))
     }
   }

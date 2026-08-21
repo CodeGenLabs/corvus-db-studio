@@ -103,6 +103,7 @@ export class PostgresConnection implements DriverConnection {
     let columns: ColumnDef[] | undefined
     let abortListener: (() => void) | undefined
     const startedAt = Date.now()
+    let errorOccurred = false
 
     try {
       // Lấy pid để cancel() có thể gọi pg_cancel_backend từ một kết nối KHÁC.
@@ -116,9 +117,11 @@ export class PostgresConnection implements DriverConnection {
         // ta đang bị chặn trong `readCursor` và không bao giờ quay lại đầu vòng lặp.
         // Phải chủ động gửi pg_cancel_backend để backend nhả ra (IV-3, ≤ 200 ms).
         abortListener = () => {
-          void this.cancel({ id: handleId }).catch(() => {
-            // Backend có thể đã kết thúc trước khi lệnh huỷ tới. Không phải lỗi người dùng.
-          })
+          if (pid !== undefined) {
+            void this.cancelPid(pid).catch(() => {
+              // Backend có thể đã kết thúc trước khi lệnh huỷ tới. Không phải lỗi người dùng.
+            })
+          }
         }
         req.signal.addEventListener('abort', abortListener, { once: true })
       }
@@ -167,6 +170,7 @@ export class PostgresConnection implements DriverConnection {
         if (done) return
       }
     } catch (err) {
+      errorOccurred = true
       throw pgErrorToCorvus(err)
     } finally {
       // `finally` này chạy cả khi người tiêu thụ `break` giữa chừng (for-await gọi
@@ -175,7 +179,11 @@ export class PostgresConnection implements DriverConnection {
       this.running.delete(handleId)
       // Đóng cursor TRƯỚC khi trả client về pool, nếu không client sẽ ở trạng thái dở.
       if (cursor) await closeCursorSafely(cursor)
-      client.release()
+      if (errorOccurred || req.signal?.aborted) {
+        client.release(true)
+      } else {
+        client.release()
+      }
     }
   }
 
@@ -232,20 +240,27 @@ export class PostgresConnection implements DriverConnection {
   }
 
   /**
-   * Huỷ statement đang chạy.
+   * Huỷ statement đang chạy theo pid backend PostgreSQL.
    *
    * Phải gửi `pg_cancel_backend` từ một kết nối KHÁC — kết nối đang chạy query thì đang
    * bị chặn, không nhận được lệnh nào (driver-spi.md §5, huỷ ≤ 200 ms).
    */
-  async cancel(handle: StatementHandle): Promise<void> {
-    const entry = this.running.get(handle.id)
-    if (!entry) return
+  async cancelPid(pid: number): Promise<void> {
     const client = await this.pool.connect()
     try {
-      await client.query('SELECT pg_cancel_backend($1)', [entry.pid])
+      await client.query('SELECT pg_cancel_backend($1)', [pid])
     } finally {
       client.release()
     }
+  }
+
+  /**
+   * Huỷ statement đang chạy.
+   */
+  async cancel(handle: StatementHandle): Promise<void> {
+    const entry = this.running.get(handle.id)
+    if (!entry) return
+    await this.cancelPid(entry.pid)
   }
 
   async ping(): Promise<number> {
@@ -387,9 +402,17 @@ function readCursor(cursor: Cursor, count: number): Promise<unknown[]> {
 }
 
 async function closeCursorSafely(cursor: Cursor): Promise<void> {
+  const state = (cursor as unknown as { state?: string }).state
+  if (state === 'done' || state === 'error') return
+
   await new Promise<void>((resolve) => {
+    // Timeout an toàn phòng trường hợp pg-cursor không nhận được readyForQuery
+    const timer = setTimeout(resolve, 1_000)
     // Lỗi khi đóng cursor không đáng để ném ra ngoài: query đã kết thúc hoặc đã lỗi rồi.
-    cursor.close(() => resolve())
+    cursor.close(() => {
+      clearTimeout(timer)
+      resolve()
+    })
   })
 }
 

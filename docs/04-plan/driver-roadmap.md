@@ -10,13 +10,13 @@
 
 | Engine | Package | Kết nối thật | Introspect | Stream | Lỗi ánh xạ | Conformance |
 |---|---|---|---|---|---|---|
-| PostgreSQL | `driver-postgres` | ✔ `pg` + pool | ✔ truy vấn gộp | ✔ `pg-cursor` | ✔ SQLSTATE (28+ mã) | C1–C9 (78 test) |
+| PostgreSQL | `driver-postgres` | ✔ `pg` + pool | ✔ truy vấn gộp | ✔ `pg-cursor` | ✔ SQLSTATE (28+ mã) | C1–C9 (80 test) |
 | MySQL / MariaDB | `driver-mysql` | ✔ `mysql2/promise` | ✔ `information_schema` | ✔ streaming | ✔ ERRNO (28+ mã) | C1–C9 (62 test) |
-| SQLite | `driver-sqlite` | ✔ `better-sqlite3` | ✔ `pragma_*` | ✔ sync batch | ✔ SQLITE_* (30+ mã) | C1–C9 (68 test, C6 skip có lý do) |
-| SQL Server | *chưa có package* | ✘ | ✘ | ✘ | ✘ | — |
-| Oracle | *chưa có package* | ✘ | ✘ | ✘ | ✘ | — |
-| MongoDB | *chưa có package* | ✘ | ✘ | ✘ | ✘ | — |
-| Redis | *chưa có package* | ✘ | ✘ | ✘ | ✘ | — |
+| SQLite | `driver-sqlite` | ✔ `better-sqlite3` | ✔ `pragma_*` | ✔ sync batch | ✔ SQLITE_* (30+ mã) | C1–C9 (72 test) |
+| SQL Server | `driver-mssql` | ✔ `mssql` (tedious) | ✔ sys catalog | ✔ streaming | ✔ MSSQL error codes | Unit + Conformance |
+| Oracle | `driver-oracle` | ✔ `oracledb` (thin) | ✔ ALL_* views | ✔ streaming | ✔ ORA-* codes | Unit + Conformance |
+| MongoDB | `driver-mongodb` | ✔ `mongodb` driver | ✔ collections/stats | ✔ cursor streaming | ✔ MongoServerError | Unit tests |
+| Redis | `driver-redis` | ✔ `ioredis` client | ✔ keys/types/info | ✔ SCAN streaming | ✔ Redis error mapping | Unit tests |
 
 Những gì **đã dùng lại được** cho mọi driver mới (không phải viết lại):
 

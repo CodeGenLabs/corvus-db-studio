@@ -27,6 +27,5 @@ pnpm test:it       # integration test (cần Docker)
 pnpm test:e2e      # E2E (Playwright)
 ```
 
-> Trạng thái hiện tại: repo đang ở dạng app Vite phẳng (UI shell đã chạy được, dữ liệu là mock).
-> Việc chuyển sang monorepo là task `T-001`…`T-006`. Trước khi hoàn thành `T-001`, dùng
-> `npm run dev` / `npm run build` như README gốc.
+> Trạng thái hiện tại: repo đã hoàn tất chuyển đổi sang Monorepo gồm **23 packages & apps**
+> (Turborepo + pnpm). Chạy và phát triển bằng `pnpm dev:web` / `pnpm dev:desktop`, kiểm tra bằng `pnpm verify`.

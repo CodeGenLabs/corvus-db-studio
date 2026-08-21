@@ -91,8 +91,8 @@ corvus-db-studio/
 │
 ├── apps/
 │   ├── web/
-│   │   ├── client/                 Vite SPA
-│   │   └── server/                 Fastify
+│   │   ├── client/                 Vite SPA (React + TypeScript)
+│   │   └── server/                 Node HTTP RPC + WebSocket (HttpRpcServer)
 │   ├── desktop/
 │   │   ├── main/  preload/  renderer/
 │   │   └── electron-builder.yml
@@ -103,21 +103,18 @@ corvus-db-studio/
 └── tools/                          script sinh code, kiểm tra contract
 ```
 
-## 3. Đường di chuyển từ repo hiện tại
+## 3. Trạng thái chuyển đổi Monorepo
 
-Repo hôm nay là một app Vite phẳng. Chuyển đổi theo `T-001 … T-006`:
+Toàn bộ quá trình chuyển đổi sang Monorepo (`T-001 … T-006`) đã **hoàn tất thành công**:
 
-| Bước | Việc | Task |
-|---|---|---|
-| 1 | Thêm pnpm workspace + turbo, giữ app cũ chạy được ở `apps/desktop/renderer` tạm thời | T-001 |
-| 2 | Chuyển `src/components`, `src/views`, `src/styles`, `src/i18n` → `packages/ui/src` | T-002 |
-| 3 | Chuyển `src/types.ts` phần dùng chung → `packages/contract/src/models` | T-003 |
-| 4 | `src/data/*` (mock) → `packages/transport-mock/src/fixtures` — **giữ lại**, dùng cho Storybook và test | T-004 |
-| 5 | Tách `src/store/studio.tsx` → `useShellStore` + hook react-query | T-005 |
-| 6 | Dựng `apps/web` và `apps/desktop`, cả hai render `<CorvusApp/>` từ `@corvus/ui` | T-006 |
-
-**Không được xoá UI hiện tại rồi viết lại.** Nó đã đúng thiết kế và đã kiểm chứng chạy được;
-việc cần làm là *di chuyển* và *nối dữ liệu thật*.
+| Bước | Việc | Task | Trạng thái |
+|---|---|---|:---:|
+| 1 | Thêm pnpm workspace + turbo, cấu hình monorepo | T-001 | ✅ Done |
+| 2 | Chuyển `src/components`, `src/views`, `src/styles`, `src/i18n` → `packages/ui/src` | T-002 | ✅ Done |
+| 3 | Chuyển models dùng chung → `packages/contract/src/models` | T-003 | ✅ Done |
+| 4 | Fixtures mock data → `packages/transport-mock/src/fixtures` | T-004 | ✅ Done |
+| 5 | Tách store → `useShellStore` + client RPC | T-005 | ✅ Done |
+| 6 | Dựng `apps/web` và `apps/desktop`, cả hai render `<CorvusApp/>` từ `@corvus/ui` | T-006 | ✅ Done |
 
 ## 4. `package.json` mẫu cho một package
 

@@ -13,10 +13,11 @@ trong repo này phải đọc theo đúng thứ tự ở mục [Thứ tự đọ
 
 | Hạng mục | Trạng thái hiện tại |
 |---|---|
-| UI shell | ✅ Đã có — React 18 + TS + Vite, 8 view, 6 dialog, 3 ngôn ngữ, light/dark (xem [../README.md](../README.md)) |
-| Dữ liệu | ❌ Toàn bộ là mock tĩnh trong `src/data/` |
-| Kết nối DB thật | ❌ Chưa có |
-| Đóng gói desktop | ❌ Chưa có |
+| Kiến trúc | ✅ Monorepo 23 packages & apps (Turborepo + pnpm workspaces) |
+| UI | ✅ Đã có — React 18 + TS + Vite, 8 view, 6 dialog, 3 ngôn ngữ, light/dark |
+| Driver DB thật | ✅ Đầy đủ 7 engine: PostgreSQL, MySQL, SQLite, MSSQL, Oracle, MongoDB, Redis |
+| Transport & Engine | ✅ HttpRpcServer (POST /rpc + /ws) & MessagePort IPC chạy thật |
+| Đóng gói & Phát hành | ✅ Đã cấu hình tsup (Node/Fastify-free server), Vite, Electron main/preload/renderer |
 
 Tham chiếu tính năng: **Navicat User Guide** (`navicat_en.pdf`, 384 trang, 22 chương).
 Corvus **không sao chép code hay tài sản** của Navicat; tài liệu đó chỉ dùng làm *feature
@@ -39,13 +40,9 @@ Sau đó đọc SPEC tương ứng với task trong [03-specs/](03-specs/).
 
 ## Bản đồ tài liệu
 
-> **Giao việc cho một AI mới?** Dùng prompt sẵn có trong
-> [KICKOFF-PROMPT.md](KICKOFF-PROMPT.md) — 3 biến thể cho 3 tình huống.
-
 ```
 docs/
 ├── README.md                        ← bạn đang ở đây
-├── KICKOFF-PROMPT.md                Prompt dán cho AI mới (3 biến thể)
 │
 ├── 01-scope/
 │   ├── feature-inventory.md         Toàn bộ tính năng Navicat → module Corvus → tier → wave
@@ -53,7 +50,7 @@ docs/
 │
 ├── 02-architecture/
 │   ├── overview.md                  ★ Kiến trúc tổng thể: một codebase → web + desktop
-│   ├── monorepo.md                  Cấu trúc package, ranh giới phụ thuộc
+│   ├── monorepo.md                  Cấu trúc 23 package & app, ranh giới phụ thuộc
 │   ├── rpc-contract.md              ★ Hợp đồng RPC transport-agnostic
 │   ├── driver-spi.md                ★ Giao diện driver, cách thêm engine mới
 │   ├── capability-matrix.md         Ma trận năng lực engine × tính năng

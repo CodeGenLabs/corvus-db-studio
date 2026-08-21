@@ -10,16 +10,18 @@ Hỗ trợ các hệ quản trị cơ sở dữ liệu:
 
 ## 🏗️ Kiến trúc Monorepo
 
-Hệ thống được tổ chức theo mô hình Monorepo (quản lý bởi `pnpm` + `Turborepo`) gồm **19 packages & apps**:
+Hệ thống được tổ chức theo mô hình Monorepo (quản lý bởi `pnpm` + `Turborepo`) gồm **23 packages & apps**:
 
 ```
 corvus-db-studio/
 ├── apps/
-│   ├── web-client/             # Ứng dụng Web SPA (React + TypeScript)
-│   ├── web-server/             # Backend Fastify Web server
-│   ├── desktop-main/           # Electron Main Process (Node/Native)
-│   ├── desktop-preload/        # Electron Preload Scripts (Isolated bridge)
-│   └── desktop-renderer/       # Electron Renderer UI
+│   ├── web/
+│   │   ├── client/             # Ứng dụng Web SPA (React + TypeScript + Vite)
+│   │   └── server/             # Backend Web server (Node HTTP RPC + WebSocket)
+│   └── desktop/
+│       ├── main/               # Electron Main Process (Node/Native)
+│       ├── preload/            # Electron Preload Scripts (Isolated bridge)
+│       └── renderer/           # Electron Renderer UI (React + TypeScript + Vite)
 ├── packages/
 │   ├── contract/               # RPC definitions & data models (Zod)
 │   ├── client/                 # Client SDK + FileGateway
@@ -32,10 +34,14 @@ corvus-db-studio/
 │   ├── driver-postgres/        # PostgreSQL Driver implementation
 │   ├── driver-mysql/           # MySQL / MariaDB Driver implementation
 │   ├── driver-sqlite/          # SQLite Driver implementation
-│   ├── transport-http/         # HTTP / WebSocket Transport
+│   ├── driver-mssql/           # SQL Server (MSSQL) Driver implementation
+│   ├── driver-oracle/          # Oracle Database Driver implementation
+│   ├── driver-mongodb/         # MongoDB Driver implementation
+│   ├── driver-redis/           # Redis Driver implementation
+│   ├── transport-http/         # HTTP / WebSocket Transport (HttpRpcServer)
 │   ├── transport-ipc/          # Electron MessagePort IPC Transport
 │   └── transport-mock/         # In-memory Mock Transport (cho testing & UI dev)
-└── docs/                       # Toàn bộ tài liệu kiến trúc (49 files)
+└── docs/                       # Toàn bộ tài liệu kiến trúc & đặc tả
 ```
 
 ---
@@ -51,6 +57,7 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
    corepack prepare pnpm@latest --activate
    ```
 3. **Git**: Để clone và quản lý mã nguồn.
+4. **Docker** *(tuỳ chọn)*: Dành cho chạy integration tests trên database thật (`pnpm test:it`).
 
 ---
 
@@ -78,7 +85,7 @@ pnpm dev
 ---
 
 ### Cách 2: Chạy bản Web đầy đủ (Web Client + Web Server)
-Khởi động đồng thời máy chủ Fastify backend và ứng dụng Web client qua Turborepo:
+Khởi động đồng thời máy chủ RPC backend và ứng dụng Web client qua Turborepo:
 
 ```bash
 pnpm dev:web
@@ -99,12 +106,15 @@ pnpm dev:desktop
 
 | Lệnh | Mô tả |
 |---|---|
-| `pnpm typecheck` | Kiểm tra TypeScript typecheck trên toàn bộ 19 packages |
+| `pnpm typecheck` | Kiểm tra TypeScript typecheck trên toàn bộ 23 packages & apps |
 | `pnpm build` | Build toàn bộ các packages và bundles qua Turborepo |
 | `pnpm build:app` | Build bundle cho ứng dụng web chính |
 | `pnpm preview` | Chạy thử bản production build của Web app tại local |
-| `pnpm test` | Chạy bộ kiểm thử tự động (Unit tests) |
-| `pnpm verify` | Kiểm tra tổng thể toàn bộ dự án (`lint` + `typecheck` + `test` + `build`) |
+| `pnpm test` | Chạy bộ kiểm thử tự động unit tests (`vitest run`) |
+| `pnpm test:it` | Chạy bộ kiểm thử integration tests trên database thật qua Docker (`testcontainers`) |
+| `pnpm lint` | Kiểm tra linting (`eslint`) và kiến trúc phụ thuộc (`dependency-cruiser`) |
+| `pnpm check:contract` | Kiểm tra độ phủ và tính tương thích của handler so với contract RPC |
+| `pnpm verify` | BẮT BUỘC trước khi commit: `lint` + `typecheck` + `build` + `test` + `check:contract` |
 
 ---
 
