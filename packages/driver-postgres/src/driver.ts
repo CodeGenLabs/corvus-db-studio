@@ -157,14 +157,24 @@ export class PostgresConnection implements DriverConnection {
         const rows = batch.map((row) => fields.map((f, i) => toCellValue((row as unknown[])[i], f.dataTypeID)))
         emitted += rows.length
 
+        const resultMeta = (cursor as unknown as { _result?: { rowCount?: number } })._result
+        const affectedRows = typeof resultMeta?.rowCount === 'number' ? resultMeta.rowCount : undefined
         const done = batch.length < remaining
+
         yield {
           seq: seq++,
           ...(seq === 1 ? { columns } : {}),
           rows,
           done,
           ...(done
-            ? { stats: { rowCount: emitted, durationMs: Date.now() - startedAt, truncated: false } }
+            ? {
+                stats: {
+                  rowCount: emitted,
+                  ...(affectedRows !== undefined ? { affectedRows } : {}),
+                  durationMs: Date.now() - startedAt,
+                  truncated: false,
+                },
+              }
             : {}),
         }
         if (done) return

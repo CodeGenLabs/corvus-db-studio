@@ -8,6 +8,7 @@ import {
   resolveConnection,
   type HandlerDeps,
 } from './context'
+import { registerDataHandlers } from './data'
 
 /**
  * Trần mặc định cho `query.execute` (streaming-and-jobs.md §A.4).
@@ -242,4 +243,7 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
       else activeStreamsPerConnection.set(p.connectionId, left)
     }
   })
+
+  // ── data.* handlers ────────────────────────────────────────────────────────
+  registerDataHandlers(router, deps, activeStreamsPerConnection)
 }
