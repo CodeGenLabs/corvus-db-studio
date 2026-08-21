@@ -13,7 +13,7 @@ trong repo này phải đọc theo đúng thứ tự ở mục [Thứ tự đọ
 
 | Hạng mục | Trạng thái hiện tại |
 |---|---|
-| Kiến trúc | ✅ Monorepo 23 packages & apps (Turborepo + pnpm workspaces) |
+| Kiến trúc | ✅ Monorepo 24 packages & apps (Turborepo + pnpm workspaces) |
 | UI | ✅ Đã có — React 18 + TS + Vite, 8 view, 6 dialog, 3 ngôn ngữ, light/dark |
 | Driver DB thật | ✅ Đầy đủ 7 engine: PostgreSQL, MySQL, SQLite, MSSQL, Oracle, MongoDB, Redis |
 | Transport & Engine | ✅ HttpRpcServer (POST /rpc + /ws) & MessagePort IPC chạy thật |
@@ -50,7 +50,7 @@ docs/
 │
 ├── 02-architecture/
 │   ├── overview.md                  ★ Kiến trúc tổng thể: một codebase → web + desktop
-│   ├── monorepo.md                  Cấu trúc 23 package & app, ranh giới phụ thuộc
+│   ├── monorepo.md                  Cấu trúc 24 package & app, ranh giới phụ thuộc
 │   ├── rpc-contract.md              ★ Hợp đồng RPC transport-agnostic
 │   ├── driver-spi.md                ★ Giao diện driver, cách thêm engine mới
 │   ├── capability-matrix.md         Ma trận năng lực engine × tính năng

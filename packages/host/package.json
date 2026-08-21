@@ -1,0 +1,37 @@
+{
+  "name": "@corvus/host",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./*": {
+      "types": "./src/*",
+      "import": "./src/*"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "@corvus/driver-core": "workspace:*",
+    "@corvus/driver-mongodb": "workspace:*",
+    "@corvus/driver-mssql": "workspace:*",
+    "@corvus/driver-mysql": "workspace:*",
+    "@corvus/driver-oracle": "workspace:*",
+    "@corvus/driver-postgres": "workspace:*",
+    "@corvus/driver-redis": "workspace:*",
+    "@corvus/driver-sqlite": "workspace:*",
+    "@corvus/engine": "workspace:*",
+    "@corvus/storage": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

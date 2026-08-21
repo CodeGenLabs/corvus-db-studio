@@ -226,6 +226,9 @@ importers:
       '@corvus/engine':
         specifier: workspace:*
         version: link:../../../packages/engine
+      '@corvus/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
       '@corvus/storage':
         specifier: workspace:*
         version: link:../../../packages/storage
@@ -553,6 +556,46 @@ importers:
       vitest:
         specifier: ^3.2.7
         version: 3.2.7(@types/node@22.20.1)(supports-color@7.2.0)(tsx@4.23.12)(yaml@2.9.0)
+
+  packages/host:
+    dependencies:
+      '@corvus/driver-core':
+        specifier: workspace:*
+        version: link:../driver-core
+      '@corvus/driver-mongodb':
+        specifier: workspace:*
+        version: link:../driver-mongodb
+      '@corvus/driver-mssql':
+        specifier: workspace:*
+        version: link:../driver-mssql
+      '@corvus/driver-mysql':
+        specifier: workspace:*
+        version: link:../driver-mysql
+      '@corvus/driver-oracle':
+        specifier: workspace:*
+        version: link:../driver-oracle
+      '@corvus/driver-postgres':
+        specifier: workspace:*
+        version: link:../driver-postgres
+      '@corvus/driver-redis':
+        specifier: workspace:*
+        version: link:../driver-redis
+      '@corvus/driver-sqlite':
+        specifier: workspace:*
+        version: link:../driver-sqlite
+      '@corvus/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@corvus/storage':
+        specifier: workspace:*
+        version: link:../storage
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/sql:
     dependencies:

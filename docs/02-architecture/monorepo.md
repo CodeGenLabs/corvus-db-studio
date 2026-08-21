@@ -86,8 +86,10 @@ corvus-db-studio/
 │   │   └── src/{introspect, dml, ddl, import, export, backup, transfer,
 │   │            datasync, structsync, datagen, profiling, security,
 │   │            monitor, search, ai}/
-│   └── engine/                     @corvus/engine       (Node) — router + runtime
-│       └── src/{router.ts, session.ts, jobs.ts, scheduler.ts, auth/, audit.ts}
+│   ├── engine/                     @corvus/engine       (Node) — router + runtime
+│   │   └── src/{router.ts, session.ts, jobs.ts, scheduler.ts, auth/, audit.ts}
+│   └── host/                       @corvus/host         (Node) — buildEngine() dùng chung
+│       └── src/{index.ts, engine.ts}
 │
 ├── apps/
 │   ├── web/

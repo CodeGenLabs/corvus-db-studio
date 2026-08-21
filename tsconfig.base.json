@@ -134,6 +134,12 @@
       "@corvus/engine/*": [
         "./packages/engine/src/*"
       ],
+      "@corvus/host": [
+        "./packages/host/src/index.ts"
+      ],
+      "@corvus/host/*": [
+        "./packages/host/src/*"
+      ],
       "@corvus/driver-core/conformance": [
         "./packages/driver-core/src/conformance/index.ts"
       ]

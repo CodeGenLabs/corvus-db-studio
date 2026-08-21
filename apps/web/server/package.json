@@ -21,6 +21,7 @@
     "@corvus/driver-redis": "workspace:*",
     "@corvus/driver-sqlite": "workspace:*",
     "@corvus/engine": "workspace:*",
+    "@corvus/host": "workspace:*",
     "@corvus/storage": "workspace:*",
     "@corvus/transport-http": "workspace:*",
     "better-sqlite3": "^13.0.3",

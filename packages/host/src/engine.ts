@@ -16,10 +16,14 @@ import {
 import { EnvelopeVault, openWorkspace, type SecretVault, type WorkspaceStorage } from '@corvus/storage'
 
 /**
- * Dựng engine thật cho bản web: workspace SQLite + vault + driver + router có handler.
+ * Dựng engine thật cho một tiến trình host: workspace SQLite + vault + driver + router
+ * có handler. Dùng cho cả `apps/web/server` và `apps/desktop/main`.
  *
  * Trước đây `apps/web/server` dùng một `mockRouter` trả `{ok:true, method, params}` với
  * comment "until @corvus/engine is linked in T-018" (audit 2026-08-18). Đây là phần nối thật.
+ *
+ * File này từng nằm ở `apps/web/server/src/engine.ts`. Chuyển sang `@corvus/host` để
+ * `apps/desktop/main` dùng được cùng một engine thay vì nhân bản — xem `./index.ts`.
  */
 export interface BuiltEngine {
   router: EngineRouter

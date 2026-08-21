@@ -10,7 +10,7 @@ Hỗ trợ các hệ quản trị cơ sở dữ liệu:
 
 ## 🏗️ Kiến trúc Monorepo
 
-Hệ thống được tổ chức theo mô hình Monorepo (quản lý bởi `pnpm` + `Turborepo`) gồm **23 packages & apps**:
+Hệ thống được tổ chức theo mô hình Monorepo (quản lý bởi `pnpm` + `Turborepo`) gồm **24 packages & apps**:
 
 ```
 corvus-db-studio/
@@ -28,6 +28,7 @@ corvus-db-studio/
 │   ├── ui/                     # UI components, views, DataGrid, themes, i18n
 │   ├── sql/                    # SQL AST, DDL generator, statement splitter
 │   ├── engine/                 # Engine Router, Session Manager, Cache, Guards
+│   ├── host/                   # buildEngine() — dựng engine thật dùng chung cho web server & desktop main
 │   ├── storage/                # SQLite storage (workspace.db), Migration, Vault
 │   ├── tunnel/                 # SSH tunnel & TLS configuration
 │   ├── driver-core/            # Driver SPI & Conformance test suite
@@ -106,7 +107,7 @@ pnpm dev:desktop
 
 | Lệnh | Mô tả |
 |---|---|
-| `pnpm typecheck` | Kiểm tra TypeScript typecheck trên toàn bộ 23 packages & apps |
+| `pnpm typecheck` | Kiểm tra TypeScript typecheck trên toàn bộ 24 packages & apps |
 | `pnpm build` | Build toàn bộ các packages và bundles qua Turborepo |
 | `pnpm build:app` | Build bundle cho ứng dụng web chính |
 | `pnpm preview` | Chạy thử bản production build của Web app tại local |

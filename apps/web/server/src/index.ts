@@ -4,7 +4,7 @@ import { timingSafeEqual } from 'node:crypto'
 import http from 'node:http'
 import { WebSocketServer, type WebSocket } from 'ws'
 import { HttpRpcServer, type WsConnection, toWireError } from '@corvus/transport-http/server'
-import { buildEngine } from './engine'
+import { buildEngine } from '@corvus/host'
 
 // Engine THẬT: workspace SQLite + vault + driver PostgreSQL + router có handler.
 // (Trước đây chỗ này là một mock router echo — xem audit-2026-08-18.md.)
