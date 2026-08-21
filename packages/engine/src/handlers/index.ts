@@ -9,6 +9,8 @@ import {
   type HandlerDeps,
 } from './context'
 import { registerDataHandlers } from './data'
+import { registerQueryToolsHandlers, recordQueryHistory } from './query-tools'
+import { registerTxHandlers } from './tx'
 
 /**
  * Trần mặc định cho `query.execute` (streaming-and-jobs.md §A.4).
@@ -226,7 +228,8 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
       )
     }
     activeStreamsPerConnection.set(p.connectionId, running + 1)
-
+    const t0 = Date.now()
+    let hasError = false
     try {
       yield* conn.execute({
         sql: p.sql,
@@ -235,7 +238,20 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
         maxRows: p.maxRows ?? DEFAULT_QUERY_MAX_ROWS,
         signal: opts.signal,
       })
+    } catch (err) {
+      hasError = true
+      throw err
     } finally {
+      // Ghi nhận lịch sử truy vấn
+      recordQueryHistory({
+        id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        sql: p.sql,
+        executedAt: new Date().toISOString(),
+        durationMs: Date.now() - t0,
+        connectionName: profile.name,
+        status: hasError ? 'error' : 'success',
+      })
+
       // `finally` chạy cả khi người tiêu thụ break giữa chừng hoặc stream bị huỷ — nếu
       // giảm ở chỗ khác, một stream bị huỷ sẽ chiếm slot mãi mãi.
       const left = (activeStreamsPerConnection.get(p.connectionId) ?? 1) - 1
@@ -246,4 +262,10 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
 
   // ── data.* handlers ────────────────────────────────────────────────────────
   registerDataHandlers(router, deps, activeStreamsPerConnection)
+
+  // ── query tools & history handlers ─────────────────────────────────────────
+  registerQueryToolsHandlers(router, deps)
+
+  // ── tx.* handlers ──────────────────────────────────────────────────────────
+  registerTxHandlers(router, deps)
 }

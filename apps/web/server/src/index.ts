@@ -1,4 +1,5 @@
-import { pathToFileURL } from 'node:url'
+import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { timingSafeEqual } from 'node:crypto'
 import http from 'node:http'
 import { WebSocketServer, type WebSocket } from 'ws'
@@ -239,7 +240,10 @@ function attachWebSocket(server: http.Server, origins: string[], authToken?: str
 // Truoc day file nay chi export createWebServer ma khong ai goi, nen `pnpm dev:web`
 // khoi dong tsx roi khong listen gi ca (audit-2026-08-18.md).
 // Guard `import.meta.main` de import module trong test khong lam server chay len.
-const isEntry = process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href
+const isEntry =
+  process.argv[1] !== undefined &&
+  (import.meta.url === pathToFileURL(process.argv[1]).href ||
+    path.resolve(fileURLToPath(import.meta.url)).toLowerCase() === path.resolve(process.argv[1]).toLowerCase())
 
 /**
  * Đóng gọn: dừng HTTP, đóng session tới database, đóng workspace.db.

@@ -194,7 +194,7 @@ describe('R-08 · handler RPC thật qua router', () => {
 
   it('method chưa có handler ném UNSUPPORTED_FEATURE, không phải lỗi mơ hồ', async () => {
     await expect(
-      router.handleRequest('query.format', { driverId: 'postgres', sql: 'select 1', options: {} }),
+      router.handleRequest('ai.generateSql', { prompt: 'select 1', dialect: 'postgres' }),
     ).rejects.toMatchObject({ code: 'UNSUPPORTED_FEATURE' })
   })
 
