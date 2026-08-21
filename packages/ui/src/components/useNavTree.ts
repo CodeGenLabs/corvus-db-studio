@@ -84,7 +84,7 @@ export function useNavTree(
   openConnections.forEach((c, idx) => {
     const caps = openConnQueries[idx]?.data
     // Nếu chưa load xong caps thì vẫn query databases theo mặc định an toàn
-    const hasCatalogs = caps ? caps.hierarchy.hasCatalogs : true
+    const hasCatalogs = caps?.hierarchy ? caps.hierarchy.hasCatalogs : true
     if (hasCatalogs) {
       dbQueryTargets.push({ conn: c, caps })
     }
@@ -108,7 +108,7 @@ export function useNavTree(
 
   openConnections.forEach((conn, ci) => {
     const caps = openConnQueries[ci]?.data
-    const levels = caps ? levelsOf(caps.hierarchy) : ['database', 'namespace']
+    const levels = caps?.hierarchy ? levelsOf(caps.hierarchy) : ['database', 'namespace']
 
     if (levels.includes('database')) {
       const dbTargetIdx = dbQueryTargets.findIndex((t) => t.conn.id === conn.id)
@@ -122,7 +122,7 @@ export function useNavTree(
   })
 
   const schemaQueryTargets = openDatabases.filter(({ caps }) => {
-    const levels = caps ? levelsOf(caps.hierarchy) : ['database', 'namespace']
+    const levels = caps?.hierarchy ? levelsOf(caps.hierarchy) : ['database', 'namespace']
     return levels.includes('namespace')
   })
 
@@ -150,8 +150,8 @@ export function useNavTree(
 
   openConnections.forEach((conn, ci) => {
     const caps = openConnQueries[ci]?.data
-    const levels = caps ? levelsOf(caps.hierarchy) : ['database', 'namespace']
-    const supportedKinds = caps
+    const levels = caps?.hierarchy ? levelsOf(caps.hierarchy) : ['database', 'namespace']
+    const supportedKinds = caps?.objects
       ? (Object.keys(caps.objects) as ObjectKind[]).filter((k) => caps.objects[k])
       : (['table', 'view'] as ObjectKind[])
 
@@ -242,7 +242,7 @@ export function useNavTree(
     const openConnIdx = openConnections.indexOf(conn)
     const connOpenQ = openConnIdx >= 0 ? openConnQueries[openConnIdx] : undefined
     const caps = connOpenQ?.data
-    const levels = caps ? levelsOf(caps.hierarchy) : ['database', 'namespace']
+    const levels = caps?.hierarchy ? levelsOf(caps.hierarchy) : ['database', 'namespace']
 
     const dbTargetIdx = dbQueryTargets.findIndex((t) => t.conn.id === conn.id)
     const dbQ = dbTargetIdx >= 0 ? dbQueries[dbTargetIdx] : undefined
@@ -265,7 +265,7 @@ export function useNavTree(
 
     // Sắp xếp các nhóm đối tượng theo order
     const supportedGroupDefs = (Object.keys(OBJECT_GROUPS) as ObjectKind[])
-      .filter((k) => (caps ? caps.objects[k] : k === 'table' || k === 'view'))
+      .filter((k) => (caps?.objects ? caps.objects[k] : k === 'table' || k === 'view'))
       .sort((a, b) => OBJECT_GROUPS[a].order - OBJECT_GROUPS[b].order)
 
     const renderFolder = (

@@ -1,5 +1,6 @@
 import type {
   CallOptions,
+  CapabilitySet,
   EventOf,
   TopicName,
   Transport,
@@ -14,6 +15,65 @@ import {
   RESULTS,
   TABLES,
 } from './fixtures/sakila'
+
+export const DEFAULT_MOCK_CAPABILITIES: CapabilitySet = {
+  hierarchy: {
+    hasCatalogs: true,
+    hasSchemas: true,
+  },
+  objects: {
+    table: true,
+    view: true,
+    materializedView: true,
+    procedure: true,
+    function: true,
+    package: false,
+    trigger: true,
+    sequence: true,
+    index: true,
+    domain: true,
+    type: true,
+    event: false,
+    collection: false,
+    keyspace: false,
+  },
+  sql: {
+    parameterStyle: 'question',
+    identifierQuote: '`',
+    limitSyntax: 'limit-offset',
+    maxIdentifierLength: 64,
+    caseSensitivity: 'lower',
+    cte: true,
+    windowFunctions: true,
+    returning: false,
+    upsert: 'on-duplicate-key',
+  },
+  exec: {
+    streamingCursor: true,
+    multipleStatements: true,
+    multipleResultSets: true,
+    cancelStatement: true,
+    explain: true,
+    explainAnalyze: true,
+    preparedStatements: true,
+  },
+  tx: {
+    supported: true,
+    savepoints: true,
+    ddlTransactional: false,
+    isolationLevels: 4,
+  },
+  tools: {
+    logicalBackup: true,
+    physicalBackup: false,
+    userManagement: true,
+    roleManagement: true,
+    processMonitor: true,
+    serverVariables: true,
+    dataGeneration: true,
+    profiling: true,
+  },
+}
 
 export interface MockTransportOptions {
   latencyMs?: number
@@ -79,7 +139,7 @@ export function createMockTransport(options: MockTransportOptions = {}): Transpo
         }
 
         case 'connection.open': {
-          return { sessionId: 'mock-session-123', capabilities: { 'objects.materializedView': true, 'exec.explainAnalyze': true } } as TResult
+          return { sessionId: 'mock-session-123', capabilities: DEFAULT_MOCK_CAPABILITIES } as TResult
         }
 
         case 'connection.close': {

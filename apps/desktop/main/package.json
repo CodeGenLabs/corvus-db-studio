@@ -7,11 +7,12 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc -b --noEmit",
-    "dev": "electron ."
+    "dev": "tsup && electron ."
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",
     "@corvus/transport-ipc": "workspace:*",
+    "@corvus/transport-mock": "workspace:*",
     "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
