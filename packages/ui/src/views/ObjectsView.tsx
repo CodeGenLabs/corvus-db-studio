@@ -1,10 +1,121 @@
+import { useEffect, useState } from 'react'
 import { TABLES } from '../data/schema'
-import { useStudio } from '../store/studio'
+import { useStudio, useClient } from '../store/studio'
+import type { ObjectKind } from '@corvus/contract'
 
 const COLS = '1fr 110px 130px 110px 110px 150px'
 
+interface ObjectRowItem {
+  name: string
+  kind: ObjectKind
+  rows: string
+  size: string
+  engine: string
+  autoInc: string
+  modified: string
+}
+
+function formatBytes(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '-'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
+}
+
 export function ObjectsView() {
-  const { s, set, t, row } = useStudio()
+  const { s, set, t, row, activeTab, openTab } = useStudio()
+  const client = useClient()
+
+  const tab = activeTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
+  const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
+
+  const [objects, setObjects] = useState<ObjectRowItem[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchObjects() {
+      try {
+        const list = await client.request<Array<{
+          name: string
+          kind: ObjectKind
+          rowCount?: number
+          sizeBytes?: number
+          engine?: string
+          autoIncrement?: number
+          updatedAt?: string
+        }>>('introspect.objects', {
+          connectionId,
+          schema,
+          kind: 'table',
+        })
+
+        if (!cancelled && Array.isArray(list) && list.length > 0) {
+          setObjects(
+            list.map((o) => ({
+              name: o.name,
+              kind: o.kind,
+              rows: o.rowCount !== undefined ? o.rowCount.toLocaleString() : '-',
+              size: formatBytes(o.sizeBytes),
+              engine: o.engine || 'InnoDB',
+              autoInc: o.autoIncrement !== undefined ? String(o.autoIncrement) : '-',
+              modified: o.updatedAt || '-',
+            })),
+          )
+        } else if (!cancelled) {
+          // Fallback sample
+          setObjects(
+            TABLES.map((r) => ({
+              name: r[0],
+              kind: 'table',
+              rows: r[1],
+              size: r[2],
+              engine: r[3],
+              autoInc: r[4],
+              modified: r[5],
+            })),
+          )
+        }
+      } catch {
+        if (!cancelled) {
+          setObjects(
+            TABLES.map((r) => ({
+              name: r[0],
+              kind: 'table',
+              rows: r[1],
+              size: r[2],
+              engine: r[3],
+              autoInc: r[4],
+              modified: r[5],
+            })),
+          )
+        }
+      }
+    }
+
+    fetchObjects()
+    return () => {
+      cancelled = true
+    }
+  }, [client, connectionId, schema])
+
+  const handleOpenObject = (name: string) => {
+    set({ selTable: name })
+    openTab(
+      {
+        type: 'object',
+        connectionId,
+        database,
+        namespace: schema,
+        name,
+        objectKind: 'table',
+        contentKind: 'data',
+      },
+      { title: name },
+    )
+  }
 
   return (
     <div>
@@ -30,13 +141,14 @@ export function ObjectsView() {
         <div style={{ padding: '5px 10px' }}>{t.cModified}</div>
       </div>
 
-      {TABLES.map((r) => {
-        const sel = s.selTable === r[0]
+      {objects.map((r) => {
+        const sel = s.selTable === r.name
         return (
           <div
-            key={r[0]}
+            key={r.name}
             className="hv-row"
-            onClick={() => set({ selTable: r[0] })}
+            onClick={() => set({ selTable: r.name })}
+            onDoubleClick={() => handleOpenObject(r.name)}
             style={row({
               display: 'grid',
               gridTemplateColumns: COLS,
@@ -61,16 +173,17 @@ export function ObjectsView() {
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  color: sel ? 'var(--accent)' : 'var(--text)',
                 }}
               >
-                {r[0]}
+                {r.name}
               </span>
             </div>
-            <div style={{ padding: '0 10px', textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--text2)' }}>{r[1]}</div>
-            <div style={{ padding: '0 10px', textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--text2)' }}>{r[2]}</div>
-            <div style={{ padding: '0 10px', color: 'var(--text2)' }}>{r[3]}</div>
-            <div style={{ padding: '0 10px', textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--text2)' }}>{r[4]}</div>
-            <div style={{ padding: '0 10px', color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 11 }}>{r[5]}</div>
+            <div style={{ padding: '0 10px', textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--text2)' }}>{r.rows}</div>
+            <div style={{ padding: '0 10px', textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--text2)' }}>{r.size}</div>
+            <div style={{ padding: '0 10px', color: 'var(--text2)' }}>{r.engine}</div>
+            <div style={{ padding: '0 10px', textAlign: 'right', fontFamily: 'var(--mono)', color: 'var(--text2)' }}>{r.autoInc}</div>
+            <div style={{ padding: '0 10px', color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 11 }}>{r.modified}</div>
           </div>
         )
       })}

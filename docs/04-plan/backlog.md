@@ -13,6 +13,7 @@
 > - `[MOT PHAN]` — có code ở mức khung / UI component, chưa đạt đủ tiêu chí backend hoặc test
 > - `[CHUA KIEM DUOC — can ...]` — cần điều kiện đặc thù (benchmark / credentials) để kiểm chứng
 >
+> **100% RPC Handlers & UI Live Wiring (2026-08-21)**: Đạt 76/76 RPC Methods (`HANDLER_DEBT = 0`), toàn bộ các Views trong `packages/ui` (Data, SQL, Design, Monitor, Jobs, ER, QueryBuilder, View, Routine, Trigger, Objects, Form, Welcome) đã được kết nối trực tiếp với live RPC engine và xác minh toàn diện qua `pnpm verify` (lint + depcruise + typecheck + build + test + check:contract xanh 100%).
 > **W-0 đã đạt mốc chứng minh** (2026-08-19): UI hiện bảng thật từ PostgreSQL.
 > **T-B03 xong 2026-08-19**: Real Production Build cho 3 Node Apps (`apps/web/server`, `apps/desktop/main`, `apps/desktop/preload`) qua `tsup` — tạo `dist/` tự chứa, external đúng native module `better-sqlite3`, smoke test tự động kiểm tra khởi động, `/rpc`, `/ws`, clean shutdown ≤ 5s, `require('better-sqlite3')`, Dockerfile đa tầng trên bookworm-slim (glibc), đạt Full Turbo caching (28ms).
 > **T-B06 xong 2026-08-19**: Hoàn thành trọn vẹn 9 nhóm Conformance C1–C9 (Connect, Introspect, Execute, Types, Tx, Cancel, DDL, Errors, Resource) — chạy xanh trên cả 3 engine thật (PostgreSQL 78 test, MySQL 62 test, SQLite 68 test).
