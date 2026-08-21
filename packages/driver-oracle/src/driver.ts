@@ -34,6 +34,8 @@ function parseOracleServerVersion(versionString: string): ServerVersion {
   }
 }
 
+oracledb.fetchAsString = [oracledb.CLOB, oracledb.NUMBER]
+
 export class OracleTransaction implements Transaction {
   constructor(
     readonly id: string,
@@ -49,10 +51,16 @@ export class OracleTransaction implements Transaction {
   }
 
   async savepoint(name: string): Promise<void> {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_$]*$/.test(name)) {
+      throw corvusError('INVALID_INPUT', 'Tên savepoint không hợp lệ')
+    }
     await this.conn.execute(`SAVEPOINT ${name}`)
   }
 
   async rollbackTo(name: string): Promise<void> {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_$]*$/.test(name)) {
+      throw corvusError('INVALID_INPUT', 'Tên savepoint không hợp lệ')
+    }
     await this.conn.execute(`ROLLBACK TO SAVEPOINT ${name}`)
   }
 }
@@ -175,7 +183,7 @@ export class OracleConnection implements DriverConnection {
           rows: formattedRows,
           done,
           ...(done
-            ? { stats: { rowCount: emitted, durationMs: Date.now() - startedAt, truncated: false } }
+            ? { stats: { rowCount: emitted, durationMs: Date.now() - startedAt, truncated: (req.maxRows !== undefined && emitted >= req.maxRows) } }
             : {}),
         }
 
@@ -252,20 +260,17 @@ export class OracleDriver implements DatabaseDriver {
         poolTimeout: 30,
       })
 
+      const conn = await pool.getConnection()
       let versionString = ''
-      let conn: oracledb.Connection | undefined
       try {
-        conn = await pool.getConnection()
         const verRes = await conn.execute<{ BANNER: string }>(
           'SELECT banner AS "BANNER" FROM v$version WHERE ROWNUM = 1',
           [],
           { outFormat: oracledb.OUT_FORMAT_OBJECT },
         )
         versionString = verRes.rows?.[0]?.BANNER ?? ''
-      } catch {
-        // ignore
       } finally {
-        if (conn) await conn.close()
+        await conn.close().catch(() => {})
       }
 
       const serverVersion = parseOracleServerVersion(versionString)

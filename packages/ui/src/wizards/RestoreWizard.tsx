@@ -15,8 +15,8 @@ export interface RestoreWizardProps {
 
 export function RestoreWizard({ onClose, onComplete }: RestoreWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [filePath, setFilePath] = useState('D:\\backups\\sakila_20260812_1042.sql.gz')
-  const [targetDatabase, setTargetDatabase] = useState('sakila')
+  const [filePath, setFilePath] = useState('D:\\backups\\backup_sample.sql.gz')
+  const [targetDatabase, setTargetDatabase] = useState('sample_db')
   const [dropExisting, setDropExisting] = useState(true)
 
   const backupMeta = {

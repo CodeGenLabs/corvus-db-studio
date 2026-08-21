@@ -1,15 +1,16 @@
 name: Integration (database thật)
 
-# Chạy trên DB thật qua testcontainers — chậm và cần Docker, nên không nằm trong CI mọi PR.
+# Chạy trên DB thật qua testcontainers / docker stack
 on:
   schedule:
-    - cron: '0 18 * * *' # 01:00 giờ Việt Nam
+    - cron: '0 18 * * *' # 01:00 giờ Việt Nam (chạy toàn bộ 7 engine)
   workflow_dispatch:
   pull_request:
-    # PR chạm driver / engine / sql thì bắt buộc chạy: đây là nơi lỗi thật lộ ra.
+    # PR chạm driver / engine / sql / host thì chạy tập core
     paths:
       - 'packages/driver-*/**'
       - 'packages/engine/**'
+      - 'packages/host/**'
       - 'packages/sql/**'
       - 'packages/storage/**'
       - 'apps/web/server/**'
@@ -19,14 +20,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  integration:
-    name: Conformance + handler trên PostgreSQL
+  integration-core:
+    name: Core Engines (PostgreSQL, MySQL, SQLite, MongoDB, Redis)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -34,15 +33,48 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Pull trước để timeout của test không tính thời gian tải image.
-      - name: Pull image PostgreSQL
-        run: docker pull postgres:16-alpine
+      - name: Pull images (PostgreSQL, MySQL, Mongo, Redis)
+        run: |
+          docker pull postgres:16-alpine
+          docker pull mysql:8.0
+          docker pull mongo:7
+          docker pull redis:7-alpine
 
-      - name: Driver conformance (C1 · C2 · C3 · C5)
-        run: pnpm --filter @corvus/driver-postgres test:integration
+      - name: Test Core Database Drivers
+        run: |
+          pnpm --filter @corvus/driver-postgres test:integration
+          pnpm --filter @corvus/driver-mysql test:integration
+          pnpm --filter @corvus/driver-sqlite test:integration
+          pnpm --filter @corvus/driver-mongodb test:integration
+          pnpm --filter @corvus/driver-redis test:integration
 
-      - name: Handler RPC end-to-end
-        run: pnpm --filter @corvus/engine test:integration
+      - name: Test Engine & Web Server RPC
+        run: |
+          pnpm --filter @corvus/engine test:integration
+          pnpm --filter @corvus/app-web-server test:integration
 
-      - name: Web server HTTP RPC end-to-end
-        run: pnpm --filter @corvus/app-web-server test:integration
+  integration-heavy:
+    name: Heavy Engines (SQL Server, Oracle, MariaDB)
+    # Chạy trên scheduled nightly hoặc workflow dispatch
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Pull images (MSSQL, Oracle, MariaDB)
+        run: |
+          docker pull mcr.microsoft.com/mssql/server:2022-latest
+          docker pull gvenzl/oracle-free:23-slim
+          docker pull mariadb:11.4
+
+      - name: Test Heavy Database Drivers
+        run: |
+          pnpm --filter @corvus/driver-mssql test:integration
+          pnpm --filter @corvus/driver-oracle test:integration

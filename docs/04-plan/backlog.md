@@ -12,7 +12,7 @@
 > - `[SAI — xem audit]` — đánh dấu xong nhưng không đạt tiêu chí `✅` của chính nó
 > - `[MOT PHAN]` — có code ở mức khung / UI component, chưa đạt đủ tiêu chí backend hoặc test
 > - `[CHUA KIEM DUOC — can ...]` — cần điều kiện đặc thù (benchmark / credentials) để kiểm chứng
->
+> **Feature 002 (Docker Real Env Testing) xong 2026-08-21**: Đã dựng hoàn chỉnh môi trường phát triển & kiểm thử thật cho 7 engine database (PostgreSQL 16, MySQL 8.0, MariaDB 11.4, SQL Server 2022 trên cổng an toàn 1434, Oracle 23 Free, MongoDB 7, Redis 7 + SQLite), loại bỏ 100% fallback mockup khỏi UI và Desktop runtime (sửa triệt để A-11 & A-12), bộ test tích hợp 100% chạy trên dữ liệu thật với 3 lớp chốt an toàn SR-005. Toàn bộ monorepo đạt 100% xanh trên `pnpm verify` và `pnpm test:it`.
 > **100% RPC Handlers & UI Live Wiring (2026-08-21)**: Đạt 76/76 RPC Methods (`HANDLER_DEBT = 0`), toàn bộ các Views trong `packages/ui` (Data, SQL, Design, Monitor, Jobs, ER, QueryBuilder, View, Routine, Trigger, Objects, Form, Welcome) đã được kết nối trực tiếp với live RPC engine và xác minh toàn diện qua `pnpm verify` (lint + depcruise + typecheck + build + test + check:contract xanh 100%).
 > **W-0 đã đạt mốc chứng minh** (2026-08-19): UI hiện bảng thật từ PostgreSQL.
 > **T-B03 xong 2026-08-19**: Real Production Build cho 3 Node Apps (`apps/web/server`, `apps/desktop/main`, `apps/desktop/preload`) qua `tsup` — tạo `dist/` tự chứa, external đúng native module `better-sqlite3`, smoke test tự động kiểm tra khởi động, `/rpc`, `/ws`, clean shutdown ≤ 5s, `require('better-sqlite3')`, Dockerfile đa tầng trên bookworm-slim (glibc), đạt Full Turbo caching (28ms).

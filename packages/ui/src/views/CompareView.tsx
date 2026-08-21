@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
-import { DIFF } from '../data/schema'
 import { useStudio } from '../store/studio'
+
+const DEFAULT_DIFF: [string, string, string, string, string, string][] = []
 
 const COLS = '30px 90px 1fr 1fr 70px 150px'
 const MARK_COLOR: Record<string, string> = { '~': 'var(--amber)', '+': 'var(--green)', '−': 'var(--red)' }
@@ -203,7 +204,7 @@ export function CompareView() {
           <div style={{ padding: '5px 8px' }}>last_update</div>
         </div>
 
-        {DIFF.map((d) => (
+        {DEFAULT_DIFF.map((d) => (
           <div
             key={d[0] + d[1]}
             style={{

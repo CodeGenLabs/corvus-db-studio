@@ -46,6 +46,10 @@ export function toCellValue(raw: unknown, declaredType?: string): CellValue {
   }
 
   if (typeof raw === 'string') {
+    if (dt.includes('float') || dt.includes('double') || dt.includes('real')) {
+      const parsed = parseFloat(raw)
+      return isNaN(parsed) ? { k: 'str', v: raw } : { k: 'num', v: parsed }
+    }
     if (dt.includes('number') || dt.includes('decimal') || dt.includes('numeric')) {
       return { k: 'big', v: raw }
     }

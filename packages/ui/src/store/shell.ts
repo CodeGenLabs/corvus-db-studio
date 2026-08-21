@@ -13,7 +13,6 @@ import type {
   View,
 } from '@corvus/contract'
 import { DICTS, JA_X, LANG_NEXT, type Dict, type Lang } from '../i18n/dictionaries'
-import { fieldsFor } from '../data/schema'
 import {
   closeTabInState,
   openTabInState,
@@ -141,16 +140,6 @@ export interface ShellStore extends ShellState {
   tr: (vi: string, en: string) => string
   filterCriteria: () => FilterCriterion[]
   sortCriteria: () => SortCriterion[]
-}
-
-function defaultCriteria(table: string): FilterCriterion[] {
-  const f = fieldsFor(table)
-  const dateCol = f.find((x) => x.type === 'timestamp')
-  const textCol = f.find((x) => x.type === 'varchar')
-  const out: FilterCriterion[] = [{ join: 'WHERE', field: f[0]?.name ?? 'id', op: '>=', value: '1' }]
-  if (dateCol) out.push({ join: 'AND', field: dateCol.name, op: '>=', value: '2026-08-01' })
-  else if (textCol) out.push({ join: 'AND', field: textCol.name, op: 'LIKE', value: '%a%' })
-  return out
 }
 
 let updateTimer: number | null = null
@@ -316,11 +305,11 @@ export const useShellStore = create<ShellStore>((setState, getState) => ({
 
   filterCriteria: () => {
     const s = getState()
-    return s.flCrit ?? defaultCriteria(s.selTable)
+    return s.flCrit ?? []
   },
 
   sortCriteria: () => {
     const s = getState()
-    return s.flSort ?? [{ field: fieldsFor(s.selTable)[0]?.name ?? 'id', dir: 'ASC' }]
+    return s.flSort ?? []
   },
 }))

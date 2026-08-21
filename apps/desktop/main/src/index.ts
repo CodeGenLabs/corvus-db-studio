@@ -1,22 +1,12 @@
 import path from 'node:path'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { IpcRpcHost } from '@corvus/transport-ipc/host'
-
-import { createMockTransport } from '@corvus/transport-mock'
+import { buildEngine } from '@corvus/host'
 
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd()
 
-const mockTransport = createMockTransport({ latencyMs: 0 })
-const mockRouter = {
-  async handleRequest(method: string, params: unknown) {
-    return mockTransport.request(method, params)
-  },
-  async *handleStream(method: string, params: unknown) {
-    yield* mockTransport.stream(method, params)
-  },
-}
-
-const host = new IpcRpcHost(mockRouter)
+const engine = buildEngine()
+const host = new IpcRpcHost(engine.router)
 host.register(ipcMain as unknown as Parameters<typeof host.register>[0])
 
 async function loadRenderer(win: BrowserWindow) {
@@ -96,6 +86,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  void engine.close()
 })
 
 process.on('SIGINT', () => {

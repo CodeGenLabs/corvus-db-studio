@@ -1,78 +1,89 @@
 import { afterAll, beforeAll } from 'vitest'
-import { GenericContainer, type StartedTestContainer } from 'testcontainers'
-import { MSSQL_SETUP_SQL, runConformanceSuite } from '@corvus/driver-core/conformance'
+import { GenericContainer } from 'testcontainers'
+import { MSSQL_CONFORMANCE, MSSQL_SETUP_SQL, runConformanceSuite } from '@corvus/driver-core/conformance'
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
 import type { ResolvedProfile } from '@corvus/driver-core'
 import { mssqlDriver } from './index'
 
-let container: StartedTestContainer | undefined
-let skipTests = false
+let envHandle: TestEnvironmentHandle | undefined
 
 const profile: ResolvedProfile = {
   id: 'conf-mssql',
   name: 'conformance mssql',
   driverId: 'mssql',
   host: '127.0.0.1',
-  port: 1433,
-  database: 'master',
+  port: 1434, // Cổng dev-db an toàn (không dùng 1433 của máy host)
+  database: 'corvus_dev',
   user: 'sa',
-  password: 'CorvusPassword123!',
+  password: 'Corvus_dev_pw1',
 }
 
 beforeAll(async () => {
   try {
-    container = await new GenericContainer('mcr.microsoft.com/mssql/server:2022-latest')
-      .withEnvironment({
-        ACCEPT_EULA: 'Y',
-        MSSQL_SA_PASSWORD: 'CorvusPassword123!',
-      })
-      .withExposedPorts(1433)
-      .start()
+    envHandle = await setupTestEnvironment(
+      'mssql',
+      mssqlDriver,
+      MSSQL_SETUP_SQL,
+      async () => {
+        const container = await new GenericContainer(
+          'mcr.microsoft.com/mssql/server:2022-latest',
+        )
+          .withEnvironment({
+            ACCEPT_EULA: 'Y',
+            MSSQL_SA_PASSWORD: 'Corvus_dev_pw1',
+          })
+          .withExposedPorts(1433)
+          .start()
 
-    profile.host = container.getHost()
-    profile.port = container.getMappedPort(1433)
-
-    // Guard SR-007 (T063): Chờ SQL Server khởi động hoàn tất
-    let connected = false
-    for (let i = 0; i < 30; i++) {
-      try {
-        const testConn = await mssqlDriver.connect(profile)
-        await testConn.ping()
-        await testConn.close()
-        connected = true
-        break
-      } catch {
-        await new Promise((r) => setTimeout(r, 1000))
-      }
-    }
-
-    if (!connected) {
-      skipTests = true
-      return
-    }
-
-    const conn = await mssqlDriver.connect(profile)
-    try {
-      for (const sql of MSSQL_SETUP_SQL) {
-        for await (const _ of conn.execute({ sql })) {
-          /* DDL */
+        const mappedProfile: ResolvedProfile = {
+          id: 'conf-mssql-tc',
+          name: 'conformance mssql testcontainers',
+          driverId: 'mssql',
+          host: container.getHost(),
+          port: container.getMappedPort(1433),
+          database: 'master',
+          user: 'sa',
+          password: 'Corvus_dev_pw1',
         }
-      }
-    } finally {
-      await conn.close()
-    }
-  } catch {
-    skipTests = true
+
+        // Chờ SQL Server khởi động hoàn tất
+        for (let i = 0; i < 30; i++) {
+          try {
+            const testConn = await mssqlDriver.connect(mappedProfile)
+            await testConn.ping()
+            await testConn.close()
+            break
+          } catch {
+            await new Promise((r) => setTimeout(r, 1000))
+          }
+        }
+
+        return {
+          profile: mappedProfile,
+          stop: async () => {
+            await container.stop()
+          },
+        }
+      },
+    )
+
+    Object.assign(profile, envHandle.profile)
+  } catch (err) {
+    console.warn('[mssql.integration.test] Không thể khởi tạo môi trường MSSQL:', err)
   }
-})
+}, 300_000)
 
 afterAll(async () => {
-  if (container) {
-    await container.stop().catch(() => {
-      // ignore
-    })
-  }
+  await envHandle?.teardown()
 })
 
-if (!skipTests) {
-  runConformanceSuite(mssqlDriver, { profile })
-}
+runConformanceSuite(mssqlDriver, {
+  profile,
+  schema: 'corvus_dev',
+  dialect: {
+    ...MSSQL_CONFORMANCE,
+    schema: 'corvus_dev',
+    qualify: (n) => `corvus_dev.[${n}]`,
+  },
+})
+

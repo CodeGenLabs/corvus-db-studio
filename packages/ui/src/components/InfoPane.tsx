@@ -1,8 +1,7 @@
-import { Fragment } from 'react'
-import { Kw } from './code'
-import { fieldsFor, TABLES } from '../data/schema'
-import { useStudio } from '../store/studio'
-import type { InfoTab, TableRow } from '../types'
+import { useQuery } from '@tanstack/react-query'
+import type { TableMeta } from '@corvus/contract'
+import { useStudio, useClient } from '../store/studio'
+import type { InfoTab } from '../types'
 
 const TABS: { k: InfoTab; icon: string }[] = [
   { k: 'info', icon: 'M8 1.8a6.2 6.2 0 100 12.4 6.2 6.2 0 000-12.4 M8 7.2v4 M8 4.9h.01' },
@@ -14,68 +13,59 @@ const TABS: { k: InfoTab; icon: string }[] = [
   },
 ]
 
-const EMPTY_META: TableRow = ['', '—', '—', 'InnoDB', '—', '—']
-
 function DdlBlock({ table }: { table: string }) {
-  const fields = fieldsFor(table)
-  const pk = fields[0].name
-  return (
-    <>
-      <Kw>CREATE TABLE</Kw> {'`' + table + '` (\n'}
-      {fields.map((f, i) => (
-        <Fragment key={f.name}>
-          {'  `' + f.name + '` '}
-          <Kw>{f.ddl}</Kw>
-          {f.notNull ? (
-            <>
-              {' '}
-              <Kw>NOT NULL</Kw>
-            </>
-          ) : (
-            <>
-              {' '}
-              <Kw>DEFAULT NULL</Kw>
-            </>
-          )}
-          {i === 0 ? (
-            ' AUTO_INCREMENT'
-          ) : f.name === 'last_update' ? (
-            <>
-              {' '}
-              <Kw>DEFAULT</Kw> CURRENT_TIMESTAMP <Kw>ON UPDATE</Kw> CURRENT_TIMESTAMP
-            </>
-          ) : null}
-          {',\n'}
-        </Fragment>
-      ))}
-      {'  '}
-      <Kw>PRIMARY KEY</Kw> {'(`' + pk + '`)'}
-      {fields.length > 1 && (
-        <>
-          {',\n  '}
-          <Kw>KEY</Kw> {'`idx_' + fields[1].name + '` (`' + fields[1].name + '`)'}
-        </>
-      )}
-      {'\n) '}
-      <Kw>ENGINE</Kw>=InnoDB <Kw>DEFAULT CHARSET</Kw>=utf8mb4;
-    </>
-  )
+  const { activeTab } = useStudio()
+  const client = useClient()
+
+  const tab = activeTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
+  const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
+
+  const { data: ddlRes, isLoading } = useQuery({
+    queryKey: ['tableDdl', connectionId, table],
+    queryFn: () =>
+      client.request<{ ddl: string }>('introspect.ddl', {
+        connectionId,
+        database,
+        schema,
+        name: table,
+        kind: 'table',
+      }),
+    enabled: !!table,
+  })
+
+  if (isLoading) return <div>Đang tải DDL...</div>
+  return <>{ddlRes?.ddl || `-- Không có DDL cho ${table}`}</>
 }
 
 export function InfoPane() {
-  const { s, set, t, tr, infoOpen, beginDrag } = useStudio()
+  const { s, set, t, tr, infoOpen, beginDrag, activeTab } = useStudio()
+  const client = useClient()
 
-  const meta = TABLES.find((r) => r[0] === s.selTable) ?? EMPTY_META
+  const tab = activeTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
+  const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
+
+  const { data: meta } = useQuery({
+    queryKey: ['tableMeta', connectionId, s.selTable],
+    queryFn: () =>
+      client.request<TableMeta>('introspect.tableMeta', {
+        connectionId,
+        database,
+        schema,
+        table: s.selTable,
+      }),
+    enabled: !!s.selTable,
+  })
+
   const facts: [string, string][] = [
-    [tr('Số dòng', 'Rows'), meta[1]],
-    ['Engine', meta[3]],
-    ['Auto increment', meta[4]],
-    ['Row format', 'Dynamic'],
-    [tr('Dung lượng', 'Data length'), meta[2]],
-    ['Index length', '16 KB'],
-    ['Collation', 'utf8mb4_0900_ai_ci'],
-    [tr('Tạo lúc', 'Created'), '2020-05-26 16:39'],
-    [tr('Sửa lúc', 'Modified'), meta[5]],
+    [tr('Số cột', 'Columns'), String(meta?.columns.length ?? '—')],
+    [tr('Số chỉ mục', 'Indexes'), String(meta?.indexes.length ?? '—')],
+    [tr('Khoá ngoại', 'Foreign Keys'), String(meta?.foreignKeys.length ?? '—')],
+    ['Schema', meta?.schema ?? '—'],
+    [tr('Ghi chú', 'Comment'), meta?.comment ?? '—'],
   ]
 
   const activities: [string, string][] =

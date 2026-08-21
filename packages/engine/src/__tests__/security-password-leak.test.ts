@@ -39,14 +39,40 @@ export function testSecurityPasswordLeak(): { passed: boolean; message?: string 
   return { passed: true }
 }
 
-/**
- * Bọc thành test vitest thật. Trước đây hàm trên chỉ được export mà không có runner
- * nào gọi, nên test này chưa từng chạy — xem docs/04-plan/audit-2026-08-18.md.
- */
-describe('security-password-leak', () => {
+describe('security-password-leak (SR-003, Điều cấm #6)', () => {
   it('mật khẩu user không rò khi tạo/sửa user', async () => {
     const result = testSecurityPasswordLeak()
     expect(result.message ?? '').toBe('')
     expect(result.passed).toBe(true)
+  })
+
+  it('redact() che toàn bộ mật khẩu trong connection configs của 7 engine', () => {
+    const secret = 'VerySecretDbPassword123!'
+    const engines = ['postgres', 'mysql', 'mariadb', 'mssql', 'oracle', 'mongodb', 'redis'] as const
+
+    for (const engine of engines) {
+      const connConfig = {
+        id: `conn-${engine}`,
+        driverId: engine,
+        name: `Dev ${engine}`,
+        host: '127.0.0.1',
+        port: 5432,
+        user: 'corvus',
+        password: secret,
+        auth: {
+          password: secret,
+          passphrase: secret,
+          privateKey: secret,
+        },
+      }
+
+      const sanitized = redact(connConfig)
+      const json = JSON.stringify(sanitized)
+      expect(json).not.toContain(secret)
+      expect(sanitized.password).toBe('«redacted»')
+      expect(sanitized.auth.password).toBe('«redacted»')
+      expect(sanitized.auth.passphrase).toBe('«redacted»')
+      expect(sanitized.auth.privateKey).toBe('«redacted»')
+    }
   })
 })

@@ -14,6 +14,7 @@ import { ConnectionDialog } from './components/dialogs/ConnectionDialog'
 import { SettingsDialog } from './components/dialogs/SettingsDialog'
 import { UpdatesDialog } from './components/dialogs/UpdatesDialog'
 import { UsersDialog } from './components/dialogs/UsersDialog'
+import { MockModeBanner } from './components/MockModeBanner'
 import { StudioProvider, useStudio } from './store/studio'
 import { BackupView } from './views/BackupView'
 import { CompareView } from './views/CompareView'
@@ -122,12 +123,14 @@ function Shell() {
 }
 
 export interface CorvusAppProps {
-  transport?: Transport
+  transport: Transport
+  isMockMode?: boolean
 }
 
-export default function App({ transport }: CorvusAppProps = {}) {
+export default function App({ transport, isMockMode }: CorvusAppProps) {
   return (
     <StudioProvider transport={transport}>
+      {isMockMode && <MockModeBanner />}
       <Shell />
     </StudioProvider>
   )

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { TABLES } from '../data/schema'
 import { useStudio, useClient } from '../store/studio'
 import type { ObjectKind } from '@corvus/contract'
 
@@ -52,45 +51,22 @@ export function ObjectsView() {
           kind: 'table',
         })
 
-        if (!cancelled && Array.isArray(list) && list.length > 0) {
+        if (!cancelled && Array.isArray(list)) {
           setObjects(
             list.map((o) => ({
               name: o.name,
               kind: o.kind,
               rows: o.rowCount !== undefined ? o.rowCount.toLocaleString() : '-',
               size: formatBytes(o.sizeBytes),
-              engine: o.engine || 'InnoDB',
+              engine: o.engine || '—',
               autoInc: o.autoIncrement !== undefined ? String(o.autoIncrement) : '-',
               modified: o.updatedAt || '-',
-            })),
-          )
-        } else if (!cancelled) {
-          // Fallback sample
-          setObjects(
-            TABLES.map((r) => ({
-              name: r[0],
-              kind: 'table',
-              rows: r[1],
-              size: r[2],
-              engine: r[3],
-              autoInc: r[4],
-              modified: r[5],
             })),
           )
         }
       } catch {
         if (!cancelled) {
-          setObjects(
-            TABLES.map((r) => ({
-              name: r[0],
-              kind: 'table',
-              rows: r[1],
-              size: r[2],
-              engine: r[3],
-              autoInc: r[4],
-              modified: r[5],
-            })),
-          )
+          setObjects([])
         }
       }
     }
@@ -99,7 +75,7 @@ export function ObjectsView() {
     return () => {
       cancelled = true
     }
-  }, [client, connectionId, schema])
+  }, [client, connectionId, schema, database])
 
   const handleOpenObject = (name: string) => {
     set({ selTable: name })

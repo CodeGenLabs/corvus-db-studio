@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
-import { fieldsFor } from '../data/schema'
-import { useStudio } from '../store/studio'
+import { useQuery } from '@tanstack/react-query'
+import type { TableMeta } from '@corvus/contract'
+import { useStudio, useClient } from '../store/studio'
 
 const ADD_BTN: CSSProperties = {
   width: 24,
@@ -45,9 +46,27 @@ function whereClause(crit: { join: string; field: string; op: string; value: str
 }
 
 export function FilterPanel() {
-  const { s, set, t, tr, filterCriteria, sortCriteria } = useStudio()
+  const { s, set, t, tr, filterCriteria, sortCriteria, activeTab } = useStudio()
+  const client = useClient()
 
-  const firstField = fieldsFor(s.selTable)[0].name
+  const tab = activeTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
+  const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
+
+  const { data: tableMeta } = useQuery({
+    queryKey: ['tableMeta', connectionId, s.selTable],
+    queryFn: () =>
+      client.request<TableMeta>('introspect.tableMeta', {
+        connectionId,
+        database,
+        schema,
+        table: s.selTable,
+      }),
+    enabled: !!s.selTable,
+  })
+
+  const firstField = tableMeta?.columns?.[0]?.name ?? 'id'
   const whereText = whereClause(filterCriteria, tr('-- chưa có điều kiện', '-- no criteria'))
   const orderText = sortCriteria.length
     ? ' ORDER BY ' + sortCriteria.map((x) => x.field + ' ' + x.dir).join(', ')

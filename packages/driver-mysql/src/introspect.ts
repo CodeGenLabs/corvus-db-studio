@@ -249,7 +249,7 @@ export class MysqlIntrospector implements Introspector {
         } else {
           indexMap.set(r.INDEX_NAME, {
             columns: [r.COLUMN_NAME],
-            unique: r.NON_UNIQUE === 0,
+            unique: Number(r.NON_UNIQUE) === 0,
             primary: r.INDEX_NAME === 'PRIMARY',
             type: r.INDEX_TYPE,
           })

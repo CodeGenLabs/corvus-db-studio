@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import type { ConnectionProfile, ResultChunk } from '@corvus/contract'
 import { registerDriver, driverRegistry } from '@corvus/driver-core'
 import { postgresDriver } from '@corvus/driver-postgres'
@@ -15,7 +15,6 @@ import { registerHandlers, type ConnectionStore } from '../handlers'
  * Ở đây kiểm những bất biến của streaming-and-jobs.md §A.3 mà chỉ database THẬT mới
  * chứng minh được: cursor có đóng không, CANCEL có tới server không, RAM có phẳng không.
  */
-let container: StartedPostgreSqlContainer
 let router: EngineRouter
 let sessions: SessionManager
 
@@ -88,20 +87,56 @@ async function until(cond: () => Promise<boolean> | boolean, label: string, time
   }
 }
 
-beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:16-alpine')
-    .withDatabase('corvus')
-    .withUsername('corvus')
-    .withPassword('corvus')
-    .start()
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
 
-  profile.host = container.getHost()
-  profile.port = container.getPort()
-  await vault.set({ kind: 'db-password', ownerId: 'local-owner', connectionId: CONNECTION_ID }, 'corvus')
+let envHandle: TestEnvironmentHandle | undefined
+
+beforeAll(async () => {
+  envHandle = await setupTestEnvironment(
+    'postgres',
+    postgresDriver,
+    undefined,
+    async () => {
+      const c = await new PostgreSqlContainer('postgres:16-alpine')
+        .withDatabase('corvus')
+        .withUsername('corvus')
+        .withPassword('corvus')
+        .start()
+      return {
+        profile: {
+          id: CONNECTION_ID,
+          name: 'PostgreSQL test',
+          driverId: 'postgres',
+          host: c.getHost(),
+          port: c.getPort(),
+          database: 'corvus',
+          user: 'corvus',
+          password: 'corvus',
+        },
+        stop: async () => {
+          await c.stop()
+        },
+      }
+    },
+  )
+
+  profile.host = envHandle.profile.host
+  profile.port = envHandle.profile.port
+  profile.database = envHandle.profile.database
+  profile.user = envHandle.profile.user
+
+  await vault.set(
+    { kind: 'db-password', ownerId: 'local-owner', connectionId: CONNECTION_ID },
+    envHandle.profile.password ?? 'corvus',
+  )
 
   if (!driverRegistry.has('postgres')) registerDriver(postgresDriver)
 
-  probe = await postgresDriver.connect({ ...profile, id: 'probe', password: 'corvus' })
+  probe = await postgresDriver.connect({
+    ...profile,
+    id: 'probe',
+    password: envHandle.profile.password ?? 'corvus',
+  })
 
   sessions = new SessionManager()
   router = new EngineRouter()
@@ -111,7 +146,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await probe?.close()
   await sessions?.closeAll?.()
-  await container?.stop()
+  await envHandle?.teardown()
 })
 
 describe('T-B05 · query.execute qua EngineRouter.handleStream', () => {
@@ -298,7 +333,12 @@ describe('read-only · query.execute trên connection chỉ đọc', () => {
   beforeAll(async () => {
     roProfile.host = profile.host
     roProfile.port = profile.port
-    await vault.set({ kind: 'db-password', ownerId: 'local-owner', connectionId: RO_ID }, 'corvus')
+    roProfile.database = profile.database
+    roProfile.user = profile.user
+    await vault.set(
+      { kind: 'db-password', ownerId: 'local-owner', connectionId: RO_ID },
+      envHandle?.profile.password ?? 'corvus',
+    )
 
     roSessions = new SessionManager()
     roRouter = new EngineRouter()
@@ -385,7 +425,10 @@ describe('read-only · query.execute trên connection chỉ đọc', () => {
   it('lớp 2 độc lập: server từ chối ghi ngay cả khi bỏ qua bộ phân loại của engine', async () => {
     // Gọi thẳng driver, không đi qua handler — chứng minh `default_transaction_read_only`
     // đã được đặt ở tầng session, chứ không phải chỉ có lớp phân loại SQL.
-    const conn = await postgresDriver.connect({ ...roProfile, password: 'corvus' })
+    const conn = await postgresDriver.connect({
+      ...roProfile,
+      password: envHandle?.profile.password ?? 'corvus',
+    })
     try {
       await expect(
         (async () => {

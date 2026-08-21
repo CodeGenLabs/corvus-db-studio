@@ -9,6 +9,16 @@ module.exports = {
       to: { path: '(^node:)|(^electron$)|(^better-sqlite3$)|(^pg$)|(^mysql2$)|(^ssh2$)|(^mssql$)|(^oracledb$)|(^mongodb$)|(^ioredis$)' },
     },
     {
+      name: 'no-mock-in-runtime',
+      comment: 'SC-004 — cấm import transport-mock trong runtime code (chỉ cho phép ở test và main.mock.tsx)',
+      severity: 'error',
+      from: {
+        path: '^(packages/ui/src|apps/desktop/main/src|apps/web/server/src|apps/web/client/src|src)/',
+        pathNot: '(\\.test\\.(ts|tsx)$|__tests__|main\\.mock\\.tsx)',
+      },
+      to: { path: '^packages/transport-mock' },
+    },
+    {
       name: 'no-engine-in-ui',
       comment: 'coding-rules §1.1 — ui/client không được import engine/services/driver/storage/tunnel',
       severity: 'error',

@@ -222,7 +222,8 @@ export class MongoDriver implements DatabaseDriver {
       authString = `${encodeURIComponent(profile.user)}:${encodeURIComponent(profile.password ?? '')}@`
     }
 
-    const url = `mongodb://${authString}${host}:${port}/${dbName}?serverSelectionTimeoutMS=15000`
+    const authSource = (profile as { authSource?: string }).authSource ?? 'admin'
+    const url = `mongodb://${authString}${host}:${port}/${dbName}?authSource=${authSource}&serverSelectionTimeoutMS=15000`
 
     try {
       const client = new MongoClient(url)

@@ -1,6 +1,7 @@
-import { BK_FILES } from '../data/schema'
 import { useStudio } from '../store/studio'
 import type { BackupOptions, BackupScope } from '../types'
+
+const DEFAULT_BK_FILES: [string, string, string, string, 'ok' | 'warn' | 'fail'][] = []
 
 const BK_COLS = '1fr 150px 90px 110px 190px'
 const PILL_COLOR: Record<string, string> = {
@@ -33,7 +34,7 @@ export function BackupView() {
   ]
 
   const status = s.bkRunning
-    ? tr('Đang ghi sakila_20260812_1042.sql.gz…', 'Writing sakila_20260812_1042.sql.gz…')
+    ? tr('Đang ghi backup.sql.gz…', 'Writing backup.sql.gz…')
     : s.bkPct >= 100
       ? tr('Hoàn tất · đã kiểm tra tệp', 'Complete · file verified')
       : tr('Chưa chạy', 'Idle')
@@ -297,7 +298,7 @@ export function BackupView() {
         </div>
 
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-          {BK_FILES.map((b, i) => {
+          {DEFAULT_BK_FILES.map((b, i) => {
             const failed = b[4] === 'fail'
             return (
               <div

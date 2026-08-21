@@ -1,23 +1,17 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import type { Server } from 'node:http'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { EnvelopeVault, openWorkspace } from '@corvus/storage'
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
 
-/**
- * R-08b: chứng minh bản WEB chạy thật — HTTP RPC → engine → PostgreSQL.
- *
- * Khác với test của engine (gọi router trực tiếp), test này đi qua đúng lớp mạng mà
- * trình duyệt dùng, nên bắt được cả lỗi nối dây ở `apps/web/server` (ví dụ: result
- * validation từ chối `color: null` — lỗi thật đã gặp khi nối UI).
- */
-let container: StartedPostgreSqlContainer
 let server: Server | undefined
 let shutdown: ((s?: Server) => Promise<void>) | undefined
 let baseUrl: string
 let dataDir: string
+let envHandle: TestEnvironmentHandle | undefined
 
 const MASTER_KEY = '0'.repeat(64)
 
@@ -32,12 +26,41 @@ async function rpc<T = unknown>(method: string, params: unknown): Promise<T> {
   return body as T
 }
 
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
+
+let envHandle: TestEnvironmentHandle | undefined
+
 beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:16-alpine')
-    .withDatabase('corvus')
-    .withUsername('corvus')
-    .withPassword('corvus')
-    .start()
+  const { postgresDriver } = await import('@corvus/driver-postgres')
+  const { POSTGRES_SETUP_SQL } = await import('@corvus/driver-core/conformance')
+
+  envHandle = await setupTestEnvironment(
+    'postgres',
+    postgresDriver,
+    POSTGRES_SETUP_SQL,
+    async () => {
+      const c = await new PostgreSqlContainer('postgres:16-alpine')
+        .withDatabase('corvus')
+        .withUsername('corvus')
+        .withPassword('corvus')
+        .start()
+      return {
+        profile: {
+          id: 'pg-tc',
+          name: 'PG test',
+          driverId: 'postgres',
+          host: c.getHost(),
+          port: c.getPort(),
+          database: 'corvus',
+          user: 'corvus',
+          password: 'corvus',
+        },
+        stop: async () => {
+          await c.stop()
+        },
+      }
+    },
+  )
 
   // Chuẩn bị workspace riêng cho test — không đụng .corvus-data của máy dev.
   dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'corvus-web-it-'))
@@ -47,14 +70,14 @@ beforeAll(async () => {
     id: 'pg',
     name: 'PG test',
     driverId: 'postgres',
-    host: container.getHost(),
-    port: container.getPort(),
-    database: 'corvus',
-    user: 'corvus',
+    host: envHandle.profile.host,
+    port: envHandle.profile.port,
+    database: envHandle.profile.database ?? 'corvus',
+    user: envHandle.profile.user ?? 'corvus',
   })
   await new EnvelopeVault(MASTER_KEY, ws.db).set(
     { kind: 'db-password', ownerId: owner, connectionId: 'pg' },
-    'corvus',
+    envHandle.profile.password ?? 'corvus',
   )
   ws.close()
 
@@ -67,36 +90,12 @@ beforeAll(async () => {
   baseUrl = `http://127.0.0.1:${port}`
   server = await mod.createWebServer(port)
   shutdown = mod.shutdown
-
-  // Tạo schema mẫu qua chính driver.
-  const { postgresDriver } = await import('@corvus/driver-postgres')
-  const { splitStatements } = await import('@corvus/sql')
-  const { POSTGRES_SETUP_SQL } = await import('@corvus/driver-core/conformance')
-  const conn = await postgresDriver.connect({
-    id: 'seed',
-    name: 'seed',
-    driverId: 'postgres',
-    host: container.getHost(),
-    port: container.getPort(),
-    database: 'corvus',
-    user: 'corvus',
-    password: 'corvus',
-  })
-  try {
-    for (const sql of splitStatements(POSTGRES_SETUP_SQL, 'postgres')) {
-      for await (const _ of conn.execute({ sql })) {
-        /* DDL */
-      }
-    }
-  } finally {
-    await conn.close()
-  }
-}, 240_000)
+}, 180_000)
 
 afterAll(async () => {
   // Phải đóng cả engine: nếu không, workspace.db còn bị khoá và rmSync báo EBUSY.
   await shutdown?.(server)
-  await container?.stop()
+  await envHandle?.teardown()
   if (dataDir) fs.rmSync(dataDir, { recursive: true, force: true })
 })
 
@@ -121,7 +120,7 @@ describe('R-08b · web server HTTP RPC trên PostgreSQL thật', () => {
 
   it('introspect.databases → introspect.schemas → introspect.objects (đúng đường cây điều hướng)', async () => {
     const dbs = await rpc<string[]>('introspect.databases', { connectionId: 'pg' })
-    expect(dbs).toContain('corvus')
+    expect(dbs).toContain(envHandle?.profile.database ?? 'corvus')
 
     const schemas = await rpc<string[]>('introspect.schemas', { connectionId: 'pg' })
     expect(schemas).toContain('corvus_conf')

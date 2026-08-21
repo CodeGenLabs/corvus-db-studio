@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",
+    "@corvus/host": "workspace:*",
     "@corvus/transport-ipc": "workspace:*",
-    "@corvus/transport-mock": "workspace:*",
     "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {

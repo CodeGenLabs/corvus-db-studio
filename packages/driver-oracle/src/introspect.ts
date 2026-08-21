@@ -4,6 +4,7 @@ import type {
   IndexMeta,
   TableMeta,
 } from '@corvus/contract'
+import { corvusError } from '@corvus/contract'
 import type { Introspector } from '@corvus/driver-core'
 import { quoteIdentifier } from '@corvus/sql'
 import type oracledb from 'oracledb'
@@ -196,7 +197,7 @@ export class OracleIntrospector implements Introspector {
     try {
       conn = await this.pool.getConnection()
       const schema = (opts.schema ?? (conn as unknown as { currentSchema?: string })?.currentSchema ?? 'USER').toUpperCase()
-      const table = opts.table.toUpperCase()
+      const table = opts.table
 
       // ── Columns ──────────────────────────────────────────────────────────────
       const colQ = `
@@ -216,17 +217,17 @@ export class OracleIntrospector implements Introspector {
                 AND cm.table_name = c.table_name
                 AND cm.column_name = c.column_name
           LEFT JOIN (
-            SELECT cc.column_name
+            SELECT cc.column_name, con.table_name
               FROM all_constraints con
               JOIN all_cons_columns cc
                 ON cc.owner = con.owner
                AND cc.constraint_name = con.constraint_name
-             WHERE con.owner = :owner
-               AND con.table_name = :tableName
+             WHERE (con.owner = :owner OR con.owner = UPPER(:owner))
+               AND (con.table_name = :tableName OR con.table_name = UPPER(:tableName))
                AND con.constraint_type = 'P'
-          ) pk ON pk.column_name = c.column_name
+          ) pk ON UPPER(pk.column_name) = UPPER(c.column_name) AND (pk.table_name = c.table_name OR pk.table_name = UPPER(c.table_name))
          WHERE c.owner = :owner
-           AND c.table_name = :tableName
+           AND (c.table_name = :tableName OR c.table_name = UPPER(:tableName))
          ORDER BY c.column_id
       `
       const colRes = await conn.execute<{
@@ -240,45 +241,56 @@ export class OracleIntrospector implements Introspector {
         DATA_SCALE: number | null
         COMMENT: string | null
         IS_PK: number
-      }>(colQ, [schema, table], { outFormat: 4002 })
+      }>(colQ, { owner: schema, tableName: table }, { outFormat: 4002 })
 
-      const columns: ColumnMeta[] = (colRes.rows ?? []).map((r) => ({
+      if (!colRes.rows || colRes.rows.length === 0) {
+        throw corvusError('TABLE_NOT_FOUND', `Bảng ${opts.table} không tồn tại`)
+      }
+
+      const columns: ColumnMeta[] = colRes.rows.map((r) => ({
         name: r.COLUMN_NAME,
         dataType: r.DATA_TYPE,
-        nullable: r.IS_NULLABLE === 1,
+        nullable: Number(r.IS_NULLABLE) === 1,
         defaultValue: r.DATA_DEFAULT ?? null,
-        isPrimaryKey: r.IS_PK === 1,
+        isPrimaryKey: Number(r.IS_PK) === 1,
         comment: r.COMMENT ? String(r.COMMENT) : undefined,
-        ordinalPosition: r.ORDINAL_POSITION,
+        ordinalPosition: Number(r.ORDINAL_POSITION),
       }))
 
       // ── Indexes ──────────────────────────────────────────────────────────────
       const idxQ = `
         SELECT i.index_name AS "INDEX_NAME",
                CASE i.uniqueness WHEN 'UNIQUE' THEN 1 ELSE 0 END AS "IS_UNIQUE",
+               CASE WHEN pk.constraint_name IS NOT NULL THEN 1 ELSE 0 END AS "IS_PRIMARY",
                i.index_type AS "INDEX_TYPE",
                ic.column_name AS "COLUMN_NAME"
           FROM all_indexes i
           JOIN all_ind_columns ic
             ON ic.index_owner = i.owner
            AND ic.index_name = i.index_name
-         WHERE i.owner = :owner
-           AND i.table_name = :tableName
+          LEFT JOIN all_constraints pk
+            ON pk.owner = i.owner
+           AND pk.table_name = i.table_name
+           AND pk.index_name = i.index_name
+           AND pk.constraint_type = 'P'
+         WHERE (i.owner = :owner OR i.table_owner = :owner)
+           AND (i.table_name = :tableName OR i.table_name = UPPER(:tableName))
          ORDER BY i.index_name, ic.column_position
       `
       const idxRes = await conn.execute<{
         INDEX_NAME: string
         IS_UNIQUE: number
+        IS_PRIMARY: number
         INDEX_TYPE: string
         COLUMN_NAME: string
-      }>(idxQ, [schema, table], { outFormat: 4002 })
+      }>(idxQ, { owner: schema, tableName: table }, { outFormat: 4002 })
 
       const indexMap = new Map<string, { unique: boolean; primary: boolean; type?: string; columns: string[] }>()
       for (const r of idxRes.rows ?? []) {
         if (!indexMap.has(r.INDEX_NAME)) {
           indexMap.set(r.INDEX_NAME, {
-            unique: r.IS_UNIQUE === 1,
-            primary: false,
+            unique: Number(r.IS_UNIQUE) === 1,
+            primary: Number(r.IS_PRIMARY) === 1,
             type: r.INDEX_TYPE,
             columns: [],
           })
@@ -314,7 +326,7 @@ export class OracleIntrospector implements Introspector {
            AND rcc.constraint_name = r.constraint_name
            AND rcc.position = cc.position
          WHERE c.owner = :owner
-           AND c.table_name = :tableName
+           AND (c.table_name = :tableName OR c.table_name = UPPER(:tableName))
            AND c.constraint_type = 'R'
          ORDER BY c.constraint_name, cc.position
       `
@@ -325,7 +337,7 @@ export class OracleIntrospector implements Introspector {
         REF_TABLE: string
         TO_COLUMN: string
         ON_DELETE: string | null
-      }>(fkQ, [schema, table], { outFormat: 4002 })
+      }>(fkQ, { owner: schema, tableName: table }, { outFormat: 4002 })
 
       const foreignKeys: ForeignKeyMeta[] = (fkRes.rows ?? []).map((r) => ({
         name: r.CONSTRAINT_NAME,
@@ -340,11 +352,11 @@ export class OracleIntrospector implements Introspector {
         SELECT comments AS "COMMENT"
           FROM all_tab_comments
          WHERE owner = :owner
-           AND table_name = :tableName
+           AND (table_name = :tableName OR table_name = UPPER(:tableName))
       `
       const commentRes = await conn.execute<{ COMMENT: string | null }>(
         commentQ,
-        [schema, table],
+        { owner: schema, tableName: table },
         { outFormat: 4002 },
       )
 
@@ -382,13 +394,18 @@ export class OracleIntrospector implements Introspector {
         SELECT DBMS_METADATA.GET_DDL(:objectType, :objectName, :owner) AS "DDL" FROM DUAL
       `
       try {
-        const ddlRes = await conn.execute<{ DDL: string }>(
+        const ddlRes = await conn.execute<{ DDL: unknown }>(
           ddlQ,
-          [kind, name, schema],
+          { objectType: kind, objectName: name, owner: schema },
           { outFormat: 4002 },
         )
-        if (ddlRes.rows?.[0]?.DDL) {
-          return ddlRes.rows[0].DDL
+        const rawDdl = ddlRes.rows?.[0]?.DDL
+        if (rawDdl) {
+          if (typeof rawDdl === 'string') return rawDdl
+          if (typeof (rawDdl as { getData?: () => Promise<string> })?.getData === 'function') {
+            return await (rawDdl as { getData: () => Promise<string> }).getData()
+          }
+          return String(rawDdl)
         }
       } catch {
         // Fallback to table DDL generation

@@ -1,10 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import type { ConnectionProfile } from '@corvus/contract'
 import { registerDriver, driverRegistry } from '@corvus/driver-core'
 import { POSTGRES_SETUP_SQL } from '@corvus/driver-core/conformance'
 import { postgresDriver } from '@corvus/driver-postgres'
-import { splitStatements } from '@corvus/sql'
 import type { SecretRef, SecretVault } from '@corvus/storage'
 import { EngineRouter } from '../router'
 import { SessionManager } from '../session'
@@ -17,7 +16,6 @@ import { registerHandlers, type ConnectionStore } from '../handlers'
  * `router → handler → SessionManager → driver → PostgreSQL` và ngược lại,
  * gồm cả validate zod của params và của result.
  */
-let container: StartedPostgreSqlContainer
 let router: EngineRouter
 let sessions: SessionManager
 
@@ -62,30 +60,50 @@ const connections: ConnectionStore = {
 
 const vault = new MemoryVault()
 
-beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:16-alpine')
-    .withDatabase('corvus')
-    .withUsername('corvus')
-    .withPassword('corvus')
-    .start()
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
 
-  profile.host = container.getHost()
-  profile.port = container.getPort()
-  await vault.set({ kind: 'db-password', ownerId: 'local-owner', connectionId: CONNECTION_ID }, 'corvus')
+let envHandle: TestEnvironmentHandle | undefined
+
+beforeAll(async () => {
+  envHandle = await setupTestEnvironment(
+    'postgres',
+    postgresDriver,
+    POSTGRES_SETUP_SQL,
+    async () => {
+      const c = await new PostgreSqlContainer('postgres:16-alpine')
+        .withDatabase('corvus')
+        .withUsername('corvus')
+        .withPassword('corvus')
+        .start()
+      return {
+        profile: {
+          id: CONNECTION_ID,
+          name: 'PostgreSQL test',
+          driverId: 'postgres',
+          host: c.getHost(),
+          port: c.getPort(),
+          database: 'corvus',
+          user: 'corvus',
+          password: 'corvus',
+        },
+        stop: async () => {
+          await c.stop()
+        },
+      }
+    },
+  )
+
+  profile.host = envHandle.profile.host
+  profile.port = envHandle.profile.port
+  profile.database = envHandle.profile.database
+  profile.user = envHandle.profile.user
+
+  await vault.set(
+    { kind: 'db-password', ownerId: 'local-owner', connectionId: CONNECTION_ID },
+    envHandle.profile.password ?? 'corvus',
+  )
 
   if (!driverRegistry.has('postgres')) registerDriver(postgresDriver)
-
-  // Dựng schema mẫu.
-  const conn = await postgresDriver.connect({ ...profile, password: 'corvus' })
-  try {
-    for (const sql of splitStatements(POSTGRES_SETUP_SQL, 'postgres')) {
-      for await (const _ of conn.execute({ sql })) {
-        /* DDL không trả dòng */
-      }
-    }
-  } finally {
-    await conn.close()
-  }
 
   sessions = new SessionManager()
   router = new EngineRouter()
@@ -94,7 +112,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await sessions?.closeAll?.()
-  await container?.stop()
+  await envHandle?.teardown()
 })
 
 describe('R-08 · handler RPC thật qua router', () => {
@@ -141,7 +159,7 @@ describe('R-08 · handler RPC thật qua router', () => {
     const dbs = (await router.handleRequest('introspect.databases', {
       connectionId: CONNECTION_ID,
     })) as string[]
-    expect(dbs).toContain('corvus')
+    expect(dbs).toContain(profile.database ?? 'corvus')
   })
 
   it('introspect.schemas thấy schema fixture', async () => {

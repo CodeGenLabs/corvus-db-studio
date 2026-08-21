@@ -1,0 +1,10 @@
+.git
+.corvus-data
+.env
+.env.*
+docker/dev-db
+dist
+coverage
+.turbo
+*.log
+node_modules

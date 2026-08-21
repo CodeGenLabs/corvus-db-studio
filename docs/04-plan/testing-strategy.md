@@ -23,9 +23,9 @@ khôi phục được. Kiểm thử **không phải** là việc làm nếu còn
 
 | Tầng | Chạy khi | Thời lượng mục tiêu | Cần Docker |
 |---|---|---|---|
-| 1 Unit | mọi lần lưu file (watch) + mọi PR | ≤ 60 s | ❌ |
+| 1 Unit | mọi lần lưu file (watch) + mọi PR | ≤ 60 s (đo thật: ~18s) | ❌ |
 | 2 Contract/Conformance | mọi PR | ≤ 5 phút | ✅ (conformance) |
-| 3 Integration | nightly + PR chạm driver/service | ≤ 40 phút | ✅ |
+| 3 Integration | mọi PR / local (`pnpm test:it`) | ≤ 2 phút (local stack: ~35s) / ≤ 40 phút (CI testcontainers) | ✅ |
 | 4 E2E | mọi PR (web smoke) + nightly (đầy đủ) | ≤ 15 phút | ✅ |
 | 5 Manual | trước mỗi mốc phát hành | 1–2 ngày | — |
 
@@ -65,7 +65,7 @@ dấu hiệu hồi quy.
 
 ## 3. Tầng 2 · Contract & Conformance
 
-### 3.1 Contract check (`tools/check-contract.mjs`)
+### 3.1 Contract check (`tools/check-contract.ts`)
 
 Chạy mọi PR, kiểm 5 điều:
 
@@ -91,10 +91,10 @@ Ma trận version (nightly):
 |---|---|
 | PostgreSQL | 13, 15, 16 |
 | MySQL | 5.7, 8.0, 8.4 |
-| MariaDB | 10.11 |
+| MariaDB | 10.11, 11.4 |
 | SQLite | 3.40, 3.45 |
 | SQL Server | 2019, 2022 |
-| Oracle | 19c, 23ai free |
+| Oracle | 19c, 23 Free |
 | MongoDB | 6.0, 7.0 |
 | Redis | 6.2, 7.2 |
 
@@ -104,11 +104,14 @@ MySQL 5.7 và PostgreSQL 13 quan trọng: nhiều capability khác biệt chỉ 
 
 ## 4. Tầng 3 · Integration
 
-Dùng `testcontainers` — DB thật trong Docker, không mock.
+Tầng 3 hỗ trợ **hai đường chạy song song** (theo thiết kế `packages/driver-core/src/testenv/resolve.ts`):
+1. **Đường ưu tiên (Local Developer)**: Tự động phát hiện và kết nối trực tiếp vào stack Docker dev-db cố định (`docker/dev-db/compose.yaml` qua `pnpm db:up`). Thời gian chạy toàn bộ 9 package integration test siêu nhanh (~35 giây).
+2. **Đường dự phòng (CI / Máy sạch)**: Tự động fallback sang `testcontainers` khởi tạo container động trên fly nếu không có biến môi trường hoặc stack local chưa chạy.
 
 ```ts
-// packages/services/src/import/__tests__/import.integration.test.ts
-const pg = await new PostgreSqlContainer('postgres:16').start()
+// packages/driver-core/src/testenv/resolve.ts
+const env = await resolveDriverTestEnv('postgres', { seed: true })
+const conn = await postgresDriver.connect(env.profile)
 ```
 
 **Bắt buộc có integration test cho**:

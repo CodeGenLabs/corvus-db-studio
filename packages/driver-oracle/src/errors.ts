@@ -65,7 +65,7 @@ export function toCorvusError(err: unknown): CorvusError {
 
   // Parse ORA-XXXXX from message string if errorNum not set
   if (e?.message) {
-    const match = /ORA-(\d{5})/.exec(e.message)
+    const match = /ORA-(\d+)/i.exec(e.message)
     if (match && match[1]) {
       const codeNum = parseInt(match[1], 10)
       if (ORACLE_ERROR_MAP[codeNum]) {
@@ -77,6 +77,21 @@ export function toCorvusError(err: unknown): CorvusError {
   }
 
   const rawMessage = e?.message ?? String(err)
+  const msgUpper = rawMessage.toUpperCase()
+  if (
+    msgUpper.includes('NJS-503') ||
+    msgUpper.includes('NJS-511') ||
+    msgUpper.includes('EADDRINUSE') ||
+    msgUpper.includes('ECONNREFUSED') ||
+    msgUpper.includes('ENOTFOUND') ||
+    msgUpper.includes('ETIMEDOUT') ||
+    msgUpper.includes('EHOSTUNREACH')
+  ) {
+    return corvusError('CONNECTION_FAILED', rawMessage, {
+      detail: rawMessage,
+    })
+  }
+
   return corvusError('INTERNAL_ERROR', rawMessage, {
     detail: rawMessage,
   })

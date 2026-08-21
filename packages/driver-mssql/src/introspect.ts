@@ -4,6 +4,7 @@ import type {
   IndexMeta,
   TableMeta,
 } from '@corvus/contract'
+import { corvusError } from '@corvus/contract'
 import type { Introspector } from '@corvus/driver-core'
 import { quoteIdentifier } from '@corvus/sql'
 import type mssql from 'mssql'
@@ -250,15 +251,15 @@ export class MssqlIntrospector implements Introspector {
               AND ep.minor_id = c.column_id
               AND ep.name = 'MS_Description'
         LEFT JOIN (
-          SELECT kcu.COLUMN_NAME AS column_name
-            FROM ${quotedDbPrefix}INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-            JOIN ${quotedDbPrefix}INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-              ON kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
-             AND kcu.TABLE_SCHEMA = tc.TABLE_SCHEMA
-             AND kcu.TABLE_NAME = tc.TABLE_NAME
-           WHERE tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
-             AND tc.TABLE_SCHEMA = @schema
-             AND tc.TABLE_NAME = @table
+          SELECT cc.name AS column_name
+            FROM ${quotedDbPrefix}sys.indexes i
+            JOIN ${quotedDbPrefix}sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id
+            JOIN ${quotedDbPrefix}sys.columns cc ON cc.object_id = ic.object_id AND cc.column_id = ic.column_id
+            JOIN ${quotedDbPrefix}sys.objects o ON o.object_id = i.object_id
+            JOIN ${quotedDbPrefix}sys.schemas s ON s.schema_id = o.schema_id
+           WHERE i.is_primary_key = 1
+             AND s.name = @schema
+             AND o.name = @table
         ) pk ON pk.column_name = c.name
        WHERE s.name = @schema AND o.name = @table
        ORDER BY c.column_id
@@ -280,6 +281,10 @@ export class MssqlIntrospector implements Introspector {
         comment: string | null
         is_pk: number
       }>(colQ)
+
+    if (!colRes.recordset || colRes.recordset.length === 0) {
+      throw corvusError('TABLE_NOT_FOUND', `Bảng ${opts.table} không tồn tại`)
+    }
 
     const columns: ColumnMeta[] = colRes.recordset.map((r) => ({
       name: r.column_name,

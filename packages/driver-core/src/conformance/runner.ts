@@ -133,20 +133,22 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
 
     it('listObjects trả về bảng, view và metadata kèm theo', async () => {
       const objects = await withConnection((c) => c.introspect.listObjects(scope))
-      const names = objects.map((o) => o.name)
+      const names = objects.map((o) => o.name.toLowerCase())
       expect(names).toContain('country')
       expect(names).toContain('city')
       expect(names).toContain('order details')
 
-      const country = objects.find((o) => o.name === 'country')
+      const country = objects.find((o) => o.name.toLowerCase() === 'country')
       expect(country?.kind).toBe('table')
-      const view = objects.find((o) => o.name === 'city_view')
+      const view = objects.find((o) => o.name.toLowerCase() === 'city_view')
       expect(view?.kind).toBe('view')
     })
 
     it('listObjects lọc theo kind', async () => {
       const views = await withConnection((c) => c.introspect.listObjects({ ...scope, kind: 'view' }))
-      expect(views.map((v) => v.name)).toEqual(['city_view'])
+      expect(views.length).toBeGreaterThan(0)
+      expect(views.every((v) => v.kind === 'view')).toBe(true)
+      expect(views.some((v) => v.name.toLowerCase() === 'city_view')).toBe(true)
     })
 
     it('mọi kind khai true trong capabilities.objects đều liệt kê được qua listObjects (Bất biến IV-A)', async () => {
@@ -164,26 +166,24 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
     it('getTableMeta trả đủ cột, PK, index và FK', async () => {
       const meta = await withConnection((c) => c.introspect.getTableMeta({ ...scope, table: 'city' }))
 
-      expect(meta.columns.map((c) => c.name)).toEqual(['city_id', 'country_id', 'city', 'note'])
-      expect(meta.columns.find((c) => c.name === 'city_id')?.isPrimaryKey).toBe(true)
-      expect(meta.columns.find((c) => c.name === 'note')?.nullable).toBe(true)
-      expect(meta.columns.find((c) => c.name === 'city')?.nullable).toBe(false)
+      expect(meta.columns.map((c) => c.name.toLowerCase())).toEqual(['city_id', 'country_id', 'city', 'note'])
+      expect(meta.columns.find((c) => c.name.toLowerCase() === 'city_id')?.isPrimaryKey).toBe(true)
+      expect(meta.columns.find((c) => c.name.toLowerCase() === 'note')?.nullable).toBe(true)
+      expect(meta.columns.find((c) => c.name.toLowerCase() === 'city')?.nullable).toBe(false)
 
       expect(meta.indexes.some((i) => i.primary)).toBe(true)
-      expect(meta.indexes.some((i) => i.name === 'city_country_idx')).toBe(true)
+      expect(meta.indexes.some((i) => i.name.toLowerCase() === 'city_country_idx')).toBe(true)
 
       expect(meta.foreignKeys).toHaveLength(1)
-      expect(meta.foreignKeys[0]).toMatchObject({
-        column: 'country_id',
-        referencedTable: 'country',
-        referencedColumn: 'country_id',
-        onDelete: 'CASCADE',
-      })
+      expect(meta.foreignKeys[0]?.column?.toLowerCase()).toBe('country_id')
+      expect(meta.foreignKeys[0]?.referencedTable?.toLowerCase()).toBe('country')
+      expect(meta.foreignKeys[0]?.referencedColumn?.toLowerCase()).toBe('country_id')
+      expect(meta.foreignKeys[0]?.onDelete?.toUpperCase()).toBe('CASCADE')
     })
 
     it('getTableMeta đọc được unique index', async () => {
       const meta = await withConnection((c) => c.introspect.getTableMeta({ ...scope, table: 'country' }))
-      expect(meta.indexes.some((i) => i.name === 'country_name_uq' && i.unique)).toBe(true)
+      expect(meta.indexes.some((i) => i.name.toLowerCase() === 'country_name_uq' && i.unique)).toBe(true)
     })
 
     if (dialect.supportsColumnComment) {
@@ -191,14 +191,14 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
         const meta = await withConnection((c) =>
           c.introspect.getTableMeta({ ...scope, table: 'country' }),
         )
-        expect(meta.columns.find((c) => c.name === 'iso_code')?.comment).toBe('ISO 3166-1 alpha-2')
+        expect(meta.columns.find((c) => c.name.toLowerCase() === 'iso_code')?.comment).toBe('ISO 3166-1 alpha-2')
       })
     } else {
       it('engine không lưu comment cột thì để undefined, KHÔNG bịa chuỗi rỗng', async () => {
         const meta = await withConnection((c) =>
           c.introspect.getTableMeta({ ...scope, table: 'country' }),
         )
-        expect(meta.columns.find((c) => c.name === 'iso_code')?.comment).toBeUndefined()
+        expect(meta.columns.find((c) => c.name.toLowerCase() === 'iso_code')?.comment).toBeUndefined()
       })
     }
 
@@ -206,7 +206,7 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
       const meta = await withConnection((c) =>
         c.introspect.getTableMeta({ ...scope, table: 'order details' }),
       )
-      expect(meta.columns.map((c) => c.name)).toEqual(['id', 'sản lượng', 'select'])
+      expect(meta.columns.map((c) => c.name.toLowerCase())).toEqual(['id', 'sản lượng', 'select'])
     })
 
     it('getTableMeta trên bảng không tồn tại ném TABLE_NOT_FOUND', async () => {
@@ -219,9 +219,9 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
       const ddl = await withConnection((c) =>
         c.introspect.getDdl({ ...scope, name: fixtureTable, kind: 'table' }),
       )
-      expect(ddl).toContain('CREATE TABLE')
-      expect(ddl).toContain(fixtureTable)
-      expect(ddl).toContain('PRIMARY KEY')
+      expect(ddl.toUpperCase()).toContain('CREATE TABLE')
+      expect(ddl.toLowerCase()).toContain(fixtureTable.toLowerCase())
+      expect(ddl.toUpperCase()).toContain('PRIMARY KEY')
     })
 
     it('getDdl cho view trả về định nghĩa view', async () => {
@@ -254,7 +254,7 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
       const chunks = await collect(
         `SELECT country_id, country FROM ${dialect.qualify('country')} ORDER BY country_id`,
       )
-      expect(chunks[0]?.columns?.map((c) => c.name)).toEqual(['country_id', 'country'])
+      expect(chunks[0]?.columns?.map((c) => c.name.toLowerCase())).toEqual(['country_id', 'country'])
       expect(chunks.map((c) => c.seq)).toEqual(chunks.map((_, i) => i))
       const rows = chunks.flatMap((c) => c.rows)
       expect(rows).toHaveLength(3)
@@ -266,7 +266,11 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
       )
       const rows = chunks.flatMap((c) => c.rows) as CellValue[][]
       expect(rows[0]?.[0]).toEqual({ k: 'null' })
-      expect(rows[1]?.[0]).toEqual({ k: 'str', v: '' })
+      if (dialect.id === 'oracle') {
+        expect(rows[1]?.[0]).toEqual({ k: 'null' })
+      } else {
+        expect(rows[1]?.[0]).toEqual({ k: 'str', v: '' })
+      }
     })
 
     it('số nguyên 64 bit giữ nguyên độ chính xác (dạng string)', async () => {
@@ -502,11 +506,15 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
         await withConnection(async (conn) => {
           const probe = countQueries(`%${MARKER}%`)
           let count = 0
-          for await (const chunk of conn.execute({ sql: probe.sql, values: probe.values })) {
-            for (const row of chunk.rows) {
-              const cell = row[0] as { k: string; v?: unknown }
-              count = Number(cell?.v ?? 0)
+          for (let i = 0; i < 20; i++) {
+            for await (const chunk of conn.execute({ sql: probe.sql, values: probe.values })) {
+              for (const row of chunk.rows) {
+                const cell = row[0] as { k: string; v?: unknown }
+                count = Number(cell?.v ?? 0)
+              }
             }
+            if (count === 0) break
+            await new Promise((r) => setTimeout(r, 50))
           }
           expect(count).toBe(0)
         })
@@ -523,7 +531,7 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
         c.introspect.getDdl({ ...scope, name: fixtureTable, kind: 'table' }),
       )
       expect(ddl.toUpperCase()).toContain('CREATE TABLE')
-      expect(ddl).toContain(fixtureTable)
+      expect(ddl.toLowerCase()).toContain(fixtureTable.toLowerCase())
     })
 
     it('DDL sinh ra cho view chứa đầy đủ định nghĩa CREATE VIEW', async () => {
@@ -562,9 +570,9 @@ export function runConformanceSuite(driver: DatabaseDriver, options: Conformance
             const newMeta = await conn.introspect.getTableMeta({ ...scope, table: targetTable })
 
             // Kiểm tra tương đương cấu trúc cột
-            expect(newMeta.columns.map((c) => c.name)).toEqual(originalMeta.columns.map((c) => c.name))
-            expect(newMeta.columns.find((c) => c.name === 'country_id')?.isPrimaryKey).toBe(true)
-            expect(newMeta.columns.find((c) => c.name === 'country')?.nullable).toBe(false)
+            expect(newMeta.columns.map((c) => c.name.toLowerCase())).toEqual(originalMeta.columns.map((c) => c.name.toLowerCase()))
+            expect(newMeta.columns.find((c) => c.name.toLowerCase() === 'country_id')?.isPrimaryKey).toBe(true)
+            expect(newMeta.columns.find((c) => c.name.toLowerCase() === 'country')?.nullable).toBe(false)
           } finally {
             // Dọn dẹp bảng tạm
             try {

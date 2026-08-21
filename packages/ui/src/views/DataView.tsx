@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { CellValue, ColumnDef } from '@corvus/contract'
-import { datasetFor, fieldsFor } from '../data/schema'
 import { useStudio, useClient } from '../store/studio'
 import { DataGrid } from '../components/grid'
 
@@ -71,54 +70,13 @@ export function DataView() {
         }
 
         if (!cancelled) {
-          if (fetchedCols.length > 0) {
-            setColumns(fetchedCols)
-            setRows(fetchedRows)
-          } else {
-            // Fallback sang mock data nếu kết nối chưa có dữ liệu
-            const ds = datasetFor(table)
-            const colTypes = fieldsFor(table)
-            setColumns(
-              ds.cols.map((c, i) => ({
-                name: c,
-                type: colTypes[i]?.ddl ?? 'VARCHAR',
-                align: ds.align[i] as 'r' | 't' | 'm',
-              })),
-            )
-            setRows(
-              ds.rows.map((r) =>
-                r.map((val) => {
-                  if (val === null || val === 'NULL') return { k: 'null' }
-                  if (typeof val === 'number') return { k: 'num', v: val }
-                  if (typeof val === 'boolean') return { k: 'bool', v: val }
-                  return { k: 'str', v: String(val) }
-                }),
-              ),
-            )
-          }
+          setColumns(fetchedCols)
+          setRows(fetchedRows)
         }
       } catch {
-        // Fallback sang mock
         if (!cancelled) {
-          const ds = datasetFor(table)
-          const colTypes = fieldsFor(table)
-          setColumns(
-            ds.cols.map((c, i) => ({
-              name: c,
-              type: colTypes[i]?.ddl ?? 'VARCHAR',
-              align: ds.align[i] as 'r' | 't' | 'm',
-            })),
-          )
-          setRows(
-            ds.rows.map((r) =>
-              r.map((val) => {
-                if (val === null || val === 'NULL') return { k: 'null' }
-                if (typeof val === 'number') return { k: 'num', v: val }
-                if (typeof val === 'boolean') return { k: 'bool', v: val }
-                return { k: 'str', v: String(val) }
-              }),
-            ),
-          )
+          setColumns([])
+          setRows([])
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -147,7 +105,7 @@ export function DataView() {
         }
       } catch {
         if (!cancelled) {
-          setTotalRows(datasetFor(table).rows.length)
+          setTotalRows(0)
         }
       }
     }

@@ -16,7 +16,8 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "test:integration": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@corvus/contract": "workspace:*",

@@ -49,11 +49,17 @@ export class MssqlTransaction implements Transaction {
   }
 
   async savepoint(name: string): Promise<void> {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_$]*$/.test(name)) {
+      throw corvusError('INVALID_INPUT', 'Tên savepoint không hợp lệ')
+    }
     const req = this.tx.request()
     await req.query(`SAVE TRANSACTION [${name}]`)
   }
 
   async rollbackTo(name: string): Promise<void> {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_$]*$/.test(name)) {
+      throw corvusError('INVALID_INPUT', 'Tên savepoint không hợp lệ')
+    }
     const req = this.tx.request()
     await req.query(`ROLLBACK TRANSACTION [${name}]`)
   }
@@ -127,14 +133,21 @@ export class MssqlConnection implements DriverConnection {
       }
     }
 
-    request.on('recordset', (recordsetColumns: Record<string, { name: string; type: () => { name: string } }>) => {
-      const colDefs: ColumnDef[] = Object.keys(recordsetColumns).map((name) => ({
-        name,
-        type: typeof recordsetColumns[name]?.type === 'function'
-          ? recordsetColumns[name]?.type()?.name ?? 'nvarchar'
-          : 'nvarchar',
-        nullable: true,
-      }))
+    request.on('recordset', (recordsetColumns: Record<string, { name: string; type?: unknown }>) => {
+      const colDefs: ColumnDef[] = Object.keys(recordsetColumns).map((name) => {
+        const rawType = recordsetColumns[name]?.type
+        let typeName = 'nvarchar'
+        if (typeof rawType === 'function') {
+          typeName = rawType.name || (typeof rawType() === 'object' ? rawType().name : 'nvarchar') || 'nvarchar'
+        } else if (rawType && typeof rawType === 'object') {
+          typeName = (rawType as { name?: string }).name ?? 'nvarchar'
+        }
+        return {
+          name,
+          type: typeName,
+          nullable: true,
+        }
+      })
       pushEvent({ type: 'columns', columns: colDefs })
     })
 
@@ -207,15 +220,25 @@ export class MssqlConnection implements DriverConnection {
           }
 
           if (currentChunkRows.length >= chunkSize || (req.maxRows !== undefined && emitted >= req.maxRows)) {
+            const isTruncated = req.maxRows !== undefined && emitted >= req.maxRows
             yield {
               seq: seq++,
               columns,
               rows: currentChunkRows,
-              done: req.maxRows !== undefined && emitted >= req.maxRows,
+              done: isTruncated,
+              ...(isTruncated
+                ? {
+                    stats: {
+                      rowCount: emitted,
+                      durationMs: Date.now() - startedAt,
+                      truncated: true,
+                    },
+                  }
+                : {}),
             }
             currentChunkRows = []
 
-            if (req.maxRows !== undefined && emitted >= req.maxRows) {
+            if (isTruncated) {
               request.cancel()
               break
             }
@@ -239,6 +262,7 @@ export class MssqlConnection implements DriverConnection {
         }
       }
     } finally {
+      request.cancel()
       if (abortListener && req.signal) {
         req.signal.removeEventListener('abort', abortListener)
       }

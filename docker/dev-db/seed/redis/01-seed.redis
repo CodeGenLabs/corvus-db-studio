@@ -1,0 +1,44 @@
+# Redis seed commands for corvus:dev:
+# data-model.md §2.3 & FR-010, FR-011
+
+# 1. Countries
+HSET corvus:dev:country:1 country_id 1 country "Việt Nam" iso_code "VN" last_update "2026-01-01T00:00:00Z"
+HSET corvus:dev:country:2 country_id 2 country "Japan" iso_code "JP" last_update "2026-01-01T00:00:00Z"
+HSET corvus:dev:country:3 country_id 3 country "Brazil" iso_code "BR" last_update "2026-01-01T00:00:00Z"
+HSET corvus:dev:country:4 country_id 4 country "United States" iso_code "US" last_update "2026-01-01T00:00:00Z"
+HSET corvus:dev:country:5 country_id 5 country "Germany" iso_code "DE" last_update "2026-01-01T00:00:00Z"
+SADD corvus:dev:countries 1 2 3 4 5
+
+# 2. Cities
+HSET corvus:dev:city:1 city_id 1 country_id 1 city "Hà Nội" note ""
+HSET corvus:dev:city:2 city_id 2 country_id 1 city "Đà Nẵng" note ""
+HSET corvus:dev:city:3 city_id 3 country_id 2 city "Tokyo" note "thủ đô"
+HSET corvus:dev:city:4 city_id 4 country_id 3 city "São Paulo" note "kinh tế"
+HSET corvus:dev:city:5 city_id 5 country_id 4 city "New York" note "tài chính"
+SADD corvus:dev:cities 1 2 3 4 5
+SADD corvus:dev:country:1:cities 1 2
+SADD corvus:dev:country:2:cities 3
+SADD corvus:dev:country:3:cities 4
+SADD corvus:dev:country:4:cities 5
+
+# 3. Order details
+HSET "corvus:dev:order details:1" id 1 "sản lượng" "1250.5000" select "standard selection"
+
+# 4. Types probe
+HSET corvus:dev:types_probe:1 id 1 big_val "9223372036854775807" numeric_val "12345678901234567890.0123456789" bool_val "1" text_null "" text_empty "" json_val "{\"a\":[1,2,3]}" bytes_val "deadbeef" ts_val "2026-08-18T09:00:00Z"
+
+# 5. Customers
+HSET corvus:dev:customer:1 customer_id 1 country_id 1 email "customer0001@example.invalid" full_name "Nguyen Van A" created_at "2026-01-01T08:00:00Z" is_active 1
+HSET corvus:dev:customer:2 customer_id 2 country_id 1 email "customer0002@example.invalid" full_name "Tran Thi B" created_at "2026-01-02T09:30:00Z" is_active 1
+HSET corvus:dev:customer:3 customer_id 3 country_id 2 email "customer0003@example.invalid" full_name "Kenji Sato" created_at "2026-01-03T10:15:00Z" is_active 1
+HSET corvus:dev:customer:4 customer_id 4 country_id 2 email "customer0004@example.invalid" full_name "Yuki Tanaka" created_at "2026-01-04T11:00:00Z" is_active 0
+HSET corvus:dev:customer:5 customer_id 5 country_id 3 email "customer0005@example.invalid" full_name "Lucas Silva" created_at "2026-01-05T12:45:00Z" is_active 1
+HSET corvus:dev:customer:6 customer_id 6 country_id 3 email "customer0006@example.invalid" full_name "Beatriz Souza" created_at "2026-01-06T14:20:00Z" is_active 1
+HSET corvus:dev:customer:7 customer_id 7 country_id 4 email "customer0007@example.invalid" full_name "John Doe" created_at "2026-01-07T15:10:00Z" is_active 1
+HSET corvus:dev:customer:8 customer_id 8 country_id 4 email "customer0008@example.invalid" full_name "Jane Smith" created_at "2026-01-08T16:00:00Z" is_active 1
+HSET corvus:dev:customer:9 customer_id 9 country_id 5 email "customer0009@example.invalid" full_name "Hans Mueller" created_at "2026-01-09T17:30:00Z" is_active 0
+HSET corvus:dev:customer:10 customer_id 10 country_id 5 email "customer0010@example.invalid" full_name "Emma Weber" created_at "2026-01-10T18:00:00Z" is_active 1
+SADD corvus:dev:customers 1 2 3 4 5 6 7 8 9 10
+
+# 6. Marker
+HSET corvus:dev:marker key "corvus_dev" value "ready" seeded_at "2026-01-01T00:00:00Z" seed_version "1.0.0"

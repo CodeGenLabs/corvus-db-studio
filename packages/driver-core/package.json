@@ -14,6 +14,10 @@
       "types": "./src/conformance/index.ts",
       "import": "./src/conformance/index.ts"
     },
+    "./testenv": {
+      "types": "./src/testenv/index.ts",
+      "import": "./src/testenv/index.ts"
+    },
     "./*": {
       "types": "./src/*",
       "import": "./src/*"

@@ -5,7 +5,10 @@ import { createIpcTransport, type CorvusBridgeApi } from '@corvus/transport-ipc'
 import '@corvus/ui/styles/theme.css'
 
 const corvusWindow = typeof window !== 'undefined' ? (window as unknown as { corvus?: CorvusBridgeApi }) : undefined
-const transport = corvusWindow?.corvus ? createIpcTransport(corvusWindow.corvus) : undefined
+if (!corvusWindow?.corvus) {
+  throw new Error('Electron preload bridge (window.corvus) is missing.')
+}
+const transport = createIpcTransport(corvusWindow.corvus)
 
 const rootEl = document.getElementById('root')
 if (rootEl) {

@@ -15,7 +15,6 @@ import type {
   Transport,
   View,
 } from '@corvus/contract'
-import { createMockTransport } from '@corvus/transport-mock'
 import { createClient, type Client } from '@corvus/client'
 import type { Tab, TabIdentity } from '../tabs'
 import { useShellStore, type ShellState } from './shell'
@@ -35,11 +34,9 @@ const queryClient = new QueryClient({
 const ClientContext = createContext<Client | null>(null)
 
 export function useClient(): Client {
-  const client = useContext(ClientContext)
-  if (!client) {
-    throw new Error('useClient must be used inside <StudioProvider>')
-  }
-  return client
+  const c = useContext(ClientContext)
+  if (!c) throw new Error('useClient must be used within a StudioProvider with a valid transport')
+  return c
 }
 
 export interface Studio {
@@ -47,6 +44,7 @@ export interface Studio {
   set: (patch: Partial<ShellState> | ((s: ShellState) => Partial<ShellState>)) => void
   t: Dict
   tr: (vi: string, en: string) => string
+  rowH: number
   setCfg: <K extends keyof Config>(key: K, value: Config[K]) => void
   setView: (v: View) => () => void
   openTab: (identity: TabIdentity, options?: { title?: string }) => void
@@ -54,7 +52,6 @@ export interface Studio {
   focusTab: (tabId: string) => void
   setTabDirty: (tabId: string, dirty: boolean) => void
   activeTab: () => Tab | undefined
-  rowH: number
   row: (extra?: CSSProperties) => CSSProperties
   beginDrag: (e: React.MouseEvent, pane: 'nav' | 'info') => void
   cycleLang: () => void
@@ -72,13 +69,12 @@ export function StudioProvider({
   transport,
 }: {
   children: ReactNode
-  transport?: Transport
+  transport: Transport
 }) {
   const set = useShellStore((state) => state.set)
 
   const client = useMemo(() => {
-    const t = transport ?? createMockTransport()
-    return createClient(t)
+    return createClient(transport)
   }, [transport])
 
   useEffect(() => {

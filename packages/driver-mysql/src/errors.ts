@@ -100,11 +100,13 @@ export function mysqlErrorToCorvus(err: unknown): CorvusError {
 
   // Lỗi chuỗi không xác định
   const msg = e.message ?? String(err)
-  const code = /timeout/i.test(msg)
-    ? 'QUERY_TIMEOUT'
-    : /ECONNREFUSED|ENOTFOUND|EHOSTUNREACH|ETIMEDOUT|socket|PROTOCOL_CONNECTION_LOST/i.test(msg)
-      ? 'CONNECTION_FAILED'
-      : 'INTERNAL_ERROR'
+  const code = /interrupted|cancelled|killed/i.test(msg)
+    ? 'QUERY_CANCELLED'
+    : /timeout/i.test(msg)
+      ? 'QUERY_TIMEOUT'
+      : /ECONNREFUSED|ENOTFOUND|EHOSTUNREACH|ETIMEDOUT|socket|PROTOCOL_CONNECTION_LOST/i.test(msg)
+        ? 'CONNECTION_FAILED'
+        : 'INTERNAL_ERROR'
 
   return corvusError(code, msg)
 }

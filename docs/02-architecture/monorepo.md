@@ -114,7 +114,7 @@ Toàn bộ quá trình chuyển đổi sang Monorepo (`T-001 … T-006`) đã **
 | 1 | Thêm pnpm workspace + turbo, cấu hình monorepo | T-001 | ✅ Done |
 | 2 | Chuyển `src/components`, `src/views`, `src/styles`, `src/i18n` → `packages/ui/src` | T-002 | ✅ Done |
 | 3 | Chuyển models dùng chung → `packages/contract/src/models` | T-003 | ✅ Done |
-| 4 | Fixtures mock data → `packages/transport-mock/src/fixtures` | T-004 | ✅ Done |
+| 4 | Fixtures mock data → `packages/transport-mock/src/fixtures` (chỉ dùng cho testing và `dev:mock`, tách hoàn toàn khỏi runtime) | T-004 | ✅ Done |
 | 5 | Tách store → `useShellStore` + client RPC | T-005 | ✅ Done |
 | 6 | Dựng `apps/web` và `apps/desktop`, cả hai render `<CorvusApp/>` từ `@corvus/ui` | T-006 | ✅ Done |
 

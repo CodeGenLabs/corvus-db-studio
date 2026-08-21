@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@corvus/transport-http':
+        specifier: workspace:*
+        version: link:packages/transport-http
       '@corvus/ui':
         specifier: workspace:*
         version: link:packages/ui
@@ -18,6 +21,9 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@corvus/transport-mock':
+        specifier: workspace:*
+        version: link:packages/transport-mock
       '@eslint/js':
         specifier: ^9.39.5
         version: 9.39.5
@@ -84,12 +90,12 @@ importers:
       '@corvus/contract':
         specifier: workspace:*
         version: link:../../../packages/contract
+      '@corvus/host':
+        specifier: workspace:*
+        version: link:../../../packages/host
       '@corvus/transport-ipc':
         specifier: workspace:*
         version: link:../../../packages/transport-ipc
-      '@corvus/transport-mock':
-        specifier: workspace:*
-        version: link:../../../packages/transport-mock
       better-sqlite3:
         specifier: ^13.0.3
         version: 13.0.3
@@ -680,9 +686,6 @@ importers:
       '@corvus/sql':
         specifier: workspace:*
         version: link:../sql
-      '@corvus/transport-mock':
-        specifier: workspace:*
-        version: link:../transport-mock
       '@tanstack/react-query':
         specifier: ^5.66.0
         version: 5.101.4(react@18.3.1)
@@ -696,6 +699,9 @@ importers:
         specifier: ^5.0.3
         version: 5.0.15(@types/react@18.3.31)(react@18.3.1)
     devDependencies:
+      '@corvus/transport-mock':
+        specifier: workspace:*
+        version: link:../transport-mock
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.31

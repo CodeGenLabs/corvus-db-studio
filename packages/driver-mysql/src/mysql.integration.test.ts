@@ -1,16 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { MySqlContainer, type StartedMySqlContainer } from '@testcontainers/mysql'
+import { MySqlContainer } from '@testcontainers/mysql'
 import { MYSQL_CONFORMANCE, MYSQL_SETUP_SQL, runConformanceSuite } from '@corvus/driver-core/conformance'
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
 import type { ResolvedProfile } from '@corvus/driver-core'
 import { mysqlDriver } from './index'
 
 /**
- * Conformance thật cho driver-mysql — chạy trên MySQL 8 trong Docker qua Testcontainers.
- *
- * Chạy bằng:
- *   pnpm --filter @corvus/driver-mysql test:integration
+ * Conformance thật cho driver-mysql:
+ * - Khi Docker dev-db đang chạy: kết nối trực tiếp vào stack cố định (nhanh).
+ * - Khi Docker dev-db chưa chạy: fallback sang testcontainers (R-4, R-5).
  */
-let container: StartedMySqlContainer
+let envHandle: TestEnvironmentHandle | undefined
 
 const profile: ResolvedProfile = {
   id: 'conf-mysql',
@@ -18,35 +18,45 @@ const profile: ResolvedProfile = {
   driverId: 'mysql',
   host: '127.0.0.1',
   port: 3306,
-  database: 'corvus',
-  user: 'root',
-  password: 'corvus_password',
+  database: 'corvus_dev',
+  user: 'corvus',
+  password: 'corvus_dev_pw',
 }
 
 beforeAll(async () => {
-  container = await new MySqlContainer('mysql:8.0')
-    .withDatabase('corvus')
-    .withRootPassword('corvus_password')
-    .start()
+  envHandle = await setupTestEnvironment(
+    'mysql',
+    mysqlDriver,
+    MYSQL_SETUP_SQL,
+    async () => {
+      const container = await new MySqlContainer('mysql:8.0')
+        .withDatabase('corvus')
+        .withRootPassword('corvus_password')
+        .start()
 
-  profile.host = container.getHost()
-  profile.port = container.getPort()
-
-  // Dựng schema mẫu bằng chính driver
-  const conn = await mysqlDriver.connect(profile)
-  try {
-    for (const sql of MYSQL_SETUP_SQL) {
-      for await (const _ of conn.execute({ sql })) {
-        /* DDL / INSERT không trả dòng */
+      return {
+        profile: {
+          id: 'conf-mysql-tc',
+          name: 'conformance mysql testcontainers',
+          driverId: 'mysql',
+          host: container.getHost(),
+          port: container.getPort(),
+          database: 'corvus',
+          user: 'root',
+          password: 'corvus_password',
+        },
+        stop: async () => {
+          await container.stop()
+        },
       }
-    }
-  } finally {
-    await conn.close()
-  }
+    },
+  )
+
+  Object.assign(profile, envHandle.profile)
 }, 300_000)
 
 afterAll(async () => {
-  await container?.stop()
+  await envHandle?.teardown()
 })
 
 // Chạy bộ Conformance chung cho MySQL

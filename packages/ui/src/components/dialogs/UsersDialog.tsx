@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { Modal } from './Modal'
-import { DB_USERS } from '../../data/schema'
 import { useStudio } from '../../store/studio'
+
+const DEFAULT_USERS: [string, string, string, string, string][] = [
+  ['root', 'localhost', 'SUPERADMIN', '2026-08-20', 'active'],
+  ['app_user', '%', 'DEVELOPER', '2026-08-21', 'active'],
+]
 
 const COLS = '1fr 130px 150px 140px 150px'
 
@@ -75,7 +79,7 @@ export function UsersDialog() {
               cursor: 'pointer',
             }}
           >
-            Người dùng ({DB_USERS.length})
+            Người dùng ({DEFAULT_USERS.length})
           </button>
           <button
             onClick={() => setActiveTab('privileges')}
@@ -122,7 +126,7 @@ export function UsersDialog() {
           </div>
 
           <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-            {DB_USERS.map((u, i) => {
+            {DEFAULT_USERS.map((u, i) => {
               const color = u[4] === 'active' ? 'var(--green)' : u[4] === 'locked' ? 'var(--amber)' : 'var(--red)'
               return (
                 <div

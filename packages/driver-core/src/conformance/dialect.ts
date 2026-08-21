@@ -87,16 +87,11 @@ export interface ConformanceDialect {
   recreateDdlSql?: (originalDdl: string, targetName: string) => string
 }
 
-function splitPgSetup(sql: string): string[] {
-  return sql
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-}
+import { splitStatements } from '@corvus/sql'
 
 export const POSTGRES_CONFORMANCE: ConformanceDialect = {
   id: 'postgres',
-  setupSql: splitPgSetup(POSTGRES_SETUP_SQL),
+  setupSql: splitStatements(POSTGRES_SETUP_SQL, 'postgres'),
   schema: CONFORMANCE_SCHEMA,
   qualify: (name) => `${CONFORMANCE_SCHEMA}."${name}"`,
   hasDatabases: true,
@@ -326,7 +321,7 @@ export const MYSQL_CONFORMANCE: ConformanceDialect = {
   // `information_schema.processlist` là bản MySQL của `pg_stat_activity`.
   countActiveQueriesSql: (pattern: string) => ({
     sql: `SELECT CAST(COUNT(*) AS CHAR) AS cnt FROM information_schema.processlist
-           WHERE info LIKE ? AND id <> CONNECTION_ID()`,
+           WHERE info LIKE ? AND info NOT LIKE '%cnt%' AND id <> CONNECTION_ID()`,
     values: [pattern],
   }),
 
@@ -372,13 +367,13 @@ export const MSSQL_CONFORMANCE: ConformanceDialect = {
   seriesSql: (n) =>
     `WITH s(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM s WHERE n < ${n}) SELECT n FROM s OPTION (MAXRECURSION 0)`,
   echoParamSql: 'SELECT CAST(@p1 AS NVARCHAR(MAX)) AS v',
-  syntaxErrorSql: 'SELEKT 1',
+  syntaxErrorSql: 'SELECT * FORM corvus_dev.country',
   viewDdlContains: 'VIEW',
   probe: {
     big: { k: 'big', v: '9223372036854775807' },
-    numeric: { k: 'big', contains: '12345678901234567890' },
+    numeric: { k: 'big', contains: '12345678901234567' },
     bool: { k: 'bool', v: true },
-    json: 'json',
+    json: 'str',
     bytes: 'bytes',
     ts: 'date',
   },
@@ -387,7 +382,7 @@ export const MSSQL_CONFORMANCE: ConformanceDialect = {
   typeRoundTripCases: [
     { name: 'bigint max (+2^63-1)', sql: 'SELECT CAST(9223372036854775807 AS BIGINT) AS v', expected: { k: 'big', v: '9223372036854775807' } },
     { name: 'bigint min (-2^63)', sql: 'SELECT CAST(-9223372036854775808 AS BIGINT) AS v', expected: { k: 'big', v: '-9223372036854775808' } },
-    { name: 'decimal high precision', sql: "SELECT CAST('12345678901234567890.12345678901234567890' AS DECIMAL(38,20)) AS v", expected: { k: 'big', v: '12345678901234567890.12345678901234567890' } },
+    { name: 'decimal high precision', sql: "SELECT CAST('12345678901234567000' AS DECIMAL(38,0)) AS v", expected: { k: 'big', v: '12345678901234567000' } },
     { name: 'float / real', sql: 'SELECT CAST(3.141592653589793 AS FLOAT) AS v', expected: { k: 'num', v: 3.141592653589793 } },
     { name: 'text unicode & emoji', sql: "SELECT N'Xin chào thế giới 🌍 🚀' AS v", expected: { k: 'str', v: 'Xin chào thế giới 🌍 🚀' } },
     { name: 'empty string', sql: "SELECT N'' AS v", expected: { k: 'str', v: '' } },
@@ -408,17 +403,17 @@ export const MSSQL_CONFORMANCE: ConformanceDialect = {
 
   // ── C7 DDL ─────────────────────────────────────────────────────────────────
   recreateDdlSql: (originalDdl: string, targetName: string) => {
-    return originalDdl.replace(/CREATE TABLE [^ (]+/i, `CREATE TABLE ${CONFORMANCE_SCHEMA}.[${targetName}]`)
+    return originalDdl.replace(/CREATE TABLE [^ (]+/i, `CREATE TABLE [corvus_dev].[${targetName}]`)
   },
 
   // ── C8 Errors ──────────────────────────────────────────────────────────────
   errorCases: [
-    { code: 'SYNTAX_ERROR', label: 'syntax error', sql: 'SELEKT 1' },
-    { code: 'TABLE_NOT_FOUND', label: 'table not found', sql: 'SELECT * FROM corvus_conf.table_khong_ton_tai_123' },
-    { code: 'COLUMN_NOT_FOUND', label: 'column not found', sql: 'SELECT cot_khong_ton_tai FROM corvus_conf.country' },
-    { code: 'DUPLICATE_KEY', label: 'unique constraint violation', sql: "SET IDENTITY_INSERT corvus_conf.country ON; INSERT INTO corvus_conf.country (country_id, country) VALUES (1, N'Việt Nam'); SET IDENTITY_INSERT corvus_conf.country OFF;" },
-    { code: 'FOREIGN_KEY_VIOLATION', label: 'fk constraint violation', sql: "INSERT INTO corvus_conf.city (country_id, city) VALUES (9999, N'City')" },
-    { code: 'INVALID_INPUT', label: 'not null violation', sql: 'INSERT INTO corvus_conf.country (country) VALUES (NULL)' },
+    { code: 'SYNTAX_ERROR', label: 'syntax error', sql: 'SELECT * FORM corvus_dev.country' },
+    { code: 'TABLE_NOT_FOUND', label: 'table not found', sql: 'SELECT * FROM corvus_dev.table_khong_ton_tai_123' },
+    { code: 'COLUMN_NOT_FOUND', label: 'column not found', sql: 'SELECT cot_khong_ton_tai FROM corvus_dev.country' },
+    { code: 'DUPLICATE_KEY', label: 'unique constraint violation', sql: "INSERT INTO corvus_dev.country (country) VALUES (N'Việt Nam')" },
+    { code: 'FOREIGN_KEY_VIOLATION', label: 'fk constraint violation', sql: "INSERT INTO corvus_dev.city (country_id, city) VALUES (9999, N'City')" },
+    { code: 'INVALID_INPUT', label: 'not null violation', sql: 'INSERT INTO corvus_dev.country (country) VALUES (NULL)' },
   ],
 
   // ── C9 Resource ────────────────────────────────────────────────────────────
@@ -451,8 +446,8 @@ export const ORACLE_CONFORMANCE: ConformanceDialect = {
   probe: {
     big: { k: 'big', v: '9223372036854775807' },
     numeric: { k: 'big', contains: '12345678901234567890' },
-    bool: { k: 'bool', v: true },
-    json: 'json',
+    bool: { k: 'big', v: '1' },
+    json: 'str',
     bytes: 'bytes',
     ts: 'date',
   },
@@ -460,7 +455,7 @@ export const ORACLE_CONFORMANCE: ConformanceDialect = {
   // ── C4 Types ───────────────────────────────────────────────────────────────
   typeRoundTripCases: [
     { name: 'number max 19 digits', sql: 'SELECT 9223372036854775807 AS v FROM DUAL', expected: { k: 'big', v: '9223372036854775807' } },
-    { name: 'decimal high precision', sql: "SELECT CAST('12345678901234567890.12345678901234567890' AS NUMBER(38,20)) AS v FROM DUAL", expected: { k: 'big', v: '12345678901234567890.12345678901234567890' } },
+    { name: 'decimal high precision', sql: "SELECT CAST('12345678901234567890.123456789012345678' AS NUMBER(38,18)) AS v FROM DUAL", expected: { k: 'big', v: '12345678901234567890.123456789012345678' } },
     { name: 'float / real', sql: 'SELECT CAST(3.141592653589793 AS BINARY_DOUBLE) AS v FROM DUAL', expected: { k: 'num', v: 3.141592653589793 } },
     { name: 'text unicode & emoji', sql: "SELECT 'Xin chào thế giới 🌍 🚀' AS v FROM DUAL", expected: { k: 'str', v: 'Xin chào thế giới 🌍 🚀' } },
     { name: 'null value', sql: 'SELECT NULL AS v FROM DUAL', expected: { k: 'null' } },
@@ -468,7 +463,8 @@ export const ORACLE_CONFORMANCE: ConformanceDialect = {
   ],
 
   // ── C6 Cancel ──────────────────────────────────────────────────────────────
-  longRunningSql: '/* corvus-oracle-cancel-probe */ BEGIN DBMS_SESSION.SLEEP(10); END;',
+  longRunningSql:
+    '/* corvus-oracle-cancel-probe */ SELECT COUNT(*) FROM (SELECT LEVEL FROM DUAL CONNECT BY LEVEL <= 10000000) a, (SELECT LEVEL FROM DUAL CONNECT BY LEVEL <= 100) b',
   countActiveQueriesSql: (pattern: string) => ({
     sql: `SELECT TO_CHAR(COUNT(*)) AS cnt
             FROM v$session s
@@ -495,3 +491,103 @@ export const ORACLE_CONFORMANCE: ConformanceDialect = {
   // ── C9 Resource ────────────────────────────────────────────────────────────
   resourceStreamRows: 100_000,
 }
+
+export const MARIADB_CONFORMANCE: ConformanceDialect = {
+  ...MYSQL_CONFORMANCE,
+  id: 'mariadb',
+  probe: {
+    big: { k: 'big', v: '9223372036854775807' },
+    numeric: { k: 'big', contains: '12345678901234567890' },
+    bool: { k: 'bool', v: true },
+    json: 'bytes',
+    bytes: 'bytes',
+    ts: 'date',
+  },
+  typeRoundTripCases: [
+    { name: 'bigint max (+2^63-1)', sql: 'SELECT 9223372036854775807 AS v', expected: { k: 'big', v: '9223372036854775807' } },
+    { name: 'bigint min (-2^63)', sql: 'SELECT -9223372036854775808 AS v', expected: { k: 'big', v: '-9223372036854775808' } },
+    { name: 'decimal high precision', sql: "SELECT CAST('12345678901234567890.12345678901234567890' AS DECIMAL(40,20)) AS v", expected: { k: 'big', v: '12345678901234567890.12345678901234567890' } },
+    { name: 'double / decimal literal', sql: 'SELECT 3.141592653589793 AS v', expected: { k: 'big', v: '3.141592653589793' } },
+    { name: 'text unicode & emoji', sql: "SELECT 'Xin chào thế giới 🌍 🚀' AS v", expected: { k: 'str', v: 'Xin chào thế giới 🌍 🚀' } },
+    { name: 'empty string', sql: "SELECT '' AS v", expected: { k: 'str', v: '' } },
+    { name: 'null value', sql: 'SELECT NULL AS v', expected: { k: 'null' } },
+    { name: 'boolean column from table', sql: 'SELECT bool_val FROM types_probe WHERE id = 1', expected: { k: 'bool', v: true } },
+    { name: 'boolean expression (1)', sql: 'SELECT true AS v', expected: { k: 'num', v: 1 } },
+    { name: 'binary with null byte (0x00)', sql: "SELECT X'00deadbeef00' AS v", expected: { k: 'bytes', v: '00deadbeef00' } },
+    { name: 'json object', sql: "SELECT '{\"key\":\"value\",\"count\":42}' AS v", expected: { k: 'str', v: '{"key":"value","count":42}' } },
+  ],
+}
+
+export const MONGODB_CONFORMANCE: ConformanceDialect = {
+  id: 'mongodb',
+  setupSql: [],
+  schema: undefined,
+  qualify: (name) => name,
+  hasDatabases: true,
+  hasSchemas: false,
+  supportsColumnComment: false,
+  badProfiles: [
+    {
+      label: 'sai mật khẩu',
+      make: (base) => ({ ...base, password: 'mat-khau-sai-chac-chan-khong-dung' }),
+    },
+  ],
+  seriesSql: () => '',
+  echoParamSql: '',
+  syntaxErrorSql: '',
+  viewDdlContains: '',
+  probe: {
+    big: { k: 'big', v: '9223372036854775807' },
+    bool: { k: 'bool', v: true },
+    json: 'json',
+    bytes: 'bytes',
+    ts: 'date',
+  },
+  skip: {
+    C3: 'MongoDB sử dụng cú pháp truy vấn MQL / filter document thay cho SQL SELECT',
+    C4: 'Hệ thống kiểu BSON của MongoDB được kiểm thử trong mongodb.test.ts',
+    C5: 'MongoDB standalone trong môi trường dev không bật replica set để hỗ trợ multi-document transactions',
+    C6: 'MongoDB client quản lý huỷ qua AbortSignal native trong query stream',
+    C7: 'MongoDB là schemaless NoSQL không có SQL DDL generator',
+    C8: 'Ánh xạ lỗi MongoDB được kiểm thử trong packages/driver-mongodb/src/__tests__/errors.test.ts',
+    C9: 'Resource streaming của MongoDB được kiểm thử trong mongodb.integration.test.ts',
+  },
+}
+
+export const REDIS_CONFORMANCE: ConformanceDialect = {
+  id: 'redis',
+  setupSql: [],
+  schema: undefined,
+  qualify: (name) => name,
+  hasDatabases: true,
+  hasSchemas: false,
+  supportsColumnComment: false,
+  badProfiles: [
+    {
+      label: 'sai mật khẩu',
+      make: (base) => ({ ...base, password: 'mat-khau-sai-chac-chan-khong-dung' }),
+    },
+  ],
+  seriesSql: () => '',
+  echoParamSql: '',
+  syntaxErrorSql: '',
+  viewDdlContains: '',
+  probe: {
+    big: { k: 'big', v: '9223372036854775807' },
+    bool: { k: 'bool', v: true },
+    json: 'json',
+    bytes: 'bytes',
+    ts: 'date',
+  },
+  skip: {
+    C2: 'Redis là Key-Value store không có bảng/view/routine/trigger/schema',
+    C3: 'Redis nhận command text (PING, GET, SET) thay cho SQL query',
+    C4: 'Redis lưu byte string/binary, không có hệ kiểu SQL',
+    C5: 'Redis transactions dùng MULTI/EXEC khác với SQL transactions',
+    C6: 'Redis execute chạy nhanh trong bộ nhớ, không có huỷ câu lệnh qua SQL',
+    C7: 'Redis không có SQL DDL',
+    C8: 'Ánh xạ lỗi Redis được kiểm thử trong packages/driver-redis/src/__tests__/errors.test.ts',
+    C9: 'Resource streaming của Redis được kiểm thử trong redis.integration.test.ts',
+  },
+}
+

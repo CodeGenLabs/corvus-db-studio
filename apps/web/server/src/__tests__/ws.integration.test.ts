@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
+import { PostgreSqlContainer } from '@testcontainers/postgresql'
 import type { Server } from 'node:http'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -7,16 +7,9 @@ import path from 'node:path'
 import WebSocket from 'ws'
 import { EnvelopeVault, openWorkspace } from '@corvus/storage'
 import type { ErrorFrame, Frame } from '@corvus/transport-http/frames'
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
 
-/**
- * T-B05: chứng minh đường ống streaming chạy THẬT —
- * WebSocket trình duyệt → /ws → HttpRpcServer → EngineRouter → driver → PostgreSQL.
- *
- * Test unit ở `packages/transport-http` đã kiểm framing bằng socket giả. Test này kiểm
- * phần mà socket giả không kiểm được: upgrade HTTP, kiểm origin, và hành vi khi socket
- * thật bị giết giữa stream.
- */
-let container: StartedPostgreSqlContainer
+let envHandle: TestEnvironmentHandle | undefined
 let server: Server | undefined
 let shutdown: ((s?: Server) => Promise<void>) | undefined
 let baseUrl: string
@@ -78,12 +71,38 @@ interface ChunkData {
   stats?: { rowCount: number; truncated?: boolean }
 }
 
+import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
+
+let envHandle: TestEnvironmentHandle | undefined
+
 beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:16-alpine')
-    .withDatabase('corvus')
-    .withUsername('corvus')
-    .withPassword('corvus')
-    .start()
+  envHandle = await setupTestEnvironment(
+    'postgres',
+    undefined,
+    undefined,
+    async () => {
+      const c = await new PostgreSqlContainer('postgres:16-alpine')
+        .withDatabase('corvus')
+        .withUsername('corvus')
+        .withPassword('corvus')
+        .start()
+      return {
+        profile: {
+          id: 'pg-tc',
+          name: 'PG test',
+          driverId: 'postgres',
+          host: c.getHost(),
+          port: c.getPort(),
+          database: 'corvus',
+          user: 'corvus',
+          password: 'corvus',
+        },
+        stop: async () => {
+          await c.stop()
+        },
+      }
+    },
+  )
 
   dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'corvus-ws-it-'))
   const ws = openWorkspace({ path: path.join(dataDir, 'workspace.db') })
@@ -92,14 +111,14 @@ beforeAll(async () => {
     id: 'pg',
     name: 'PG test',
     driverId: 'postgres',
-    host: container.getHost(),
-    port: container.getPort(),
-    database: 'corvus',
-    user: 'corvus',
+    host: envHandle.profile.host,
+    port: envHandle.profile.port,
+    database: envHandle.profile.database ?? 'corvus',
+    user: envHandle.profile.user ?? 'corvus',
   })
   await new EnvelopeVault(MASTER_KEY, ws.db).set(
     { kind: 'db-password', ownerId: owner, connectionId: 'pg' },
-    'corvus',
+    envHandle.profile.password ?? 'corvus',
   )
   ws.close()
 
@@ -116,7 +135,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await shutdown?.(server)
-  await container?.stop()
+  await envHandle?.teardown()
   if (dataDir) fs.rmSync(dataDir, { recursive: true, force: true })
 })
 

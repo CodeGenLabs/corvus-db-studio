@@ -250,7 +250,7 @@ export const JA_X: Record<string, string> = {
   Restart: '再起動',
   'Downloading…': 'ダウンロード中…',
   Download: 'ダウンロード',
-  'Writing sakila_20260812_1042.sql.gz…': 'sakila_20260812_1042.sql.gz を書き込み中…',
+  'Writing backup.sql.gz…': 'backup.sql.gz を書き込み中…',
   'Complete · file verified': '完了 · ファイル検証済み',
   Idle: '待機中',
   'Backing up…': 'バックアップ中…',

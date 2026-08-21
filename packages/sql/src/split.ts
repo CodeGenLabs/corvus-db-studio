@@ -119,7 +119,7 @@ export function splitStatements(sql: string, dialect: SqlDialect = 'postgres'): 
       continue
     }
 
-    if (char === '`' && dialect === 'mysql') {
+    if (char === '`' && (dialect === 'mysql' || dialect === 'sqlite')) {
       current += char
       inBacktick = true
       i++

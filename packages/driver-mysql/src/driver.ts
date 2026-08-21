@@ -123,13 +123,14 @@ export class MysqlConnection implements DriverConnection {
 
     // Lấy threadId từ connection nội bộ của mysql2
     const rawConn = (conn as unknown as { connection?: InternalMysqlConnection }).connection
-    const threadId: number = rawConn?.threadId ?? 0
+    const threadId: number = Number((conn as unknown as { threadId?: number }).threadId ?? rawConn?.threadId ?? 0)
 
-    if (threadId) {
+    if (threadId > 0) {
       this.running.set(handleId, { threadId, conn })
     }
 
     let abortListener: (() => void) | undefined
+    let abortPromise: Promise<void> | null = null
     let activeStream: MysqlStream | null = null
     let resolveWait: (() => void) | null = null
     const startedAt = Date.now()
@@ -141,9 +142,11 @@ export class MysqlConnection implements DriverConnection {
         throw corvusError('QUERY_CANCELLED', 'Truy vấn đã bị huỷ')
       }
       abortListener = () => {
-        void this.cancel({ id: handleId }).catch(() => {
-          // Bỏ qua lỗi nếu query đã xong trước khi lệnh huỷ tới
-        })
+        if (threadId) {
+          abortPromise = this.killThread(threadId).catch(() => {
+            // Bỏ qua lỗi nếu query đã xong trước khi lệnh huỷ tới
+          })
+        }
         if (resolveWait) {
           const fn = resolveWait
           resolveWait = null
@@ -286,6 +289,13 @@ export class MysqlConnection implements DriverConnection {
         }
       }
     } catch (err) {
+      if (req.signal?.aborted) {
+        try {
+          conn.destroy()
+        } catch {
+          /* ignore */
+        }
+      }
       throw mysqlErrorToCorvus(err)
     } finally {
       if (req.signal && abortListener) {
@@ -293,7 +303,18 @@ export class MysqlConnection implements DriverConnection {
       }
       this.running.delete(handleId)
       destroyStream(activeStream)
-      conn.release()
+      if (abortPromise) {
+        await abortPromise
+      }
+      if (req.signal?.aborted) {
+        try {
+          conn.destroy()
+        } catch {
+          /* ignore */
+        }
+      } else {
+        conn.release()
+      }
     }
   }
 
@@ -353,19 +374,11 @@ export class MysqlConnection implements DriverConnection {
     }
   }
 
-  /**
-   * Huỷ query đang chạy bằng KILL QUERY <threadId> từ MỘT KẾT NỐI KHÁC.
-   */
-  async cancel(handle: StatementHandle): Promise<void> {
-    const target = this.running.get(handle.id)
-    if (!target || !target.threadId) {
-      return
-    }
-
+  private async killThread(threadId: number): Promise<void> {
     try {
       const killerConn = await this.pool.getConnection()
       try {
-        await killerConn.query(`KILL QUERY ${target.threadId}`)
+        await killerConn.query(`KILL QUERY ${threadId}`)
       } finally {
         killerConn.release()
       }
@@ -377,6 +390,18 @@ export class MysqlConnection implements DriverConnection {
       }
       throw mysqlErrorToCorvus(err)
     }
+  }
+
+  /**
+   * Huỷ query đang chạy bằng KILL QUERY <threadId> từ MỘT KẾT NỐI KHÁC.
+   */
+  async cancel(handle: StatementHandle): Promise<void> {
+    const target = this.running.get(handle.id)
+    if (!target || !target.threadId) {
+      return
+    }
+
+    await this.killThread(target.threadId)
   }
 
   async ping(): Promise<number> {
@@ -424,6 +449,7 @@ export class MysqlDriver implements DatabaseDriver {
         supportBigNumbers: true,
         bigNumberStrings: true,
         dateStrings: true,
+        charset: 'utf8mb4',
       })
 
       const timeoutMs = queryTimeoutMs()
