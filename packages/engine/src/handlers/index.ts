@@ -10,7 +10,9 @@ import {
 } from './context'
 import { registerDataHandlers } from './data'
 import { registerDdlHandlers } from './ddl'
+import { registerMonitorHandlers } from './monitor'
 import { registerQueryToolsHandlers, recordQueryHistory } from './query-tools'
+import { registerSecurityHandlers } from './security'
 import { registerTxHandlers } from './tx'
 import { registerWorkspaceHandlers } from './workspace'
 
@@ -273,6 +275,12 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
 
   // ── ddl.* handlers ────────────────────────────────────────────────────────
   registerDdlHandlers(router, deps)
+
+  // ── monitor.* handlers ────────────────────────────────────────────────────
+  registerMonitorHandlers(router, deps)
+
+  // ── security.* handlers ───────────────────────────────────────────────────
+  registerSecurityHandlers(router, deps)
 
   // ── workspace.* handlers ──────────────────────────────────────────────────
   registerWorkspaceHandlers(router, deps)

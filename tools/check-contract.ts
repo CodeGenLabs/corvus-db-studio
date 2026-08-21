@@ -20,7 +20,7 @@ import { METHODS } from '../packages/contract/src/index'
  * Số method còn CHƯA có handler. Đây là nợ đã biết (audit 2026-08-18: 76/76).
  * Chỉ được PHÉP GIẢM. Mỗi khi hiện thực thêm handler, hạ con số này xuống.
  */
-const HANDLER_DEBT = 41
+const HANDLER_DEBT = 32
 
 const errors: string[] = []
 const warnings: string[] = []
