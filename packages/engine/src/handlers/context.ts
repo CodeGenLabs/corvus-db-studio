@@ -16,11 +16,17 @@ export interface ConnectionStore {
   delete?(id: string): Promise<void>
 }
 
+export interface SettingsStore {
+  get?(ownerId: string): Promise<Record<string, unknown>>
+  set?(ownerId: string, settings: Record<string, unknown>): Promise<void>
+}
+
 /** Mọi thứ handler cần để làm việc. Truyền một lần khi đăng ký handler. */
 export interface HandlerDeps {
   sessions: SessionManager
   connections: ConnectionStore
   vault: SecretVault
+  settings?: SettingsStore
 }
 
 /**

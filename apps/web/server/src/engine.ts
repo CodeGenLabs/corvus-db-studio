@@ -70,11 +70,28 @@ export function buildEngine(): BuiltEngine {
     async get(id) {
       return workspace.storage.getConnection(id)
     },
+    async save(owner, profile) {
+      workspace.storage.upsertConnection(owner, profile)
+    },
+    async delete(id) {
+      workspace.storage.deleteConnection(id)
+    },
+  }
+
+  const settings = {
+    async get(owner: string) {
+      return workspace.storage.getAllSettings(owner)
+    },
+    async set(owner: string, sets: Record<string, unknown>) {
+      for (const [k, v] of Object.entries(sets)) {
+        workspace.storage.setSetting(owner, k, v)
+      }
+    },
   }
 
   const sessions = new SessionManager()
   const router = new EngineRouter()
-  registerHandlers(router, { sessions, connections, vault })
+  registerHandlers(router, { sessions, connections, vault, settings })
 
   return {
     router,

@@ -295,4 +295,19 @@ export class WorkspaceStorage {
     const res = this.db.prepare('DELETE FROM connection WHERE id = ?').run(id)
     return res.changes > 0
   }
+
+  getAllSettings(ownerId: string): Record<string, unknown> {
+    const rows = this.db
+      .prepare('SELECT key, value_json FROM setting WHERE owner_id = ?')
+      .all(ownerId) as Array<{ key: string; value_json: string }>
+    const result: Record<string, unknown> = {}
+    for (const r of rows) {
+      try {
+        result[r.key] = JSON.parse(r.value_json)
+      } catch {
+        result[r.key] = r.value_json
+      }
+    }
+    return result
+  }
 }
