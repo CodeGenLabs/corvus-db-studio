@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { selectValue } from '../utils/select-value'
-import { useStudio } from '../store/studio'
+import { useStudio, useClient } from '../store/studio'
 
 export function TriggerDesigner() {
-  const { s } = useStudio()
+  const { s, activeTab } = useStudio()
+  const client = useClient()
+
+  const tab = activeTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+
   const [triggerName, setTriggerName] = useState(`trg_${s.selTable || 'customer'}_audit`)
   const [timing, setTiming] = useState<'BEFORE' | 'AFTER'>('AFTER')
   const [event, setEvent] = useState<'INSERT' | 'UPDATE' | 'DELETE'>('UPDATE')
@@ -11,8 +16,27 @@ export function TriggerDesigner() {
   const [body, setBody] = useState(
     `BEGIN\n  IF OLD.email <> NEW.email THEN\n    INSERT INTO customer_audit_log (customer_id, old_email, new_email, changed_at)\n    VALUES (NEW.customer_id, OLD.email, NEW.email, NOW());\n  END IF;\nEND`,
   )
+  const [applying, setApplying] = useState(false)
 
   const ddlSql = `CREATE TRIGGER \`${triggerName}\`\n${timing} ${event} ON \`${targetTable}\`\nFOR EACH ROW\n${body};`
+
+  const handleApply = async () => {
+    setApplying(true)
+    try {
+      const stream = client.stream('query.execute', {
+        connectionId,
+        sql: ddlSql,
+      })
+      for await (const _chunk of stream) {
+        // stream execute
+      }
+      alert(`Đã tạo/cập nhật Trigger "${triggerName}" thành công!`)
+    } catch (err) {
+      alert(`Lỗi tạo Trigger: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setApplying(false)
+    }
+  }
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -31,6 +55,24 @@ export function TriggerDesigner() {
         <span style={{ fontWeight: 600, color: 'var(--text)' }}>
           ⚡ Thiết kế Trigger (Trigger Designer)
         </span>
+        <button
+          disabled={applying}
+          onClick={handleApply}
+          style={{
+            marginLeft: 'auto',
+            height: 22,
+            padding: '0 10px',
+            background: 'var(--accent)',
+            color: 'var(--on-accent)',
+            border: 'none',
+            borderRadius: 3,
+            fontWeight: 600,
+            cursor: applying ? 'not-allowed' : 'pointer',
+            fontSize: 11,
+          }}
+        >
+          {applying ? 'Đang thực thi...' : 'Áp dụng DDL Trigger'}
+        </button>
       </div>
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
@@ -71,7 +113,7 @@ export function TriggerDesigner() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Bảng áp dụng:</label>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Bảng mục tiêu (Table):</label>
               <input
                 value={targetTable}
                 onChange={(e) => setTargetTable(e.target.value)}
@@ -81,7 +123,7 @@ export function TriggerDesigner() {
           </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4 }}>Thân Trigger (Body):</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4 }}>Thân Trigger (Trigger Body):</label>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}

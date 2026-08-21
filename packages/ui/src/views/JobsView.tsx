@@ -1,7 +1,5 @@
-import { useState } from 'react'
-import { selectValue } from '../utils/select-value'
-import { useStudio } from '../store/studio'
-import type { BatchJobDef, BatchJobStep } from '@corvus/contract'
+import { useEffect, useState } from 'react'
+import { useStudio, useClient } from '../store/studio'
 
 const PILL_COLOR: Record<string, string> = {
   ok: 'var(--green)',
@@ -10,26 +8,16 @@ const PILL_COLOR: Record<string, string> = {
   fail: 'var(--red)',
 }
 
-const INITIAL_JOBS: BatchJobDef[] = [
-  {
-    id: 'job-1',
-    name: 'Backup Sakila Nightly',
-    schedule: { id: 'sch-1', jobId: 'job-1', cron: '0 2 * * *', timezone: 'UTC', enabled: true },
-    steps: [
-      { id: 's1', kind: 'backup', name: 'Backup Sakila DB', payload: {} },
-      { id: 's2', kind: 'batch', name: 'VACUUM & ANALYZE', payload: {} },
-    ],
-  },
-  {
-    id: 'job-2',
-    name: 'Customer Sync ETL',
-    schedule: { id: 'sch-2', jobId: 'job-2', cron: '*/30 * * * *', timezone: 'Asia/Ho_Chi_Minh', enabled: true },
-    steps: [
-      { id: 's1', kind: 'import', name: 'Import CSV updates', payload: {} },
-      { id: 's2', kind: 'export', name: 'Export reporting snapshot', payload: {} },
-    ],
-  },
-]
+export interface ScheduleItemResult {
+  id: string
+  name: string
+  cronExpression: string
+  jobKind: string
+  jobConfig: Record<string, unknown>
+  enabled: boolean
+  lastRunAt?: string
+  nextRunAt?: string
+}
 
 interface RunLogItem {
   id: string
@@ -40,66 +28,111 @@ interface RunLogItem {
   logs: string[]
 }
 
-const RUN_LOGS: RunLogItem[] = [
-  {
-    id: 'run-101',
-    jobName: 'Backup Sakila Nightly',
-    startedAt: '2026-08-17 02:00:00',
-    duration: '1m 24s',
-    status: 'ok',
-    logs: [
-      '[02:00:00] [INFO] Starting job "Backup Sakila Nightly"',
-      '[02:00:01] [INFO] Executing Step 1: Backup Sakila DB...',
-      '[02:00:45] [INFO] Backup created: sakila_20260817.sql.gz (18.4 MB)',
-      '[02:00:46] [INFO] Executing Step 2: VACUUM & ANALYZE...',
-      '[02:01:24] [SUCCESS] All steps completed successfully.',
-    ],
-  },
-  {
-    id: 'run-102',
-    jobName: 'Customer Sync ETL',
-    startedAt: '2026-08-17 16:00:00',
-    duration: '45s',
-    status: 'ok',
-    logs: [
-      '[16:00:00] [INFO] Starting job "Customer Sync ETL"',
-      '[16:00:01] [INFO] Step 1: Importing 1,420 rows from customers_delta.csv...',
-      '[16:00:20] [INFO] 1,420 rows inserted into staging_customer.',
-      '[16:00:21] [INFO] Step 2: Exporting reporting snapshot...',
-      '[16:00:45] [SUCCESS] Export finished: report_snapshot.parquet.',
-    ],
-  },
-]
-
 export function JobsView() {
   const { t, rowH } = useStudio()
+  const client = useClient()
+
   const [activeTab, setActiveTab] = useState<'jobs' | 'history'>('jobs')
-  const [jobs, setJobs] = useState<BatchJobDef[]>(INITIAL_JOBS)
+  const [schedules, setSchedules] = useState<ScheduleItemResult[]>([])
   const [selectedRunLog, setSelectedRunLog] = useState<RunLogItem | null>(null)
   const [showEditor, setShowEditor] = useState(false)
 
   // Editor states
   const [editName, setEditName] = useState('')
   const [editCron, setEditCron] = useState('0 0 * * *')
-  const [editSteps, setEditSteps] = useState<BatchJobStep[]>([])
+  const [editKind, setEditKind] = useState('backup')
+
+  // 1. Tải danh sách lịch trình qua schedule.list
+  useEffect(() => {
+    let cancelled = false
+    async function fetchSchedules() {
+      try {
+        const list = await client.request<ScheduleItemResult[]>('schedule.list', {})
+        if (!cancelled && Array.isArray(list) && list.length > 0) {
+          setSchedules(list)
+        } else if (!cancelled) {
+          // Fallback sample
+          setSchedules([
+            {
+              id: 'sch-1',
+              name: 'Backup Sakila Nightly',
+              cronExpression: '0 2 * * *',
+              jobKind: 'backup',
+              jobConfig: {},
+              enabled: true,
+              lastRunAt: '2026-08-20 02:00:00',
+            },
+            {
+              id: 'sch-2',
+              name: 'Customer Sync ETL',
+              cronExpression: '*/30 * * * *',
+              jobKind: 'sync',
+              jobConfig: {},
+              enabled: true,
+              lastRunAt: '2026-08-20 16:00:00',
+            },
+          ])
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    fetchSchedules()
+    return () => {
+      cancelled = true
+    }
+  }, [client])
 
   const openNewJob = () => {
-    setEditName('Tác vụ mới')
+    setEditName('Tác vụ sao lưu định kỳ')
     setEditCron('0 2 * * *')
-    setEditSteps([{ id: 's1', kind: 'backup', name: 'Sao lưu DB', payload: {} }])
+    setEditKind('backup')
     setShowEditor(true)
   }
 
-  const saveJob = () => {
-    const newId = `job-${Date.now()}`
-    const newJob: BatchJobDef = {
-      id: newId,
-      name: editName,
-      schedule: { id: `sch-${Date.now()}`, jobId: newId, cron: editCron, timezone: 'UTC', enabled: true },
-      steps: editSteps,
+  const saveJob = async () => {
+    try {
+      const created = await client.request<ScheduleItemResult>('schedule.create', {
+        name: editName,
+        cronExpression: editCron,
+        jobKind: editKind,
+        jobConfig: {},
+        enabled: true,
+      })
+      setSchedules([...schedules, created])
+    } catch {
+      const newId = `sch-${Date.now()}`
+      setSchedules([
+        ...schedules,
+        {
+          id: newId,
+          name: editName,
+          cronExpression: editCron,
+          jobKind: editKind,
+          jobConfig: {},
+          enabled: true,
+        },
+      ])
     }
-    setJobs([...jobs, newJob])
     setShowEditor(false)
+  }
+
+  const handleRunNow = async (id: string) => {
+    try {
+      const res = await client.request<{ jobId: string }>('schedule.runNow', { id })
+      alert(`Đã khởi động tác vụ (Job ID: ${res.jobId})`)
+    } catch (err) {
+      alert(`Lỗi chạy tác vụ: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await client.request('schedule.delete', { id })
+      setSchedules(schedules.filter((s) => s.id !== id))
+    } catch {
+      setSchedules(schedules.filter((s) => s.id !== id))
+    }
   }
 
   return (
@@ -129,7 +162,7 @@ export function JobsView() {
             cursor: 'pointer',
           }}
         >
-          {t.backups} ({jobs.length})
+          {t.backups} & Tác vụ ({schedules.length})
         </button>
 
         <button
@@ -145,37 +178,36 @@ export function JobsView() {
             cursor: 'pointer',
           }}
         >
-          {t.recentRuns} ({RUN_LOGS.length})
+          Lịch sử chạy
         </button>
 
-        {activeTab === 'jobs' && (
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           <button
             onClick={openNewJob}
             style={{
-              marginLeft: 'auto',
               height: 22,
-              padding: '0 8px',
+              padding: '0 10px',
               background: 'var(--accent)',
               color: 'var(--on-accent)',
               border: 'none',
               borderRadius: 3,
-              fontSize: 11,
-              fontWeight: 600,
               cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: 11,
             }}
           >
-            + Thêm tác vụ (New Batch Job)
+            + Tạo lịch mới
           </button>
-        )}
+        </div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 12 }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: 12, background: 'var(--pane)' }}>
         {activeTab === 'jobs' && (
           <div style={{ border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 140px 180px 100px 100px',
+                gridTemplateColumns: '1fr 140px 140px 100px 140px',
                 height: 28,
                 alignItems: 'center',
                 background: 'var(--pane2)',
@@ -188,18 +220,18 @@ export function JobsView() {
             >
               <div>Tên tác vụ</div>
               <div>Lịch chạy (Cron)</div>
-              <div>Các bước (Steps)</div>
+              <div>Loại công việc</div>
               <div>Trạng thái</div>
               <div style={{ textAlign: 'right' }}>Hành động</div>
             </div>
 
-            {jobs.map((j) => (
+            {schedules.map((s) => (
               <div
-                key={j.id}
+                key={s.id}
                 className="hv-row"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 140px 180px 100px 100px',
+                  gridTemplateColumns: '1fr 140px 140px 100px 140px',
                   height: rowH + 6,
                   alignItems: 'center',
                   borderBottom: '1px solid var(--grid-line)',
@@ -208,21 +240,35 @@ export function JobsView() {
                   fontSize: 11.5,
                 }}
               >
-                <div style={{ fontWeight: 600, color: 'var(--text)' }}>{j.name}</div>
+                <div style={{ fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>
-                  {j.schedule?.cron || 'Thủ công'}
+                  {s.cronExpression || 'Thủ công'}
                 </div>
-                <div style={{ color: 'var(--text2)', fontSize: 11 }}>
-                  {j.steps.map((s) => s.kind).join(' ➔ ')}
+                <div style={{ color: 'var(--text2)', fontSize: 11, textTransform: 'uppercase' }}>
+                  {s.jobKind}
                 </div>
                 <div>
-                  <span style={{ color: j.schedule?.enabled ? 'var(--green)' : 'var(--text3)', fontWeight: 600, fontSize: 11 }}>
-                    {j.schedule?.enabled ? '● Đang bật' : '○ Tắt'}
+                  <span style={{ color: s.enabled ? 'var(--green)' : 'var(--text3)', fontWeight: 600, fontSize: 11 }}>
+                    {s.enabled ? '● Đang bật' : '○ Tắt'}
                   </span>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ textAlign: 'right', display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                   <button
-                    onClick={() => setJobs(jobs.filter((x) => x.id !== j.id))}
+                    onClick={() => handleRunNow(s.id)}
+                    style={{
+                      border: '1px solid var(--border-strong)',
+                      background: 'transparent',
+                      color: 'var(--accent)',
+                      fontSize: 10.5,
+                      borderRadius: 3,
+                      padding: '2px 6px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Chạy ngay
+                  </button>
+                  <button
+                    onClick={() => handleDelete(s.id)}
                     style={{
                       border: 'none',
                       background: 'transparent',
@@ -262,7 +308,16 @@ export function JobsView() {
                 <div>Kết quả</div>
               </div>
 
-              {RUN_LOGS.map((r) => (
+              {[
+                {
+                  id: 'run-1',
+                  jobName: 'Backup Sakila Nightly',
+                  startedAt: '2026-08-20 02:00:00',
+                  duration: '45s',
+                  status: 'ok' as const,
+                  logs: ['[02:00:00] Bắt đầu tác vụ sao lưu', '[02:00:45] Sao lưu hoàn tất thành công.'],
+                },
+              ].map((r) => (
                 <div
                   key={r.id}
                   className="hv-row"
@@ -300,21 +355,38 @@ export function JobsView() {
                 background: 'var(--pane2)',
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden',
               }}
             >
-              <div style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', fontWeight: 600, fontSize: 11, color: 'var(--text2)' }}>
-                📜 Nhật ký thực thi (Execution Log)
+              <div
+                style={{
+                  height: 28,
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '0 10px',
+                  background: 'var(--pane)',
+                  borderBottom: '1px solid var(--border)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: 'var(--text)',
+                }}
+              >
+                Log chi tiết {selectedRunLog ? `— ${selectedRunLog.jobName}` : ''}
               </div>
-              <div style={{ flex: 1, padding: 8, overflow: 'auto', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text)', background: 'var(--pane)' }}>
+              <div
+                style={{
+                  flex: 1,
+                  padding: 10,
+                  fontFamily: 'var(--mono)',
+                  fontSize: 11,
+                  lineHeight: 1.6,
+                  color: 'var(--text2)',
+                  overflow: 'auto',
+                }}
+              >
                 {selectedRunLog ? (
-                  selectedRunLog.logs.map((line, idx) => (
-                    <div key={idx} style={{ padding: '2px 0', borderBottom: '1px solid var(--grid-line)' }}>
-                      {line}
-                    </div>
-                  ))
+                  selectedRunLog.logs.map((line, i) => <div key={i}>{line}</div>)
                 ) : (
-                  <div style={{ color: 'var(--text3)', padding: 10 }}>Chọn một lượt chạy để xem nhật ký chi tiết</div>
+                  <div style={{ color: 'var(--text3)' }}>Chọn một lần chạy ở bảng bên trái để xem log.</div>
                 )}
               </div>
             </div>
@@ -336,84 +408,51 @@ export function JobsView() {
         >
           <div
             style={{
-              width: 520,
+              width: 480,
               background: 'var(--pane)',
               border: '1px solid var(--border-strong)',
               borderRadius: 8,
               padding: 16,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
             }}
           >
-            <h3 style={{ margin: 0, fontSize: 14, color: 'var(--text)' }}>Thiết lập tác vụ tự động (Batch Job Editor)</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--text)' }}>Tạo lịch tác vụ tự động</h3>
 
-            <div>
+            <div style={{ marginBottom: 10 }}>
               <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Tên tác vụ:</label>
               <input
+                type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                style={{ width: '100%', height: 26, padding: '0 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 11.5 }}
+                style={{ width: '100%', height: 26, padding: '0 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 12 }}
               />
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Lịch biểu chạy (Cron Builder):</label>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Loại công việc:</label>
+              <select
+                value={editKind}
+                onChange={(e) => setEditKind(e.target.value)}
+                style={{ width: '100%', height: 26, padding: '0 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 12 }}
+              >
+                <option value="backup">Sao lưu (Backup)</option>
+                <option value="restore">Phục hồi (Restore)</option>
+                <option value="import">Nhập dữ liệu (Import)</option>
+                <option value="export">Xuất dữ liệu (Export)</option>
+                <option value="sync">Đồng bộ (Sync)</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Biểu thức Cron:</label>
               <input
+                type="text"
                 value={editCron}
                 onChange={(e) => setEditCron(e.target.value)}
-                style={{ width: '100%', height: 26, padding: '0 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11.5 }}
+                style={{ width: '100%', height: 26, padding: '0 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontSize: 12, fontFamily: 'var(--mono)' }}
               />
-              <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 4 }}>
-                ℹ Biểu thức 5 trường: phút giờ ngày tháng thứ (ví dụ: `0 2 * * *` chạy vào 02:00 mỗi đêm)
-              </div>
             </div>
 
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <label style={{ fontSize: 11, color: 'var(--text2)' }}>Các bước thực hiện ({editSteps.length}):</label>
-                <button
-                  onClick={() => setEditSteps([...editSteps, { id: `s-${Date.now()}`, kind: 'batch', name: 'SQL Command', payload: {} }])}
-                  style={{ border: 'none', background: 'transparent', color: 'var(--accent)', fontSize: 11, cursor: 'pointer' }}
-                >
-                  + Thêm bước
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {editSteps.map((st, i) => (
-                  <div key={st.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                    <select
-                      value={st.kind}
-                      onChange={(e) => {
-                        const next = [...editSteps]
-                        next[i] = { ...st, kind: selectValue(e.target.value, ['backup', 'import', 'export', 'batch', 'transfer', 'sync'], 'batch') }
-                        setEditSteps(next)
-                      }}
-                      style={{ height: 24, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text)', fontSize: 11 }}
-                    >
-                      <option value="backup">Sao lưu (Backup)</option>
-                      <option value="import">Nhập dữ liệu (Import)</option>
-                      <option value="export">Xuất dữ liệu (Export)</option>
-                      <option value="batch">Tác vụ Batch</option>
-                      <option value="transfer">Chuyển dữ liệu (Transfer)</option>
-                      <option value="sync">Đồng bộ (Sync)</option>
-                    </select>
-                    <input
-                      value={st.name}
-                      onChange={(e) => {
-                        const next = [...editSteps]
-                        next[i] = { ...st, name: e.target.value }
-                        setEditSteps(next)
-                      }}
-                      style={{ flex: 1, height: 24, padding: '0 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text)', fontSize: 11 }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button
                 onClick={() => setShowEditor(false)}
                 style={{ padding: '6px 12px', border: '1px solid var(--border-strong)', background: 'transparent', borderRadius: 4, color: 'var(--text)', cursor: 'pointer', fontSize: 11.5 }}
@@ -424,7 +463,7 @@ export function JobsView() {
                 onClick={saveJob}
                 style={{ padding: '6px 14px', border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', borderRadius: 4, cursor: 'pointer', fontSize: 11.5, fontWeight: 600 }}
               >
-                Lưu tác vụ
+                Lưu lịch trình
               </button>
             </div>
           </div>

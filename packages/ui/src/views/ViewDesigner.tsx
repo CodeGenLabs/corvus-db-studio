@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { selectValue } from '../utils/select-value'
-import { useStudio } from '../store/studio'
-import { formatSql } from '@corvus/sql'
+import { useStudio, useClient } from '../store/studio'
 
 export function ViewDesigner() {
-  const { s, setView } = useStudio()
+  const { s, setView, activeTab } = useStudio()
+  const client = useClient()
   const goSql = setView('sql')
+
+  const tab = activeTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
 
   const [viewName, setViewName] = useState(s.selTable ? `v_${s.selTable}` : 'v_customer_summary')
   const [security, setSecurity] = useState<'DEFINER' | 'INVOKER'>('DEFINER')
@@ -13,10 +16,29 @@ export function ViewDesigner() {
   const [query, setQuery] = useState(
     `SELECT \n  c.customer_id,\n  CONCAT(c.first_name, ' ', c.last_name) AS full_name,\n  c.email,\n  COUNT(r.rental_id) AS total_rentals\nFROM customer c\nLEFT JOIN rental r ON c.customer_id = r.customer_id\nGROUP BY c.customer_id, c.first_name, c.last_name, c.email`,
   )
+  const [applying, setApplying] = useState(false)
 
   const ddlSql = `CREATE OR REPLACE SQL SECURITY ${security} VIEW \`${viewName}\` AS\n${query}${
     checkOption !== 'NONE' ? `\nWITH ${checkOption} CHECK OPTION;` : ';'
   }`
+
+  const handleApply = async () => {
+    setApplying(true)
+    try {
+      const stream = client.stream('query.execute', {
+        connectionId,
+        sql: ddlSql,
+      })
+      for await (const _chunk of stream) {
+        // stream execution
+      }
+      alert(`Đã tạo/cập nhật View "${viewName}" thành công!`)
+    } catch (err) {
+      alert(`Lỗi tạo View: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setApplying(false)
+    }
+  }
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -33,23 +55,40 @@ export function ViewDesigner() {
         }}
       >
         <span style={{ fontWeight: 600, color: 'var(--text)' }}>📐 Thiết kế Khung nhìn (View Designer)</span>
-        <button
-          onClick={goSql}
-          style={{
-            marginLeft: 'auto',
-            height: 22,
-            padding: '0 8px',
-            background: 'var(--accent)',
-            color: 'var(--on-accent)',
-            border: 'none',
-            borderRadius: 3,
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontSize: 11,
-          }}
-        >
-          ▶ Chạy trong SQL Editor
-        </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <button
+            onClick={goSql}
+            style={{
+              height: 22,
+              padding: '0 8px',
+              background: 'transparent',
+              border: '1px solid var(--border-strong)',
+              color: 'var(--text)',
+              borderRadius: 3,
+              cursor: 'pointer',
+              fontSize: 11,
+            }}
+          >
+            Mở trong SQL Editor
+          </button>
+          <button
+            disabled={applying}
+            onClick={handleApply}
+            style={{
+              height: 22,
+              padding: '0 10px',
+              background: 'var(--accent)',
+              color: 'var(--on-accent)',
+              border: 'none',
+              borderRadius: 3,
+              fontWeight: 600,
+              cursor: applying ? 'not-allowed' : 'pointer',
+              fontSize: 11,
+            }}
+          >
+            {applying ? 'Đang thực thi...' : 'Áp dụng DDL View'}
+          </button>
+        </div>
       </div>
 
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
@@ -66,7 +105,7 @@ export function ViewDesigner() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>SQL Security:</label>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>Bảo mật (Security):</label>
               <select
                 value={security}
                 onChange={(e) => setSecurity(selectValue(e.target.value, ['DEFINER', 'INVOKER'], 'DEFINER'))}
@@ -92,15 +131,7 @@ export function ViewDesigner() {
           </div>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <label style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 600 }}>Định nghĩa truy vấn SELECT (Query):</label>
-              <button
-                onClick={() => setQuery(formatSql(query))}
-                style={{ border: 'none', background: 'transparent', color: 'var(--accent)', fontSize: 11, cursor: 'pointer' }}
-              >
-                ✨ Định dạng SQL
-              </button>
-            </div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4 }}>Câu lệnh truy vấn nguồn (SELECT Statement):</label>
             <textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}

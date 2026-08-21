@@ -1,4 +1,6 @@
-import { ER } from '../data/schema'
+import { useEffect, useState, useRef } from 'react'
+import { useStudio, useClient } from '../store/studio'
+import type { TableMeta } from '@corvus/contract'
 
 const KEY_COLOR: Record<string, string> = {
   PK: 'var(--amber)',
@@ -7,9 +9,187 @@ const KEY_COLOR: Record<string, string> = {
   '': 'transparent',
 }
 
+interface ErEntity {
+  name: string
+  x: number
+  y: number
+  w: number
+  fields: Array<[string, string, string]> // [key, name, type]
+  foreignKeys: Array<{ column: string; refTable: string; refColumn: string }>
+}
+
+const DEFAULT_ER: ErEntity[] = [
+  {
+    name: 'customer',
+    x: 40,
+    y: 40,
+    w: 210,
+    fields: [
+      ['PK', 'customer_id', 'INT'],
+      ['', 'first_name', 'VARCHAR'],
+      ['', 'last_name', 'VARCHAR'],
+      ['', 'email', 'VARCHAR'],
+      ['FK', 'address_id', 'INT'],
+      ['', 'active', 'TINYINT'],
+    ],
+    foreignKeys: [{ column: 'address_id', refTable: 'address', refColumn: 'address_id' }],
+  },
+  {
+    name: 'address',
+    x: 340,
+    y: 40,
+    w: 210,
+    fields: [
+      ['PK', 'address_id', 'INT'],
+      ['', 'address', 'VARCHAR'],
+      ['', 'district', 'VARCHAR'],
+      ['FK', 'city_id', 'INT'],
+      ['', 'postal_code', 'VARCHAR'],
+    ],
+    foreignKeys: [{ column: 'city_id', refTable: 'city', refColumn: 'city_id' }],
+  },
+  {
+    name: 'city',
+    x: 640,
+    y: 40,
+    w: 200,
+    fields: [
+      ['PK', 'city_id', 'INT'],
+      ['', 'city', 'VARCHAR'],
+      ['FK', 'country_id', 'INT'],
+    ],
+    foreignKeys: [{ column: 'country_id', refTable: 'country', refColumn: 'country_id' }],
+  },
+  {
+    name: 'country',
+    x: 640,
+    y: 240,
+    w: 200,
+    fields: [
+      ['PK', 'country_id', 'INT'],
+      ['', 'country', 'VARCHAR'],
+    ],
+    foreignKeys: [],
+  },
+]
+
 export function ErView() {
+  const { activeTab } = useStudio()
+  const client = useClient()
+
+  const tab = activeTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
+
+  const [entities, setEntities] = useState<ErEntity[]>(DEFAULT_ER)
+  const [scale, setScale] = useState(1)
+  const [draggingEntity, setDraggingEntity] = useState<string | null>(null)
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // 1. Tải metadata ER từ introspect
+  useEffect(() => {
+    let cancelled = false
+    async function loadErDiagram() {
+      try {
+        const objects = await client.request<Array<{ name: string; kind: string }>>('introspect.objects', {
+          connectionId,
+          schema,
+          kind: 'table',
+        })
+
+        if (!cancelled && Array.isArray(objects) && objects.length > 0) {
+          const loadedEntities: ErEntity[] = []
+          const colsCount = 3
+          const boxWidth = 220
+          const xGap = 80
+          const yGap = 60
+
+          for (let i = 0; i < Math.min(objects.length, 12); i++) {
+            const obj = objects[i]
+            if (!obj) continue
+            try {
+              const meta = await client.request<TableMeta>('introspect.tableMeta', {
+                connectionId,
+                schema,
+                table: obj.name,
+              })
+
+              const row = Math.floor(i / colsCount)
+              const col = i % colsCount
+              const x = 40 + col * (boxWidth + xGap)
+              const y = 40 + row * (220 + yGap)
+
+              const fields: Array<[string, string, string]> = meta.columns.map((c) => {
+                const isFk = meta.foreignKeys?.some((fk) => fk.column === c.name)
+                const key = c.isPrimaryKey ? 'PK' : isFk ? 'FK' : ''
+                return [key, c.name, (c.dataType || 'VARCHAR').toUpperCase()]
+              })
+
+              const fks = (meta.foreignKeys || []).map((fk) => ({
+                column: fk.column,
+                refTable: fk.referencedTable,
+                refColumn: fk.referencedColumn,
+              }))
+
+              loadedEntities.push({
+                name: obj.name,
+                x,
+                y,
+                w: boxWidth,
+                fields,
+                foreignKeys: fks,
+              })
+            } catch {
+              // skip single table error
+            }
+          }
+
+          if (!cancelled && loadedEntities.length > 0) {
+            setEntities(loadedEntities)
+          }
+        }
+      } catch {
+        // Fallback default
+      }
+    }
+
+    loadErDiagram()
+    return () => {
+      cancelled = true
+    }
+  }, [client, connectionId, schema])
+
+  const handleMouseDown = (name: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const target = entities.find((x) => x.name === name)
+    if (!target) return
+    setDraggingEntity(name)
+    setDragOffset({
+      x: e.clientX - target.x * scale,
+      y: e.clientY - target.y * scale,
+    })
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!draggingEntity) return
+    const newX = (e.clientX - dragOffset.x) / scale
+    const newY = (e.clientY - dragOffset.y) / scale
+    setEntities((prev) =>
+      prev.map((ent) => (ent.name === draggingEntity ? { ...ent, x: Math.max(10, newX), y: Math.max(10, newY) } : ent)),
+    )
+  }
+
+  const handleMouseUp = () => {
+    setDraggingEntity(null)
+  }
+
   return (
     <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
       style={{
         height: '100%',
         position: 'relative',
@@ -17,102 +197,142 @@ export function ErView() {
         backgroundImage: 'radial-gradient(var(--grid-line) 1px, transparent 1px)',
         backgroundSize: '18px 18px',
         overflow: 'auto',
+        userSelect: draggingEntity ? 'none' : 'auto',
       }}
     >
-      <div style={{ position: 'absolute', inset: 0 }}>
+      <div
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: '0 0',
+          position: 'absolute',
+          inset: 0,
+          minWidth: 1600,
+          minHeight: 1200,
+        }}
+      >
+        {/* SVG Relationship Connector Lines */}
         <svg
           width="100%"
           height="100%"
-          style={{ position: 'absolute', inset: 0 }}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
           fill="none"
-          stroke="var(--border-strong)"
-          strokeWidth={1.4}
+          stroke="var(--accent)"
+          strokeWidth={1.5}
+          strokeDasharray="4 2"
         >
-          <path d="M250 150 H300 V200 H352" />
-          <path d="M614 200 H660 V160 H704" />
-          <path d="M829 217 V360" />
-          <path d="M250 410 H320 V300 H660 V196 H704" />
-        </svg>
-      </div>
+          {entities.flatMap((source) =>
+            source.foreignKeys.map((fk, idx) => {
+              const target = entities.find((x) => x.name === fk.refTable)
+              if (!target) return null
 
-      {ER.map((e) => (
-        <div
-          key={e.name}
-          style={{
-            position: 'absolute',
-            left: e.x,
-            top: e.y,
-            width: e.w,
-            background: 'var(--pane)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: 6,
-            boxShadow: '0 3px 10px rgba(0,0,0,.10)',
-            overflow: 'hidden',
-          }}
-        >
+              const x1 = source.x + source.w
+              const y1 = source.y + 30
+              const x2 = target.x
+              const y2 = target.y + 30
+              const midX = (x1 + x2) / 2
+
+              return (
+                <path
+                  key={`${source.name}-${target.name}-${idx}`}
+                  d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
+                />
+              )
+            }),
+          )}
+        </svg>
+
+        {entities.map((e) => (
           <div
+            key={e.name}
+            onMouseDown={(ev) => handleMouseDown(e.name, ev)}
             style={{
-              padding: '5px 8px',
-              background: 'var(--accent-soft)',
-              color: 'var(--accent)',
-              fontWeight: 600,
-              fontSize: 11.5,
-              fontFamily: 'var(--mono)',
+              position: 'absolute',
+              left: e.x,
+              top: e.y,
+              width: e.w,
+              background: 'var(--pane)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 6,
+              boxShadow: '0 3px 10px rgba(0,0,0,.15)',
+              overflow: 'hidden',
+              cursor: draggingEntity === e.name ? 'grabbing' : 'grab',
+              zIndex: draggingEntity === e.name ? 10 : 1,
             }}
           >
-            {e.name}
-          </div>
-          {e.fields.map((f) => (
             <div
-              key={f[1]}
               style={{
-                display: 'grid',
-                gridTemplateColumns: '14px 1fr auto',
-                gap: 6,
+                padding: '6px 10px',
+                background: 'var(--accent-soft)',
+                color: 'var(--accent)',
+                fontWeight: 600,
+                fontSize: 11.5,
+                fontFamily: 'var(--mono)',
+                display: 'flex',
                 alignItems: 'center',
-                padding: '2px 8px',
-                borderTop: '1px solid var(--grid-line)',
-                fontSize: 11,
+                justifyContent: 'space-between',
               }}
             >
-              <span style={{ fontSize: 9, fontWeight: 700, color: KEY_COLOR[f[0]], fontFamily: 'var(--mono)' }}>{f[0]}</span>
-              <span style={{ fontFamily: 'var(--mono)' }}>{f[1]}</span>
-              <span style={{ color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 10.5 }}>{f[2]}</span>
+              <span>{e.name}</span>
+              <span style={{ fontSize: 10, color: 'var(--text3)' }}>{e.fields.length} cols</span>
             </div>
-          ))}
-        </div>
-      ))}
+            <div style={{ maxHeight: 220, overflow: 'auto' }}>
+              {e.fields.map((f, i) => (
+                <div
+                  key={`${f[1]}-${i}`}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '18px 1fr auto',
+                    gap: 6,
+                    alignItems: 'center',
+                    padding: '3px 8px',
+                    borderTop: '1px solid var(--grid-line)',
+                    fontSize: 11,
+                  }}
+                >
+                  <span style={{ fontSize: 9, fontWeight: 700, color: KEY_COLOR[f[0]] || 'var(--text3)', fontFamily: 'var(--mono)' }}>
+                    {f[0]}
+                  </span>
+                  <span style={{ fontFamily: 'var(--mono)', color: 'var(--text)' }}>{f[1]}</span>
+                  <span style={{ color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 10 }}>{f[2]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
 
+      {/* Zoom / Scale Controls */}
       <div
         style={{
-          position: 'absolute',
-          right: 12,
-          bottom: 12,
+          position: 'fixed',
+          right: 20,
+          bottom: 20,
           display: 'flex',
+          alignItems: 'center',
           gap: 4,
           background: 'var(--pane)',
           border: '1px solid var(--border-strong)',
           borderRadius: 6,
-          padding: 4,
+          padding: '2px 6px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          zIndex: 50,
         }}
       >
-        <div
-          className="hv-accent"
-          style={{ width: 24, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}
+        <button
+          onClick={() => setScale((s) => Math.max(0.4, Number((s - 0.1).toFixed(1))))}
+          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontWeight: 700 }}
         >
           −
+        </button>
+        <div style={{ padding: '0 6px', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text2)', minWidth: 44, textAlign: 'center' }}>
+          {Math.round(scale * 100)}%
         </div>
-        <div
-          style={{ padding: '0 6px', height: 20, display: 'flex', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text2)' }}
-        >
-          100%
-        </div>
-        <div
-          className="hv-accent"
-          style={{ width: 24, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}
+        <button
+          onClick={() => setScale((s) => Math.min(1.8, Number((s + 0.1).toFixed(1))))}
+          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontWeight: 700 }}
         >
           +
-        </div>
+        </button>
       </div>
     </div>
   )

@@ -1,11 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { selectValue } from '../utils/select-value'
-import { useStudio } from '../store/studio'
+import { useStudio, useClient } from '../store/studio'
 import { buildSelect, type QueryModel } from '@corvus/sql'
 
 export function QueryBuilderView() {
-  const { setView } = useStudio()
+  const { setView, activeTab: getActiveTab } = useStudio()
+  const client = useClient()
   const goSql = setView('sql')
+
+  const tab = getActiveTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
+
+  const [availableTables, setAvailableTables] = useState<string[]>([])
 
   const [model, setModel] = useState<QueryModel>({
     tables: [
@@ -43,7 +50,81 @@ export function QueryBuilderView() {
 
   const [activeTab, setActiveTab] = useState<'tables' | 'fields' | 'joins' | 'where' | 'order'>('fields')
 
-  const generatedSql = buildSelect(model, 'mysql')
+  // 1. Tải danh sách bảng từ introspect
+  useEffect(() => {
+    let cancelled = false
+    async function fetchTables() {
+      try {
+        const objects = await client.request<Array<{ name: string; kind: string }>>('introspect.objects', {
+          connectionId,
+          schema,
+          kind: 'table',
+        })
+        if (!cancelled && Array.isArray(objects) && objects.length > 0) {
+          setAvailableTables(objects.map((o) => o.name))
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    fetchTables()
+    return () => {
+      cancelled = true
+    }
+  }, [client, connectionId, schema])
+
+  const generatedSql = buildSelect(model, 'postgres')
+
+  const handleAddTable = () => {
+    const nextName = availableTables.find((t) => !model.tables.some((x) => x.name === t)) || `table_${model.tables.length + 1}`
+    const nextAlias = nextName.charAt(0).toLowerCase()
+    setModel({
+      ...model,
+      tables: [...model.tables, { name: nextName, alias: nextAlias }],
+    })
+  }
+
+  const handleAddField = () => {
+    const defaultTable = model.tables[0]?.alias || model.tables[0]?.name || ''
+    setModel({
+      ...model,
+      fields: [...model.fields, { table: defaultTable, name: 'id' }],
+    })
+  }
+
+  const handleAddJoin = () => {
+    const t1 = model.tables[0]?.alias || 't1'
+    const t2 = model.tables[1]?.alias || 't2'
+    setModel({
+      ...model,
+      joins: [
+        ...(model.joins || []),
+        {
+          type: 'INNER',
+          fromTable: t1,
+          fromField: 'id',
+          toTable: t2,
+          toField: `${t1}_id`,
+        },
+      ],
+    })
+  }
+
+  const handleAddWhere = () => {
+    const defaultTable = model.tables[0]?.alias || ''
+    setModel({
+      ...model,
+      where: [
+        ...(model.where || []),
+        {
+          table: defaultTable,
+          field: 'id',
+          op: '=',
+          value: '1',
+        },
+      ],
+    })
+  }
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -111,18 +192,43 @@ export function QueryBuilderView() {
         <div style={{ flex: 1, padding: 14, overflow: 'auto', borderRight: '1px solid var(--border)' }}>
           {activeTab === 'tables' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <h4 style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text)' }}>Các bảng tham gia truy vấn</h4>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>Các bảng tham gia truy vấn</h4>
+                <button
+                  onClick={handleAddTable}
+                  style={{ padding: '2px 8px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                >
+                  + Thêm bảng
+                </button>
+              </div>
+
               {model.tables.map((t, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    value={t.name}
-                    onChange={(e) => {
-                      const next = [...model.tables]
-                      next[idx] = { ...t, name: e.target.value }
-                      setModel({ ...model, tables: next })
-                    }}
-                    style={{ padding: '4px 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: 11.5 }}
-                  />
+                  {availableTables.length > 0 ? (
+                    <select
+                      value={t.name}
+                      onChange={(e) => {
+                        const next = [...model.tables]
+                        next[idx] = { ...t, name: e.target.value }
+                        setModel({ ...model, tables: next })
+                      }}
+                      style={{ padding: '4px 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: 11.5 }}
+                    >
+                      {availableTables.map((tbl) => (
+                        <option key={tbl} value={tbl}>{tbl}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={t.name}
+                      onChange={(e) => {
+                        const next = [...model.tables]
+                        next[idx] = { ...t, name: e.target.value }
+                        setModel({ ...model, tables: next })
+                      }}
+                      style={{ padding: '4px 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: 11.5 }}
+                    />
+                  )}
                   <span style={{ fontSize: 11, color: 'var(--text3)' }}>AS</span>
                   <input
                     value={t.alias || ''}
@@ -134,6 +240,12 @@ export function QueryBuilderView() {
                     }}
                     style={{ width: 60, padding: '4px 8px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text)', fontFamily: 'var(--mono)', fontSize: 11.5 }}
                   />
+                  <button
+                    onClick={() => setModel({ ...model, tables: model.tables.filter((_, i) => i !== idx) })}
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -141,10 +253,19 @@ export function QueryBuilderView() {
 
           {activeTab === 'fields' && (
             <div>
-              <h4 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text)' }}>Danh sách cột chọn (SELECT)</h4>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>Danh sách cột chọn (SELECT)</h4>
+                <button
+                  onClick={handleAddField}
+                  style={{ padding: '2px 8px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                >
+                  + Thêm cột
+                </button>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {model.fields.map((f, idx) => (
-                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '80px 140px 90px 100px', gap: 6, alignItems: 'center' }}>
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '80px 140px 90px 100px 24px', gap: 6, alignItems: 'center' }}>
                     <input
                       value={f.table || ''}
                       placeholder="Table"
@@ -190,6 +311,12 @@ export function QueryBuilderView() {
                       }}
                       style={{ padding: '3px 6px', background: 'var(--pane2)', border: '1px solid var(--border)', borderRadius: 3, color: 'var(--text2)', fontFamily: 'var(--mono)', fontSize: 11 }}
                     />
+                    <button
+                      onClick={() => setModel({ ...model, fields: model.fields.filter((_, i) => i !== idx) })}
+                      style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12 }}
+                    >
+                      ×
+                    </button>
                   </div>
                 ))}
               </div>
@@ -198,13 +325,28 @@ export function QueryBuilderView() {
 
           {activeTab === 'joins' && (
             <div>
-              <h4 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text)' }}>Liên kết bảng (JOINs)</h4>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>Liên kết bảng (JOINs)</h4>
+                <button
+                  onClick={handleAddJoin}
+                  style={{ padding: '2px 8px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                >
+                  + Thêm JOIN
+                </button>
+              </div>
+
               {model.joins?.map((j, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11.5, fontFamily: 'var(--mono)' }}>
+                <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11.5, fontFamily: 'var(--mono)', marginBottom: 8 }}>
                   <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{j.type} JOIN</span>
                   <span style={{ color: 'var(--text)' }}>{j.toTable}</span>
                   <span style={{ color: 'var(--text3)' }}>ON</span>
                   <span style={{ color: 'var(--text)' }}>{j.fromTable}.{j.fromField} = {j.toTable}.{j.toField}</span>
+                  <button
+                    onClick={() => setModel({ ...model, joins: model.joins?.filter((_, i) => i !== idx) })}
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, marginLeft: 'auto' }}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>
@@ -212,12 +354,27 @@ export function QueryBuilderView() {
 
           {activeTab === 'where' && (
             <div>
-              <h4 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text)' }}>Điều kiện lọc (WHERE)</h4>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text)' }}>Điều kiện lọc (WHERE)</h4>
+                <button
+                  onClick={handleAddWhere}
+                  style={{ padding: '2px 8px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 3, cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                >
+                  + Thêm điều kiện
+                </button>
+              </div>
+
               {model.where?.map((w, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11.5, fontFamily: 'var(--mono)' }}>
+                <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11.5, fontFamily: 'var(--mono)', marginBottom: 8 }}>
                   <span style={{ color: 'var(--text)' }}>{w.table ? `${w.table}.${w.field}` : w.field}</span>
                   <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{w.op}</span>
                   <span style={{ color: 'var(--amber)' }}>{w.value}</span>
+                  <button
+                    onClick={() => setModel({ ...model, where: model.where?.filter((_, i) => i !== idx) })}
+                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 12, marginLeft: 'auto' }}
+                  >
+                    ×
+                  </button>
                 </div>
               ))}
             </div>

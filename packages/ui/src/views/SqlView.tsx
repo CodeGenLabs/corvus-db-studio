@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStudio, useClient } from '../store/studio'
 import { DataGrid } from '../components/grid'
 import { splitStatements } from '@corvus/sql'
@@ -14,44 +14,38 @@ interface QueryTabResult {
 }
 
 export function SqlView() {
-  const { t, setView } = useStudio()
+  const { t, setView, activeTab: getActiveTab } = useStudio()
   const client = useClient()
   const goCompare = setView('compare')
 
+  const tab = getActiveTab()
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+
   const [sqlText, setSqlText] = useState(
-    `-- Corvus DB Studio SQL Editor\nSELECT customer_id, first_name, last_name, email, active\nFROM customer\nWHERE active = 1\nORDER BY customer_id ASC\nLIMIT 20;\n\nSELECT film_id, title, release_year, rating\nFROM film\nLIMIT 10;`,
+    `-- Corvus DB Studio SQL Editor\nSELECT customer_id, first_name, last_name, email, active\nFROM customer\nWHERE active = 1\nORDER BY customer_id ASC\nLIMIT 20;`,
   )
 
-  const [activeTab, setActiveTab] = useState<'results' | 'messages'>('results')
+  const [activeSubTab, setActiveSubTab] = useState<'results' | 'messages' | 'history'>('results')
   const [activeResultIdx, setActiveResultIdx] = useState(0)
   const [running, setRunning] = useState(false)
-  const [results, setResults] = useState<QueryTabResult[]>([
-    {
-      statement: 'SELECT customer_id, first_name, last_name, email, active FROM customer LIMIT 20',
-      columns: [
-        { name: 'customer_id', type: 'INT', align: 'r' },
-        { name: 'first_name', type: 'VARCHAR', align: 't' },
-        { name: 'last_name', type: 'VARCHAR', align: 't' },
-        { name: 'email', type: 'VARCHAR', align: 't' },
-        { name: 'active', type: 'TINYINT', align: 'r' },
-      ],
-      rows: [
-        [{ k: 'num', v: 1 }, { k: 'str', v: 'MARY' }, { k: 'str', v: 'SMITH' }, { k: 'str', v: 'MARY.SMITH@sakilacustomer.org' }, { k: 'num', v: 1 }],
-        [{ k: 'num', v: 2 }, { k: 'str', v: 'PATRICIA' }, { k: 'str', v: 'JOHNSON' }, { k: 'str', v: 'PATRICIA.JOHNSON@sakilacustomer.org' }, { k: 'num', v: 1 }],
-        [{ k: 'num', v: 3 }, { k: 'str', v: 'LINDA' }, { k: 'str', v: 'WILLIAMS' }, { k: 'str', v: 'LINDA.WILLIAMS@sakilacustomer.org' }, { k: 'num', v: 1 }],
-        [{ k: 'num', v: 4 }, { k: 'str', v: 'BARBARA' }, { k: 'str', v: 'JONES' }, { k: 'str', v: 'BARBARA.JONES@sakilacustomer.org' }, { k: 'num', v: 1 }],
-        [{ k: 'num', v: 5 }, { k: 'str', v: 'ELIZABETH' }, { k: 'str', v: 'BROWN' }, { k: 'str', v: 'ELIZABETH.BROWN@sakilacustomer.org' }, { k: 'num', v: 1 }],
-      ],
-      rowCount: 5,
-      durationMs: 8,
-    },
-  ])
+  const [results, setResults] = useState<QueryTabResult[]>([])
+  const [history, setHistory] = useState<Array<{ id: string; sql: string; executedAt: string; durationMs: number; status: string }>>([])
+
+  // Modal AI Assistant
+  const [showAiModal, setShowAiModal] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiGenerating, setAiGenerating] = useState(false)
+
+  // Modal Explain
+  const [showExplainModal, setShowExplainModal] = useState(false)
+  const [explainResult, setExplainResult] = useState<string>('')
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  // 1. Chạy câu lệnh SQL
   const handleRunQuery = async () => {
     setRunning(true)
-    const statements = splitStatements(sqlText, 'mysql')
+    const statements = splitStatements(sqlText, 'postgres').filter((s) => s.trim().length > 0)
     const nextResults: QueryTabResult[] = []
 
     abortControllerRef.current = new AbortController()
@@ -60,64 +54,52 @@ export function SqlView() {
       for (const stmt of statements) {
         const start = Date.now()
         try {
-          if (client) {
-            const stream = client.stream('query.execute', {
-              sql: stmt,
-              connectionId: 'conn-1',
-            })
+          const stream = client.stream('query.execute', {
+            sql: stmt,
+            connectionId,
+          })
 
-            let cols: ColumnDef[] = []
-            const fetchedRows: CellValue[][] = []
-            let count = 0
+          let cols: ColumnDef[] = []
+          const fetchedRows: CellValue[][] = []
+          let count = 0
 
-            for await (const rawChunk of stream) {
-              const chunk = rawChunk as {
-                columns?: Array<{ name: string; type: string; align?: string }>
-                rows?: unknown[][]
-                stats?: { rowCount?: number }
-              }
-              if (chunk.columns) {
-                cols = chunk.columns.map((c) => ({
-                  name: c.name,
-                  type: c.type,
-                  align: c.align as 'r' | 't' | 'm',
-                }))
-              }
-              if (chunk.rows) {
-                for (const r of chunk.rows) {
-                  fetchedRows.push(
-                    r.map((val: unknown) => {
-                      if (val === null || val === 'NULL') return { k: 'null' }
-                      if (typeof val === 'number') return { k: 'num', v: val }
-                      if (typeof val === 'boolean') return { k: 'bool', v: val }
-                      return { k: 'str', v: String(val) }
-                    }),
-                  )
-                }
-              }
-              if (chunk.stats?.rowCount) {
-                count = chunk.stats.rowCount
+          for await (const rawChunk of stream) {
+            const chunk = rawChunk as {
+              columns?: Array<{ name: string; type: string; align?: string }>
+              rows?: unknown[][]
+              stats?: { rowCount?: number }
+            }
+            if (chunk.columns) {
+              cols = chunk.columns.map((c) => ({
+                name: c.name,
+                type: c.type,
+                align: c.align as 'r' | 't' | 'm',
+              }))
+            }
+            if (chunk.rows) {
+              for (const r of chunk.rows) {
+                fetchedRows.push(
+                  r.map((val: unknown) => {
+                    if (val === null || val === 'NULL') return { k: 'null' }
+                    if (typeof val === 'number') return { k: 'num', v: val }
+                    if (typeof val === 'boolean') return { k: 'bool', v: val }
+                    return { k: 'str', v: String(val) }
+                  }),
+                )
               }
             }
-
-            nextResults.push({
-              statement: stmt,
-              columns: cols.length > 0 ? cols : [{ name: 'result', type: 'TEXT', align: 't' }],
-              rows: fetchedRows,
-              rowCount: count || fetchedRows.length,
-              durationMs: Date.now() - start,
-            })
-          } else {
-            // Fallback simulate
-            await new Promise((r) => setTimeout(r, 100))
-            nextResults.push({
-              statement: stmt,
-              columns: [{ name: 'id', type: 'INT', align: 'r' }, { name: 'value', type: 'VARCHAR', align: 't' }],
-              rows: [[{ k: 'num', v: 1 }, { k: 'str', v: 'executed' }]],
-              rowCount: 1,
-              durationMs: 12,
-            })
+            if (chunk.stats?.rowCount) {
+              count = chunk.stats.rowCount
+            }
           }
+
+          nextResults.push({
+            statement: stmt,
+            columns: cols.length > 0 ? cols : [{ name: 'result', type: 'TEXT', align: 't' }],
+            rows: fetchedRows,
+            rowCount: count || fetchedRows.length,
+            durationMs: Date.now() - start,
+          })
         } catch (err) {
           nextResults.push({
             statement: stmt,
@@ -132,6 +114,7 @@ export function SqlView() {
 
       setResults(nextResults)
       setActiveResultIdx(0)
+      setActiveSubTab('results')
     } finally {
       setRunning(false)
       abortControllerRef.current = null
@@ -144,6 +127,86 @@ export function SqlView() {
     }
     setRunning(false)
   }
+
+  // 2. Format SQL qua query.format
+  const handleFormatSql = async () => {
+    try {
+      const res = await client.request<{ formatted: string }>('query.format', {
+        sql: sqlText,
+        dialect: 'postgres',
+      })
+      if (res.formatted) setSqlText(res.formatted)
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. Explain Plan qua query.explain
+  const handleExplain = async () => {
+    setRunning(true)
+    try {
+      const res = await client.request<{ plan: unknown }>('query.explain', {
+        connectionId,
+        sql: sqlText.trim(),
+      })
+      setExplainResult(JSON.stringify(res.plan, null, 2))
+      setShowExplainModal(true)
+    } catch (err) {
+      alert(`Lỗi Explain: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  // 4. AI Generate SQL
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) return
+    setAiGenerating(true)
+    try {
+      const res = await client.request<{ sql: string; explanation?: string }>('ai.generateSql', {
+        prompt: aiPrompt,
+        dialect: 'postgres',
+      })
+      setSqlText(res.sql)
+      setShowAiModal(false)
+    } catch (err) {
+      alert(`Lỗi AI: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setAiGenerating(false)
+    }
+  }
+
+  // 5. AI Fix SQL khi có lỗi
+  const handleAiFix = async (errStmt: string, errorMsg: string) => {
+    try {
+      const res = await client.request<{ fixedSql: string; explanation: string }>('ai.fixSql', {
+        sql: errStmt,
+        error: errorMsg,
+        dialect: 'postgres',
+      })
+      setSqlText(res.fixedSql)
+      alert(`AI đã sửa SQL: ${res.explanation}`)
+    } catch (err) {
+      alert(`Lỗi AI Fix: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // 6. Tải lịch sử truy vấn
+  useEffect(() => {
+    if (activeSubTab !== 'history') return
+    async function loadHistory() {
+      try {
+        const hist = await client.request<Array<{ id: string; sql: string; executedAt: string; durationMs: number; status: string }>>(
+          'query.history.list',
+          { connectionId, limit: 50 },
+        )
+        if (Array.isArray(hist)) setHistory(hist)
+      } catch {
+        // Fallback
+      }
+    }
+    loadHistory()
+  }, [client, connectionId, activeSubTab])
 
   const activeResult = results[activeResultIdx]
 
@@ -204,6 +267,7 @@ export function SqlView() {
         )}
 
         <button
+          onClick={handleExplain}
           className="hv-accent-border"
           style={{
             height: 22,
@@ -222,6 +286,7 @@ export function SqlView() {
         </button>
 
         <button
+          onClick={handleFormatSql}
           className="hv-accent-border"
           style={{
             height: 22,
@@ -240,6 +305,26 @@ export function SqlView() {
         </button>
 
         <button
+          onClick={() => setShowAiModal(true)}
+          style={{
+            height: 22,
+            padding: '0 8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            border: '1px solid var(--accent)',
+            background: 'rgba(99,102,241,0.1)',
+            color: 'var(--accent)',
+            borderRadius: 4,
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: 11,
+          }}
+        >
+          ✨ Trợ lý AI (Text-to-SQL)
+        </button>
+
+        <button
           className="hv-accent-soft-bg"
           onClick={goCompare}
           style={{
@@ -248,12 +333,11 @@ export function SqlView() {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            border: '1px solid var(--accent)',
+            border: '1px solid var(--border)',
             background: 'transparent',
-            color: 'var(--accent)',
+            color: 'var(--text2)',
             borderRadius: 4,
             cursor: 'pointer',
-            fontWeight: 600,
             fontSize: 11,
           }}
         >
@@ -301,16 +385,16 @@ export function SqlView() {
         }}
       >
         <button
-          onClick={() => setActiveTab('results')}
+          onClick={() => setActiveSubTab('results')}
           style={{
             height: 22,
             padding: '0 8px',
             border: 'none',
             borderRadius: 3,
-            background: activeTab === 'results' ? 'var(--pane)' : 'transparent',
-            color: activeTab === 'results' ? 'var(--accent)' : 'var(--text2)',
+            background: activeSubTab === 'results' ? 'var(--pane)' : 'transparent',
+            color: activeSubTab === 'results' ? 'var(--accent)' : 'var(--text2)',
             fontSize: 11,
-            fontWeight: activeTab === 'results' ? 600 : 400,
+            fontWeight: activeSubTab === 'results' ? 600 : 400,
             cursor: 'pointer',
           }}
         >
@@ -318,23 +402,40 @@ export function SqlView() {
         </button>
 
         <button
-          onClick={() => setActiveTab('messages')}
+          onClick={() => setActiveSubTab('messages')}
           style={{
             height: 22,
             padding: '0 8px',
             border: 'none',
             borderRadius: 3,
-            background: activeTab === 'messages' ? 'var(--pane)' : 'transparent',
-            color: activeTab === 'messages' ? 'var(--accent)' : 'var(--text2)',
+            background: activeSubTab === 'messages' ? 'var(--pane)' : 'transparent',
+            color: activeSubTab === 'messages' ? 'var(--accent)' : 'var(--text2)',
             fontSize: 11,
-            fontWeight: activeTab === 'messages' ? 600 : 400,
+            fontWeight: activeSubTab === 'messages' ? 600 : 400,
             cursor: 'pointer',
           }}
         >
           {t.messages}
         </button>
 
-        {activeTab === 'results' && results.length > 1 && (
+        <button
+          onClick={() => setActiveSubTab('history')}
+          style={{
+            height: 22,
+            padding: '0 8px',
+            border: 'none',
+            borderRadius: 3,
+            background: activeSubTab === 'history' ? 'var(--pane)' : 'transparent',
+            color: activeSubTab === 'history' ? 'var(--accent)' : 'var(--text2)',
+            fontSize: 11,
+            fontWeight: activeSubTab === 'history' ? 600 : 400,
+            cursor: 'pointer',
+          }}
+        >
+          Lịch sử ({history.length})
+        </button>
+
+        {activeSubTab === 'results' && results.length > 1 && (
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
             {results.map((_, idx) => (
               <button
@@ -360,10 +461,26 @@ export function SqlView() {
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {activeTab === 'results' && activeResult && (
+        {activeSubTab === 'results' && activeResult && (
           activeResult.error ? (
             <div style={{ padding: 14, color: '#ef4444', fontFamily: 'var(--mono)', fontSize: 12 }}>
-              Lỗi thực thi: {activeResult.error}
+              <div>✕ Lỗi thực thi: {activeResult.error}</div>
+              <button
+                onClick={() => handleAiFix(activeResult.statement, activeResult.error || '')}
+                style={{
+                  marginTop: 10,
+                  padding: '4px 10px',
+                  background: 'var(--accent)',
+                  color: 'var(--on-accent)',
+                  border: 'none',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 11,
+                }}
+              >
+                ✨ Nhờ AI tự động sửa câu lệnh này
+              </button>
             </div>
           ) : (
             <DataGrid
@@ -374,7 +491,7 @@ export function SqlView() {
           )
         )}
 
-        {activeTab === 'messages' && (
+        {activeSubTab === 'messages' && (
           <div style={{ padding: 12, fontFamily: 'var(--mono)', fontSize: 11.5, color: 'var(--text2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {results.map((res, i) => (
               <div key={i} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
@@ -390,7 +507,142 @@ export function SqlView() {
             ))}
           </div>
         )}
+
+        {activeSubTab === 'history' && (
+          <div style={{ padding: 10, fontFamily: 'var(--mono)', fontSize: 11.5 }}>
+            {history.map((h) => (
+              <div
+                key={h.id}
+                onClick={() => setSqlText(h.sql)}
+                style={{
+                  padding: '8px 10px',
+                  borderBottom: '1px solid var(--grid-line)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <div style={{ color: 'var(--text3)', fontSize: 10.5 }}>{h.executedAt}</div>
+                <div style={{ flex: 1, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.sql}</div>
+                <div style={{ color: h.status === 'error' ? '#ef4444' : '#4ade80', fontSize: 10.5 }}>{h.durationMs}ms</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Modal AI Generate */}
+      {showAiModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+          }}
+        >
+          <div
+            style={{
+              width: 500,
+              background: 'var(--pane)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 8,
+              padding: 16,
+            }}
+          >
+            <h3 style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--text)' }}>✨ Trợ lý AI Text-to-SQL</h3>
+            <p style={{ margin: '0 0 10px', fontSize: 11.5, color: 'var(--text2)' }}>
+              Nhập yêu cầu bằng ngôn ngữ tự nhiên để AI tự động sinh câu truy vấn SQL:
+            </p>
+            <textarea
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Ví dụ: Lấy danh sách 10 khách hàng có tổng chi tiêu cao nhất trong tháng này..."
+              style={{
+                width: '100%',
+                height: 80,
+                padding: 8,
+                background: 'var(--pane2)',
+                border: '1px solid var(--border)',
+                borderRadius: 4,
+                color: 'var(--text)',
+                fontSize: 12,
+                resize: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              <button
+                onClick={() => setShowAiModal(false)}
+                style={{ padding: '6px 12px', border: '1px solid var(--border-strong)', background: 'transparent', borderRadius: 4, color: 'var(--text)', cursor: 'pointer', fontSize: 11.5 }}
+              >
+                Huỷ
+              </button>
+              <button
+                disabled={aiGenerating}
+                onClick={handleAiGenerate}
+                style={{ padding: '6px 14px', border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', borderRadius: 4, cursor: 'pointer', fontSize: 11.5, fontWeight: 600 }}
+              >
+                {aiGenerating ? 'Đang tạo...' : 'Sinh câu lệnh SQL'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Explain Plan */}
+      {showExplainModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+          }}
+        >
+          <div
+            style={{
+              width: 580,
+              background: 'var(--pane)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 8,
+              padding: 16,
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--text)' }}>Kế hoạch thực thi (EXPLAIN Plan)</h3>
+            <pre
+              style={{
+                background: 'var(--pane2)',
+                border: '1px solid var(--border)',
+                borderRadius: 4,
+                padding: 12,
+                fontFamily: 'var(--mono)',
+                fontSize: 11.5,
+                color: 'var(--text)',
+                lineHeight: 1.5,
+                maxHeight: 280,
+                overflow: 'auto',
+              }}
+            >
+              {explainResult}
+            </pre>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+              <button
+                onClick={() => setShowExplainModal(false)}
+                style={{ padding: '6px 14px', border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text)', borderRadius: 4, cursor: 'pointer', fontSize: 11.5 }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
