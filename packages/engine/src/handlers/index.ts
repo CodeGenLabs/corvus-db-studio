@@ -9,8 +9,10 @@ import {
   type HandlerDeps,
 } from './context'
 import { registerDataHandlers } from './data'
+import { registerDdlHandlers } from './ddl'
 import { registerQueryToolsHandlers, recordQueryHistory } from './query-tools'
 import { registerTxHandlers } from './tx'
+import { registerWorkspaceHandlers } from './workspace'
 
 /**
  * Trần mặc định cho `query.execute` (streaming-and-jobs.md §A.4).
@@ -268,4 +270,10 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
 
   // ── tx.* handlers ──────────────────────────────────────────────────────────
   registerTxHandlers(router, deps)
+
+  // ── ddl.* handlers ────────────────────────────────────────────────────────
+  registerDdlHandlers(router, deps)
+
+  // ── workspace.* handlers ──────────────────────────────────────────────────
+  registerWorkspaceHandlers(router, deps)
 }
