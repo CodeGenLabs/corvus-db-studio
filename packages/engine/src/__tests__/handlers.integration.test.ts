@@ -193,8 +193,9 @@ describe('R-08 · handler RPC thật qua router', () => {
   })
 
   it('method chưa có handler ném UNSUPPORTED_FEATURE, không phải lỗi mơ hồ', async () => {
+    const emptyRouter = new EngineRouter()
     await expect(
-      router.handleRequest('connection.duplicate', { id: 'conn-1', newName: 'Copy' }),
+      emptyRouter.handleRequest('connection.get', { id: 'conn-1' }),
     ).rejects.toMatchObject({ code: 'UNSUPPORTED_FEATURE' })
   })
 

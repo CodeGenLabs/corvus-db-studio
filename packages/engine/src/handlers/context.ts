@@ -12,6 +12,8 @@ import type { SessionManager } from '../session'
 export interface ConnectionStore {
   list(ownerId: string): Promise<ConnectionProfile[]>
   get(id: string): Promise<ConnectionProfile | undefined>
+  save?(ownerId: string, profile: ConnectionProfile): Promise<void>
+  delete?(id: string): Promise<void>
 }
 
 /** Mọi thứ handler cần để làm việc. Truyền một lần khi đăng ký handler. */

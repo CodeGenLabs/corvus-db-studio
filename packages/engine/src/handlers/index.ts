@@ -1,4 +1,10 @@
-import { corvusError, errorMessage } from '@corvus/contract'
+import {
+  corvusError,
+  errorMessage,
+  parseConnectionUri,
+  toConnectionUri,
+  type ConnectionProfile,
+} from '@corvus/contract'
 import { getDriver } from '@corvus/driver-core'
 import { assertReadOnlySql } from '@corvus/sql'
 import type { EngineRouter } from '../router'
@@ -114,6 +120,127 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
     }
   })
 
+  // ── connection.get ─────────────────────────────────────────────────────────
+  router.registerUnary('connection.get', async (params) => {
+    const p = params as { id: string }
+    const profile = await deps.connections.get(p.id)
+    return profile ?? null
+  })
+
+  // ── connection.create ──────────────────────────────────────────────────────
+  router.registerUnary('connection.create', async (params, ctx) => {
+    const { password, ...draft } = params as ConnectionProfile & { password?: string }
+    const id = `conn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const profile: ConnectionProfile = {
+      ...draft,
+      id,
+    }
+    if (password) {
+      await deps.vault.set(
+        {
+          kind: 'db-password',
+          ownerId: ctx.actor.id,
+          connectionId: id,
+        },
+        password,
+      )
+    }
+    await deps.connections.save?.(ctx.actor.id, profile)
+    return profile
+  })
+
+  // ── connection.update ──────────────────────────────────────────────────────
+  router.registerUnary('connection.update', async (params, ctx) => {
+    const { password, ...profile } = params as ConnectionProfile & { password?: string }
+    if (password) {
+      await deps.vault.set(
+        {
+          kind: 'db-password',
+          ownerId: ctx.actor.id,
+          connectionId: profile.id,
+        },
+        password,
+      )
+    }
+    await deps.connections.save?.(ctx.actor.id, profile)
+    return profile
+  })
+
+  // ── connection.delete ──────────────────────────────────────────────────────
+  router.registerUnary('connection.delete', async (params, ctx) => {
+    const p = params as { id: string }
+    await deps.sessions.closeSession(p.id).catch(() => {})
+    await deps.vault
+      .delete({
+        kind: 'db-password',
+        ownerId: ctx.actor.id,
+        connectionId: p.id,
+      })
+      .catch(() => {})
+    await deps.connections.delete?.(p.id)
+    return { success: true }
+  })
+
+  // ── connection.duplicate ───────────────────────────────────────────────────
+  router.registerUnary('connection.duplicate', async (params, ctx) => {
+    const p = params as { id: string; newName: string }
+    const orig = await deps.connections.get(p.id)
+    if (!orig) throw corvusError('NOT_FOUND', `Không tìm thấy kết nối '${p.id}'`)
+    const newId = `conn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    const newProfile: ConnectionProfile = {
+      ...orig,
+      id: newId,
+      name: p.newName,
+    }
+    const password = await deps.vault.get({
+      kind: 'db-password',
+      ownerId: ctx.actor.id,
+      connectionId: p.id,
+    })
+    if (password) {
+      await deps.vault.set(
+        {
+          kind: 'db-password',
+          ownerId: ctx.actor.id,
+          connectionId: newId,
+        },
+        password,
+      )
+    }
+    await deps.connections.save?.(ctx.actor.id, newProfile)
+    return newProfile
+  })
+
+  // ── connection.close ───────────────────────────────────────────────────────
+  router.registerUnary('connection.close', async (params) => {
+    const p = params as { id: string }
+    await deps.sessions.closeSession(p.id).catch(() => {})
+    return { success: true }
+  })
+
+  // ── connection.status ──────────────────────────────────────────────────────
+  router.registerUnary('connection.status', async (params) => {
+    const p = params as { id: string }
+    const session = deps.sessions.getSession(p.id)
+    return {
+      status: session ? ('connected' as const) : ('disconnected' as const),
+      activeQueries: 0,
+      poolSize: session ? 1 : 0,
+    }
+  })
+
+  // ── connection.parseUri ────────────────────────────────────────────────────
+  router.registerUnary('connection.parseUri', async (params) => {
+    const p = params as { uri: string }
+    return parseConnectionUri(p.uri)
+  })
+
+  // ── connection.toUri ───────────────────────────────────────────────────────
+  router.registerUnary('connection.toUri', async (params) => {
+    const p = params as ConnectionProfile
+    return { uri: toConnectionUri(p) }
+  })
+
   // ── introspect.databases ───────────────────────────────────────────────────
   router.registerUnary('introspect.databases', async (params, ctx) => {
     const { connectionId } = params as { connectionId: string }
@@ -198,6 +325,26 @@ export function registerHandlers(router: EngineRouter, deps: HandlerDeps): void 
       kind: p.kind,
     })
     return { ddl }
+  })
+
+  // ── introspect.dependencies ────────────────────────────────────────────────
+  router.registerUnary('introspect.dependencies', async (_params) => {
+    return {
+      using: [],
+      usedBy: [],
+    }
+  })
+
+  // ── introspect.identifiers ─────────────────────────────────────────────────
+  router.registerUnary('introspect.identifiers', async (params, ctx) => {
+    const p = params as { connectionId: string; database?: string; schema?: string }
+    const conn = await resolveConnection(deps, p.connectionId, ctx.actor.id)
+    const objects = await conn.introspect.listObjects({ database: p.database, schema: p.schema })
+    return objects.map((o) => ({
+      name: o.name,
+      kind: (o.kind === 'view' ? 'table' : o.kind === 'procedure' || o.kind === 'function' ? 'function' : 'table') as 'table' | 'column' | 'function' | 'schema' | 'database' | 'keyword',
+      parent: p.schema,
+    }))
   })
 
   // ── query.execute (STREAM) ─────────────────────────────────────────────────
