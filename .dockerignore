@@ -3,6 +3,7 @@
 .env
 .env.*
 docker/dev-db
+docker-dev-connections.json
 dist
 coverage
 .turbo

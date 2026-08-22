@@ -2,7 +2,7 @@ import path from 'node:path'
 import { registerDriver, driverRegistry } from '@corvus/driver-core'
 import { postgresDriver } from '@corvus/driver-postgres'
 import { sqliteDriver } from '@corvus/driver-sqlite'
-import { mysqlDriver } from '@corvus/driver-mysql'
+import { mysqlDriver, mariadbDriver } from '@corvus/driver-mysql'
 import { mssqlDriver } from '@corvus/driver-mssql'
 import { oracleDriver } from '@corvus/driver-oracle'
 import { mongoDriver } from '@corvus/driver-mongodb'
@@ -29,6 +29,7 @@ export interface BuiltEngine {
   router: EngineRouter
   sessions: SessionManager
   storage: WorkspaceStorage
+  vault: SecretVault
   ownerId: string
   close(): Promise<void>
 }
@@ -58,6 +59,7 @@ export function buildEngine(): BuiltEngine {
   if (!driverRegistry.has('postgres')) registerDriver(postgresDriver)
   if (!driverRegistry.has('sqlite')) registerDriver(sqliteDriver)
   if (!driverRegistry.has('mysql')) registerDriver(mysqlDriver)
+  if (!driverRegistry.has('mariadb')) registerDriver(mariadbDriver)
   if (!driverRegistry.has('mssql')) registerDriver(mssqlDriver)
   if (!driverRegistry.has('oracle')) registerDriver(oracleDriver)
   if (!driverRegistry.has('mongodb')) registerDriver(mongoDriver)
@@ -101,6 +103,7 @@ export function buildEngine(): BuiltEngine {
     router,
     sessions,
     storage: workspace.storage,
+    vault,
     ownerId,
     close: async () => {
       await sessions.closeAll()

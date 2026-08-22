@@ -1,7 +1,7 @@
 {
   "$schema": "https://corvus-db.org/schema/v1/connections.json",
   "version": 1,
-  "exportedAt": "2026-08-22T07:25:00.000Z",
+  "exportedAt": "2026-08-22T07:50:00.000Z",
   "connections": [
     {
       "id": "dev-postgres",
@@ -10,8 +10,8 @@
       "host": "127.0.0.1",
       "port": 5432,
       "database": "corvus_dev",
-      "user": "corvus_dev",
-      "password": "corvus_dev",
+      "user": "corvus",
+      "password": "corvus_dev_pw",
       "color": "#336791",
       "group": "Docker Dev Stack"
     },
@@ -22,8 +22,8 @@
       "host": "127.0.0.1",
       "port": 3306,
       "database": "corvus_dev",
-      "user": "corvus_dev",
-      "password": "corvus_dev",
+      "user": "corvus",
+      "password": "corvus_dev_pw",
       "color": "#f29111",
       "group": "Docker Dev Stack"
     },
@@ -34,8 +34,8 @@
       "host": "127.0.0.1",
       "port": 3307,
       "database": "corvus_dev",
-      "user": "corvus_dev",
-      "password": "corvus_dev",
+      "user": "corvus",
+      "password": "corvus_dev_pw",
       "color": "#c0765a",
       "group": "Docker Dev Stack"
     },
@@ -47,7 +47,7 @@
       "port": 1434,
       "database": "corvus_dev",
       "user": "sa",
-      "password": "Corvus_Dev_2026!",
+      "password": "Corvus_dev_pw1",
       "color": "#cc292b",
       "group": "Docker Dev Stack"
     },
@@ -59,7 +59,7 @@
       "port": 1521,
       "database": "FREEPDB1",
       "user": "CORVUS_DEV",
-      "password": "corvus_dev",
+      "password": "corvus_dev_pw",
       "color": "#e01a22",
       "group": "Docker Dev Stack"
     },
@@ -71,7 +71,7 @@
       "port": 27017,
       "database": "corvus_dev",
       "user": "corvus",
-      "password": "corvus_dev",
+      "password": "corvus_dev_pw",
       "color": "#13aa52",
       "group": "Docker Dev Stack"
     },
@@ -81,7 +81,7 @@
       "driverId": "redis",
       "host": "127.0.0.1",
       "port": 6379,
-      "password": "corvus_dev",
+      "password": "corvus_dev_pw",
       "color": "#d82c20",
       "group": "Docker Dev Stack"
     },

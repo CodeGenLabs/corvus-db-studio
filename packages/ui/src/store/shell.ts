@@ -4,7 +4,6 @@ import type {
   BackupOptions,
   BackupScope,
   Config,
-  ConnectionProfile,
   DialogId,
   FilterCriterion,
   InfoTab,
@@ -14,6 +13,7 @@ import type {
   View,
 } from '@corvus/contract'
 import { DICTS, JA_X, LANG_NEXT, type Dict, type Lang } from '../i18n/dictionaries'
+import type { ImportableConnectionProfile } from '../utils/connection-export-import'
 import {
   closeTabInState,
   openTabInState,
@@ -78,7 +78,7 @@ export interface ShellState {
   connKind: string
   userMenu: boolean
   userSel: string | null
-  importConnData: { open: boolean; connections: ConnectionProfile[]; fileName?: string } | null
+  importConnData: { open: boolean; connections: ImportableConnectionProfile[]; fileName?: string } | null
 }
 
 const INITIAL_SHELL_STATE: ShellState = {

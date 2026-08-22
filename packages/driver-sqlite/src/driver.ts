@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { corvusError } from '@corvus/contract'
 import type { ColumnDef, ResultChunk } from '@corvus/contract'
@@ -295,7 +296,24 @@ export class SqliteDriver implements DatabaseDriver {
     }
 
     const isMemory = profile.database === MEMORY_PATH
-    const file = isMemory ? MEMORY_PATH : path.resolve(profile.database)
+    let file = profile.database
+    if (isMemory) {
+      file = MEMORY_PATH
+    } else if (path.isAbsolute(profile.database)) {
+      file = profile.database
+    } else {
+      const cwdResolved = path.resolve(profile.database)
+      if (fs.existsSync(cwdResolved)) {
+        file = cwdResolved
+      } else {
+        const parentResolved = path.resolve(process.cwd(), '../..', profile.database)
+        if (fs.existsSync(parentResolved)) {
+          file = parentResolved
+        } else {
+          file = cwdResolved
+        }
+      }
+    }
 
     let db: Database.Database
     try {

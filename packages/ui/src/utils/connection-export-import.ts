@@ -1,15 +1,17 @@
 import type { ConnectionProfile } from '@corvus/contract'
 
+export type ImportableConnectionProfile = ConnectionProfile & { password?: string }
+
 export interface ConnectionBackupFile {
   $schema?: string
   version: number
   exportedAt: string
-  connections: ConnectionProfile[]
+  connections: ImportableConnectionProfile[]
 }
 
 export interface ParseConnectionsResult {
   valid: boolean
-  connections: ConnectionProfile[]
+  connections: ImportableConnectionProfile[]
   error?: string
 }
 
@@ -46,7 +48,7 @@ export function parseConnectionsBackup(jsonStr: string): ParseConnectionsResult 
       }
     }
 
-    const validProfiles: ConnectionProfile[] = []
+    const validProfiles: ImportableConnectionProfile[] = []
     for (const item of list) {
       if (item && typeof item === 'object') {
         const obj = item as Record<string, unknown>
@@ -59,6 +61,7 @@ export function parseConnectionsBackup(jsonStr: string): ParseConnectionsResult 
             port: typeof obj.port === 'number' ? obj.port : undefined,
             database: typeof obj.database === 'string' ? obj.database : undefined,
             user: typeof obj.user === 'string' ? obj.user : undefined,
+            password: typeof obj.password === 'string' ? obj.password : undefined,
             color: typeof obj.color === 'string' ? obj.color : undefined,
             group: typeof obj.group === 'string' ? obj.group : undefined,
             readOnly: typeof obj.readOnly === 'boolean' ? obj.readOnly : undefined,

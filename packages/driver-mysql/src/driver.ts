@@ -507,3 +507,17 @@ export class MysqlDriver implements DatabaseDriver {
 }
 
 export const mysqlDriver = new MysqlDriver()
+
+export class MariaDbDriver implements DatabaseDriver {
+  readonly id = 'mariadb' as const
+  readonly displayName = 'MariaDB'
+  readonly capabilities = MYSQL_CAPABILITIES
+  readonly defaultPort = 3307
+
+  async connect(profile: ResolvedProfile, ctx?: DriverContext): Promise<DriverConnection> {
+    return mysqlDriver.connect(profile, ctx)
+  }
+}
+
+export const mariadbDriver = new MariaDbDriver()
+

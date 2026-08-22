@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Modal } from './Modal'
 import { DB_ICON, dbMark } from '../../data/icons'
 import { useStudio, useClient } from '../../store/studio'
 import type { ConnectionProfile } from '@corvus/contract'
+import type { ImportableConnectionProfile } from '../../utils/connection-export-import'
 
 export type ConflictResolution = 'rename' | 'overwrite' | 'skip'
 
 export interface ImportConnectionsDialogProps {
   open: boolean
-  connections: ConnectionProfile[]
+  connections: ImportableConnectionProfile[]
   fileName?: string
   onClose: () => void
   onSuccess?: (importedCount: number) => void
@@ -23,6 +25,7 @@ export function ImportConnectionsDialog({
 }: ImportConnectionsDialogProps) {
   const { tr } = useStudio()
   const client = useClient()
+  const queryClient = useQueryClient()
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [conflictPolicy, setConflictPolicy] = useState<ConflictResolution>('rename')
@@ -122,6 +125,7 @@ export function ImportConnectionsDialog({
       }
 
       setImporting(false)
+      await queryClient.invalidateQueries({ queryKey: ['connections'] })
       onSuccess?.(count)
       onClose()
     } catch (err: unknown) {
