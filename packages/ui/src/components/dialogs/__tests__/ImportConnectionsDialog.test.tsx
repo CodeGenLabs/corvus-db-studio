@@ -1,6 +1,5 @@
-﻿import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import React from 'react'
 import { StudioProvider } from '../../../store/studio'
 import { createMockTransport } from '@corvus/transport-mock'
 import { ImportConnectionsDialog } from '../ImportConnectionsDialog'
@@ -31,15 +30,13 @@ describe('ImportConnectionsDialog', () => {
 
   it('renders dialog with connection list preview when open', () => {
     const html = renderToStaticMarkup(
-      React.createElement(
-        StudioProvider,
-        { transport },
-        React.createElement(ImportConnectionsDialog, {
-          open: true,
-          connections: sampleConnections,
-          onClose: vi.fn(),
-        })
-      )
+      <StudioProvider transport={transport}>
+        <ImportConnectionsDialog
+          open={true}
+          connections={sampleConnections}
+          onClose={vi.fn()}
+        />
+      </StudioProvider>,
     )
     expect(html).toContain('PostgreSQL Dev Stack')
     expect(html).toContain('MySQL Dev Stack')
@@ -50,15 +47,13 @@ describe('ImportConnectionsDialog', () => {
 
   it('does not render markup when open is false', () => {
     const html = renderToStaticMarkup(
-      React.createElement(
-        StudioProvider,
-        { transport },
-        React.createElement(ImportConnectionsDialog, {
-          open: false,
-          connections: sampleConnections,
-          onClose: vi.fn(),
-        })
-      )
+      <StudioProvider transport={transport}>
+        <ImportConnectionsDialog
+          open={false}
+          connections={sampleConnections}
+          onClose={vi.fn()}
+        />
+      </StudioProvider>,
     )
     expect(html).toBe('')
   })

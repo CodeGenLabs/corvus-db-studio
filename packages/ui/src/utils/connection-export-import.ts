@@ -1,4 +1,4 @@
-﻿import type { ConnectionProfile } from '@corvus/contract'
+import type { ConnectionProfile } from '@corvus/contract'
 
 export interface ConnectionBackupFile {
   $schema?: string
@@ -31,13 +31,13 @@ export function serializeConnectionsBackup(connections: ConnectionProfile[]): st
  */
 export function parseConnectionsBackup(jsonStr: string): ParseConnectionsResult {
   try {
-    const raw = JSON.parse(jsonStr)
+    const raw: unknown = JSON.parse(jsonStr)
     let list: unknown[]
 
     if (Array.isArray(raw)) {
       list = raw
-    } else if (raw && typeof raw === 'object' && Array.isArray((raw as any).connections)) {
-      list = (raw as any).connections
+    } else if (raw && typeof raw === 'object' && 'connections' in raw && Array.isArray((raw as { connections: unknown[] }).connections)) {
+      list = (raw as { connections: unknown[] }).connections
     } else {
       return {
         valid: false,
@@ -54,7 +54,7 @@ export function parseConnectionsBackup(jsonStr: string): ParseConnectionsResult 
           validProfiles.push({
             id: typeof obj.id === 'string' && obj.id ? obj.id : `imported-${Math.random().toString(36).slice(2, 9)}`,
             name: obj.name,
-            driverId: obj.driverId as any,
+            driverId: obj.driverId as ConnectionProfile['driverId'],
             host: typeof obj.host === 'string' ? obj.host : undefined,
             port: typeof obj.port === 'number' ? obj.port : undefined,
             database: typeof obj.database === 'string' ? obj.database : undefined,
@@ -62,8 +62,8 @@ export function parseConnectionsBackup(jsonStr: string): ParseConnectionsResult 
             color: typeof obj.color === 'string' ? obj.color : undefined,
             group: typeof obj.group === 'string' ? obj.group : undefined,
             readOnly: typeof obj.readOnly === 'boolean' ? obj.readOnly : undefined,
-            ssl: obj.ssl as any,
-            ssh: obj.ssh as any,
+            ssl: obj.ssl as ConnectionProfile['ssl'],
+            ssh: obj.ssh as ConnectionProfile['ssh'],
           })
         }
       }
@@ -81,11 +81,12 @@ export function parseConnectionsBackup(jsonStr: string): ParseConnectionsResult 
       valid: true,
       connections: validProfiles,
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Dữ liệu không hợp lệ'
     return {
       valid: false,
       connections: [],
-      error: `Lỗi đọc JSON: ${err?.message || 'Dữ liệu không hợp lệ'}`,
+      error: `Lỗi đọc JSON: ${message}`,
     }
   }
 }

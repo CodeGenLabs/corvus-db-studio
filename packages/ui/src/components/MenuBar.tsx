@@ -21,8 +21,9 @@ export function MenuBar() {
       } else {
         alert(tr('Chưa có cấu hình kết nối nào để xuất.', 'No connection configurations to export.'))
       }
-    } catch (err: any) {
-      alert(err?.message || tr('Lỗi khi lấy danh sách kết nối.', 'Failed to retrieve connections list.'))
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : tr('Lỗi khi lấy danh sách kết nối.', 'Failed to retrieve connections list.')
+      alert(msg)
     }
   }
 

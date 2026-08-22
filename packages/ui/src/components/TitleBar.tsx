@@ -1,7 +1,9 @@
 import { LANG_LABEL } from '../i18n/dictionaries'
 import { useStudio } from '../store/studio'
 
-const WIN_BTN: React.CSSProperties = {
+type DragStyle = React.CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' }
+
+const WIN_BTN: DragStyle = {
   width: 46,
   display: 'flex',
   alignItems: 'center',
@@ -11,22 +13,33 @@ const WIN_BTN: React.CSSProperties = {
   WebkitAppRegion: 'no-drag',
 }
 
+interface WindowWithCorvus {
+  corvus?: {
+    windowControls?: {
+      minimize: () => void
+      maximize: () => void
+      close: () => void
+      isMaximized: () => Promise<boolean>
+    }
+  }
+}
+
 export function TitleBar() {
   const { s, set, tr, cycleLang, toggleTheme } = useStudio()
 
   const handleMinimize = () => {
     if (typeof window !== 'undefined') {
-      ;(window as any).corvus?.windowControls?.minimize()
+      ;(window as unknown as WindowWithCorvus).corvus?.windowControls?.minimize()
     }
   }
   const handleMaximize = () => {
     if (typeof window !== 'undefined') {
-      ;(window as any).corvus?.windowControls?.maximize()
+      ;(window as unknown as WindowWithCorvus).corvus?.windowControls?.maximize()
     }
   }
   const handleClose = () => {
     if (typeof window !== 'undefined') {
-      ;(window as any).corvus?.windowControls?.close()
+      ;(window as unknown as WindowWithCorvus).corvus?.windowControls?.close()
     }
   }
 
@@ -40,18 +53,20 @@ export function TitleBar() {
 
   return (
     <div
-      style={{
-        height: 34,
-        flex: 'none',
-        display: 'flex',
-        alignItems: 'stretch',
-        background: 'var(--titlebar)',
-        borderBottom: '1px solid var(--border)',
-        WebkitAppRegion: 'drag',
-        userSelect: 'none',
-      }}
+      style={
+        {
+          height: 34,
+          flex: 'none',
+          display: 'flex',
+          alignItems: 'stretch',
+          background: 'var(--titlebar)',
+          borderBottom: '1px solid var(--border)',
+          WebkitAppRegion: 'drag',
+          userSelect: 'none',
+        } as DragStyle
+      }
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', WebkitAppRegion: 'no-drag' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', WebkitAppRegion: 'no-drag' } as DragStyle}>
         <div
           style={{
             width: 17,
@@ -75,7 +90,7 @@ export function TitleBar() {
 
       <div style={{ flex: 1 }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 8, WebkitAppRegion: 'no-drag' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 8, WebkitAppRegion: 'no-drag' } as DragStyle}>
         <div
           className="hv-accent-border"
           onClick={cycleLang}
@@ -237,7 +252,7 @@ export function TitleBar() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'stretch', WebkitAppRegion: 'no-drag' }}>
+      <div style={{ display: 'flex', alignItems: 'stretch', WebkitAppRegion: 'no-drag' } as DragStyle}>
         <div className="hv-row" title="Minimize" onClick={handleMinimize} style={WIN_BTN}>
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.1}>
             <path d="M1.5 6h9" />

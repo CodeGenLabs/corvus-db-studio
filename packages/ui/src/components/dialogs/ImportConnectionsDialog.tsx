@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from './Modal'
 import { DB_ICON, dbMark } from '../../data/icons'
 import { useStudio, useClient } from '../../store/studio'
@@ -111,7 +111,8 @@ export function ImportConnectionsDialog({
         }
 
         // Tạo mới
-        const { id: _unused, ...createPayload } = item as any
+        const createPayload = { ...item }
+        delete (createPayload as { id?: string }).id
         await client.request('connection.create', {
           ...createPayload,
           name: finalName,
@@ -123,9 +124,10 @@ export function ImportConnectionsDialog({
       setImporting(false)
       onSuccess?.(count)
       onClose()
-    } catch (err: any) {
+    } catch (err: unknown) {
       setImporting(false)
-      setErrorMsg(err?.message || 'Có lỗi xảy ra trong quá trình nạp kết nối.')
+      const msg = err instanceof Error ? err.message : 'Có lỗi xảy ra trong quá trình nạp kết nối.'
+      setErrorMsg(msg)
     }
   }
 
@@ -177,8 +179,8 @@ export function ImportConnectionsDialog({
       <div style={{ padding: '16px 18px', overflowY: 'auto', flex: 1 }}>
         <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text2)' }}>
           {tr(
-            `Tìm thấy ${connections.length} cấu hình kết nối trong tệp. Hãy tick chọn các kết nối bạn muốn nạp vào hệ thống:`,
-            `Found ${connections.length} connection configurations in file. Select the connections you want to import:`,
+            'Tìm thấy ' + connections.length + ' cấu hình kết nối trong tệp. Hãy tick chọn các kết nối bạn muốn nạp:',
+            'Found ' + connections.length + ' connection profiles in file. Pick the connections you want to import:',
           )}
         </p>
 
@@ -329,7 +331,7 @@ export function ImportConnectionsDialog({
         }}
       >
         <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>
-          {tr(`Đã chọn: ${selectedIds.size} / ${connections.length} kết nối`, `Selected: ${selectedIds.size} / ${connections.length} connections`)}
+          {tr('Đã chọn: ' + selectedIds.size + ' / ' + connections.length + ' kết nối', 'Selected: ' + selectedIds.size + ' / ' + connections.length + ' connections')}
         </span>
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
@@ -365,7 +367,7 @@ export function ImportConnectionsDialog({
               opacity: (importing || selectedIds.size === 0) ? 0.6 : 1,
             }}
           >
-            {importing ? tr('Đang nạp…', 'Importing…') : tr(`Nhập ${selectedIds.size} kết nối`, `Import ${selectedIds.size} connections`)}
+            {importing ? tr('Đang nạp…', 'Importing…') : tr('Nhập ' + selectedIds.size + ' kết nối', 'Import ' + selectedIds.size + ' connections')}
           </button>
         </div>
       </div>
