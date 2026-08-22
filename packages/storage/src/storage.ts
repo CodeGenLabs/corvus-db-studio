@@ -177,6 +177,24 @@ export class WorkspaceStorage {
     return WorkspaceStorage.LOCAL_OWNER_ID
   }
 
+  /** Tạo group nếu chưa có. */
+  ensureGroup(ownerId: string, groupIdOrName: string, targetKind = 'connection'): string {
+    const existing = this.db
+      .prepare('SELECT id FROM vgroup WHERE id = ? OR (owner_id = ? AND name = ?)')
+      .get(groupIdOrName, ownerId, groupIdOrName) as { id: string } | undefined
+    if (existing) return existing.id
+
+    const id = groupIdOrName
+    this.db
+      .prepare(
+        `INSERT INTO vgroup (id, owner_id, name, target_kind, sort_order)
+         VALUES (?, ?, ?, ?, 0)
+         ON CONFLICT(id) DO NOTHING`,
+      )
+      .run(id, ownerId, groupIdOrName, targetKind)
+    return id
+  }
+
   initialize(): void {
     const runner = new MigrationRunner(INITIAL_MIGRATIONS)
     runner.run(this.db, this.dbPath)
@@ -206,7 +224,11 @@ export class WorkspaceStorage {
   listConnections(ownerId: string): ConnectionProfile[] {
     const rows = this.db
       .prepare(
-        'SELECT id, name, driver_id, color, mode, group_id, config_json, tunnel_json, tls_json FROM connection WHERE owner_id = ? ORDER BY sort_order ASC, name ASC',
+        `SELECT c.id, c.name, c.driver_id, c.color, c.mode, c.group_id, g.name as group_name, c.config_json, c.tunnel_json, c.tls_json
+         FROM connection c
+         LEFT JOIN vgroup g ON c.group_id = g.id
+         WHERE c.owner_id = ?
+         ORDER BY c.sort_order ASC, c.name ASC`,
       )
       .all(ownerId) as Array<{
       id: string
@@ -215,6 +237,7 @@ export class WorkspaceStorage {
       color?: string
       mode: string
       group_id?: string
+      group_name?: string
       config_json: string
     }>
 
@@ -225,6 +248,8 @@ export class WorkspaceStorage {
         name: r.name,
         driverId: r.driver_id as DriverId,
         color: r.color,
+        group: r.group_name || r.group_id,
+        readOnly: r.mode === 'read-only',
         ...config,
       })
     })
@@ -233,10 +258,13 @@ export class WorkspaceStorage {
   getConnection(id: string): ConnectionProfile | undefined {
     const row = this.db
       .prepare(
-        'SELECT id, name, driver_id, color, mode, group_id, config_json FROM connection WHERE id = ?',
+        `SELECT c.id, c.name, c.driver_id, c.color, c.mode, c.group_id, g.name as group_name, c.config_json
+         FROM connection c
+         LEFT JOIN vgroup g ON c.group_id = g.id
+         WHERE c.id = ?`,
       )
       .get(id) as
-      | { id: string; name: string; driver_id: string; color?: string; mode: string; group_id?: string; config_json: string }
+      | { id: string; name: string; driver_id: string; color?: string; mode: string; group_id?: string; group_name?: string; config_json: string }
       | undefined
     if (!row) return undefined
     const config = JSON.parse(row.config_json || '{}')
@@ -246,7 +274,7 @@ export class WorkspaceStorage {
       driverId: row.driver_id as DriverId,
       color: row.color,
       readOnly: row.mode === 'read-only',
-      group: row.group_id,
+      group: row.group_name || row.group_id,
       ...config,
     })
   }
@@ -263,6 +291,12 @@ export class WorkspaceStorage {
       this.ensureLocalOwner()
     }
     const { id, name, driverId, color, readOnly, group, ...rest } = profile
+
+    let resolvedGroupId: string | null = null
+    if (group && typeof group === 'string' && group.trim()) {
+      resolvedGroupId = this.ensureGroup(ownerId, group.trim(), 'connection')
+    }
+
     const config = { ...rest } as Record<string, unknown>
     for (const secretField of ['password', 'passphrase', 'privateKey', 'secret', 'token']) {
       delete config[secretField]
@@ -285,7 +319,7 @@ export class WorkspaceStorage {
         driverId,
         color ?? null,
         readOnly ? 'read-only' : 'read-write',
-        group ?? null,
+        resolvedGroupId,
         JSON.stringify(config),
         now,
         now,

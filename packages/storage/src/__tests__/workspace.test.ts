@@ -63,6 +63,24 @@ describe('WorkspaceStorage trên SQLite thật', () => {
     }
   })
 
+  it('tự động tạo vgroup khi lưu connection có group', () => {
+    const ws = openInMemoryWorkspace()
+    try {
+      ws.storage.ensureUser('owner-1')
+      ws.storage.upsertConnection('owner-1', {
+        ...profile,
+        id: 'c-with-group',
+        group: 'Docker Dev Stack',
+      })
+      const got = ws.storage.getConnection('c-with-group')
+      expect(got?.group).toBe('Docker Dev Stack')
+      const list = ws.storage.listConnections('owner-1')
+      expect(list.find((c) => c.id === 'c-with-group')?.group).toBe('Docker Dev Stack')
+    } finally {
+      ws.close()
+    }
+  })
+
   it('KHÔNG bao giờ ghi mật khẩu vào workspace.db', () => {
     const ws = openInMemoryWorkspace()
     try {
