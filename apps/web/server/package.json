@@ -24,7 +24,7 @@
     "@corvus/host": "workspace:*",
     "@corvus/storage": "workspace:*",
     "@corvus/transport-http": "workspace:*",
-    "better-sqlite3": "^13.0.3",
+    "better-sqlite3": "^11.10.0",
     "ioredis": "^5.4.2",
     "mongodb": "^6.12.0",
     "mssql": "^11.0.1",

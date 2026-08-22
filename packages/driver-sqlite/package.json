@@ -23,10 +23,10 @@
     "@corvus/contract": "workspace:*",
     "@corvus/driver-core": "workspace:*",
     "@corvus/sql": "workspace:*",
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "^11.10.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "@types/better-sqlite3": "^9.6.0"
+    "@types/better-sqlite3": "^9.6.0",
+    "typescript": "^5.7.2"
   }
 }
