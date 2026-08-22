@@ -1,0 +1,97 @@
+{
+  "$schema": "https://corvus-db.org/schema/v1/connections.json",
+  "version": 1,
+  "exportedAt": "2026-08-22T07:25:00.000Z",
+  "connections": [
+    {
+      "id": "dev-postgres",
+      "name": "PostgreSQL Local Dev",
+      "driverId": "postgres",
+      "host": "127.0.0.1",
+      "port": 5432,
+      "database": "corvus_dev",
+      "user": "corvus_dev",
+      "password": "corvus_dev",
+      "color": "#336791",
+      "group": "Docker Dev Stack"
+    },
+    {
+      "id": "dev-mysql",
+      "name": "MySQL Local Dev",
+      "driverId": "mysql",
+      "host": "127.0.0.1",
+      "port": 3306,
+      "database": "corvus_dev",
+      "user": "corvus_dev",
+      "password": "corvus_dev",
+      "color": "#f29111",
+      "group": "Docker Dev Stack"
+    },
+    {
+      "id": "dev-mariadb",
+      "name": "MariaDB Local Dev",
+      "driverId": "mariadb",
+      "host": "127.0.0.1",
+      "port": 3307,
+      "database": "corvus_dev",
+      "user": "corvus_dev",
+      "password": "corvus_dev",
+      "color": "#c0765a",
+      "group": "Docker Dev Stack"
+    },
+    {
+      "id": "dev-mssql",
+      "name": "SQL Server Local Dev",
+      "driverId": "mssql",
+      "host": "127.0.0.1",
+      "port": 1434,
+      "database": "corvus_dev",
+      "user": "sa",
+      "password": "Corvus_Dev_2026!",
+      "color": "#cc292b",
+      "group": "Docker Dev Stack"
+    },
+    {
+      "id": "dev-oracle",
+      "name": "Oracle 23 Free Local Dev",
+      "driverId": "oracle",
+      "host": "127.0.0.1",
+      "port": 1521,
+      "database": "FREEPDB1",
+      "user": "CORVUS_DEV",
+      "password": "corvus_dev",
+      "color": "#e01a22",
+      "group": "Docker Dev Stack"
+    },
+    {
+      "id": "dev-mongodb",
+      "name": "MongoDB Local Dev",
+      "driverId": "mongodb",
+      "host": "127.0.0.1",
+      "port": 27017,
+      "database": "corvus_dev",
+      "user": "corvus",
+      "password": "corvus_dev",
+      "color": "#13aa52",
+      "group": "Docker Dev Stack"
+    },
+    {
+      "id": "dev-redis",
+      "name": "Redis Local Dev",
+      "driverId": "redis",
+      "host": "127.0.0.1",
+      "port": 6379,
+      "password": "corvus_dev",
+      "color": "#d82c20",
+      "group": "Docker Dev Stack"
+    },
+    {
+      "id": "dev-sqlite",
+      "name": "SQLite Sample",
+      "driverId": "sqlite",
+      "database": ".corvus-data/sample.sqlite",
+      "color": "#003b57",
+      "group": "Local File"
+    }
+  ]
+}
