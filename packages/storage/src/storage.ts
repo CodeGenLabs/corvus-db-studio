@@ -153,13 +153,22 @@ export class WorkspaceStorage {
 
   /** Tạo owner nếu chưa có. Idempotent — gọi mỗi lần khởi động cũng không sao. */
   ensureUser(id: string, username = id, displayName = username, role = 'owner'): void {
+    const existingById = this.db.prepare('SELECT id FROM app_user WHERE id = ?').get(id)
+    if (existingById) return
+
+    let finalUsername = username
+    const existingByUsername = this.db.prepare('SELECT id FROM app_user WHERE username = ?').get(username)
+    if (existingByUsername) {
+      finalUsername = `${username}_${id.replace(/[^a-zA-Z0-9]/g, '_')}`
+    }
+
     this.db
       .prepare(
         `INSERT INTO app_user (id, username, display_name, role, is_active, created_at)
          VALUES (?, ?, ?, ?, 1, ?)
          ON CONFLICT(id) DO NOTHING`,
       )
-      .run(id, username, displayName, role, new Date().toISOString())
+      .run(id, finalUsername, displayName, role, new Date().toISOString())
   }
 
   /** Tạo owner mặc định của bản desktop. */
@@ -250,6 +259,9 @@ export class WorkspaceStorage {
    * lời gọi bất cẩn cũng không ghi được secret vào workspace.db.
    */
   upsertConnection(ownerId: string, profile: ConnectionProfile): void {
+    if (ownerId === WorkspaceStorage.LOCAL_OWNER_ID) {
+      this.ensureLocalOwner()
+    }
     const { id, name, driverId, color, readOnly, group, ...rest } = profile
     const config = { ...rest } as Record<string, unknown>
     for (const secretField of ['password', 'passphrase', 'privateKey', 'secret', 'token']) {

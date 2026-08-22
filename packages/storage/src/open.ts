@@ -59,7 +59,10 @@ export function openWorkspace(options: OpenWorkspaceOptions): OpenedWorkspace {
   // better-sqlite3 khớp sẵn hình dạng SqliteDbLike (exec / prepare / pragma).
   const db = raw as unknown as SqliteDbLike
   const storage = new WorkspaceStorage(db, options.path)
-  if (!options.readonly) storage.initialize()
+  if (!options.readonly) {
+    storage.initialize()
+    storage.ensureLocalOwner()
+  }
 
   return {
     storage,
@@ -75,5 +78,6 @@ export function openInMemoryWorkspace(): OpenedWorkspace {
   const db = raw as unknown as SqliteDbLike
   const storage = new WorkspaceStorage(db)
   storage.initialize()
+  storage.ensureLocalOwner()
   return { storage, db, close: () => raw.close() }
 }
