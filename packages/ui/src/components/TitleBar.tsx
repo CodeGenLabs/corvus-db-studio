@@ -7,11 +7,28 @@ const WIN_BTN: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   color: 'var(--text2)',
-  cursor: 'default',
+  cursor: 'pointer',
+  WebkitAppRegion: 'no-drag',
 }
 
 export function TitleBar() {
   const { s, set, tr, cycleLang, toggleTheme } = useStudio()
+
+  const handleMinimize = () => {
+    if (typeof window !== 'undefined') {
+      ;(window as any).corvus?.windowControls?.minimize()
+    }
+  }
+  const handleMaximize = () => {
+    if (typeof window !== 'undefined') {
+      ;(window as any).corvus?.windowControls?.maximize()
+    }
+  }
+  const handleClose = () => {
+    if (typeof window !== 'undefined') {
+      ;(window as any).corvus?.windowControls?.close()
+    }
+  }
 
   const menuItems: [label: string, hint: string, action: (() => void) | null][] = [
     [tr('Tài khoản của tôi', 'My account'), '', null],
@@ -30,9 +47,11 @@ export function TitleBar() {
         alignItems: 'stretch',
         background: 'var(--titlebar)',
         borderBottom: '1px solid var(--border)',
+        WebkitAppRegion: 'drag',
+        userSelect: 'none',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', WebkitAppRegion: 'no-drag' }}>
         <div
           style={{
             width: 17,
@@ -56,7 +75,7 @@ export function TitleBar() {
 
       <div style={{ flex: 1 }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingRight: 8, WebkitAppRegion: 'no-drag' }}>
         <div
           className="hv-accent-border"
           onClick={cycleLang}
@@ -218,18 +237,18 @@ export function TitleBar() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'stretch' }}>
-        <div className="hv-row" title="Minimize" style={WIN_BTN}>
+      <div style={{ display: 'flex', alignItems: 'stretch', WebkitAppRegion: 'no-drag' }}>
+        <div className="hv-row" title="Minimize" onClick={handleMinimize} style={WIN_BTN}>
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.1}>
             <path d="M1.5 6h9" />
           </svg>
         </div>
-        <div className="hv-row" title="Maximize" style={WIN_BTN}>
+        <div className="hv-row" title="Maximize" onClick={handleMaximize} style={WIN_BTN}>
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.1}>
             <rect x="1.8" y="1.8" width="8.4" height="8.4" />
           </svg>
         </div>
-        <div className="hv-close" title="Close" style={WIN_BTN}>
+        <div className="hv-close" title="Close" onClick={handleClose} style={WIN_BTN}>
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.1}>
             <path d="M2 2l8 8M10 2l-8 8" />
           </svg>
