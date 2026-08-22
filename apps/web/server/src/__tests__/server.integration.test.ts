@@ -26,9 +26,6 @@ async function rpc<T = unknown>(method: string, params: unknown): Promise<T> {
   return body as T
 }
 
-import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
-
-let envHandle: TestEnvironmentHandle | undefined
 
 beforeAll(async () => {
   const { postgresDriver } = await import('@corvus/driver-postgres')

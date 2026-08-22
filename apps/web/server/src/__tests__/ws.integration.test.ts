@@ -71,10 +71,6 @@ interface ChunkData {
   stats?: { rowCount: number; truncated?: boolean }
 }
 
-import { setupTestEnvironment, type TestEnvironmentHandle } from '@corvus/driver-core/testenv'
-
-let envHandle: TestEnvironmentHandle | undefined
-
 beforeAll(async () => {
   envHandle = await setupTestEnvironment(
     'postgres',

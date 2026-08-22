@@ -19,7 +19,7 @@ describe('T-B03 · Production Dist Smoke Test (apps/web/server/dist/index.js)', 
     }
   })
   it('khởi động node dist/index.js, phục vụ /rpc và /ws, rồi shutdown sạch bằng SIGTERM', async () => {
-    const port = 8091
+    const port = 8200 + Math.floor(Math.random() * 500)
     const serverProc = spawn('node', [distEntry], {
       env: {
         ...process.env,

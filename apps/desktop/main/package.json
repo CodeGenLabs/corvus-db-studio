@@ -13,7 +13,16 @@
     "@corvus/contract": "workspace:*",
     "@corvus/host": "workspace:*",
     "@corvus/transport-ipc": "workspace:*",
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "^13.0.3",
+    "ioredis": "^5.4.2",
+    "mongodb": "^6.12.0",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.23.3",
+    "oracledb": "^6.7.0",
+    "pg": "^8.23.0",
+    "pg-cursor": "^2.22.0",
+    "pg-types": "^4.1.0",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
