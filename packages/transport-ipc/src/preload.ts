@@ -1,7 +1,15 @@
+export interface WindowControlsApi {
+  minimize: () => void
+  maximize: () => void
+  close: () => void
+  isMaximized: () => Promise<boolean>
+}
+
 export interface CorvusBridgeApi {
   invoke: (method: string, params: unknown) => Promise<unknown>
   openStream: (method: string, params: unknown) => MessagePort
   subscribe: (topic: string) => MessagePort
+  windowControls?: WindowControlsApi
 }
 
 export function exposeCorvusBridge(
@@ -22,6 +30,20 @@ export function exposeCorvusBridge(
       const { port1, port2 } = new MessageChannel()
       ipcRenderer.postMessage('corvus:subscribe', { topic }, [port2])
       return port1
+    },
+    windowControls: {
+      minimize: () => {
+        void ipcRenderer.invoke('corvus:window:minimize')
+      },
+      maximize: () => {
+        void ipcRenderer.invoke('corvus:window:maximize')
+      },
+      close: () => {
+        void ipcRenderer.invoke('corvus:window:close')
+      },
+      isMaximized: async () => {
+        return (await ipcRenderer.invoke('corvus:window:isMaximized')) as boolean
+      },
     },
   }
 

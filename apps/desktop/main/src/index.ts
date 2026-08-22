@@ -9,6 +9,32 @@ const engine = buildEngine()
 const host = new IpcRpcHost(engine.router)
 host.register(ipcMain as unknown as Parameters<typeof host.register>[0])
 
+ipcMain.handle('corvus:window:minimize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  win?.minimize()
+})
+
+ipcMain.handle('corvus:window:maximize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (win) {
+    if (win.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win.maximize()
+    }
+  }
+})
+
+ipcMain.handle('corvus:window:close', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  win?.close()
+})
+
+ipcMain.handle('corvus:window:isMaximized', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  return win?.isMaximized() ?? false
+})
+
 async function loadRenderer(win: BrowserWindow) {
   const devServerUrl = process.env.VITE_DEV_SERVER_URL || (!app.isPackaged ? 'http://localhost:3001' : undefined)
 
