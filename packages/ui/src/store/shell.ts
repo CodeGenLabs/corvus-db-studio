@@ -4,6 +4,7 @@ import type {
   BackupOptions,
   BackupScope,
   Config,
+  ConnectionProfile,
   DialogId,
   FilterCriterion,
   InfoTab,
@@ -77,6 +78,7 @@ export interface ShellState {
   connKind: string
   userMenu: boolean
   userSel: string | null
+  importConnData: { open: boolean; connections: ConnectionProfile[]; fileName?: string } | null
 }
 
 const INITIAL_SHELL_STATE: ShellState = {
@@ -116,6 +118,7 @@ const INITIAL_SHELL_STATE: ShellState = {
   connKind: 'MySQL / MariaDB',
   userMenu: false,
   userSel: null,
+  importConnData: null,
 }
 
 type Patch = Partial<ShellState> | ((prev: ShellState) => Partial<ShellState>)

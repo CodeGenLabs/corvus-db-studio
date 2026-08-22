@@ -1,12 +1,62 @@
+import { useRef } from 'react'
 import { SearchIcon } from './SearchIcon'
-import { useStudio } from '../store/studio'
+import { useStudio, useClient } from '../store/studio'
+import { exportConnectionsFile, parseConnectionsBackup } from '../utils/connection-export-import'
+import type { ConnectionProfile } from '@corvus/contract'
 import type { MenuKey } from '../types'
 
 type MenuEntry = '-' | [label: string, hint: string, action: (() => void) | null, checked?: boolean]
 
 export function MenuBar() {
   const { s, set, t, tr, openTab, closeTab } = useStudio()
+  const client = useClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const view = s.view
+
+  const handleExportConnections = async () => {
+    try {
+      const list = await client.request<ConnectionProfile[]>('connection.list', {})
+      if (Array.isArray(list) && list.length > 0) {
+        exportConnectionsFile(list)
+      } else {
+        alert(tr('Chưa có cấu hình kết nối nào để xuất.', 'No connection configurations to export.'))
+      }
+    } catch (err: any) {
+      alert(err?.message || tr('Lỗi khi lấy danh sách kết nối.', 'Failed to retrieve connections list.'))
+    }
+  }
+
+  const handleImportConnectionsClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const content = event.target?.result as string
+      if (!content) return
+
+      const result = parseConnectionsBackup(content)
+      if (result.valid && result.connections.length > 0) {
+        set({
+          importConnData: {
+            open: true,
+            connections: result.connections,
+            fileName: file.name,
+          },
+        })
+      } else {
+        alert(result.error || tr('Tệp không chứa danh sách kết nối hợp lệ.', 'Invalid connections backup file.'))
+      }
+    }
+    reader.readAsText(file)
+  }
 
   const menus: { key: MenuKey; label: string; items: MenuEntry[] }[] = [
     {
@@ -23,6 +73,9 @@ export function MenuBar() {
           },
         ],
         [tr('Mở gần đây', 'Open recent'), '▸', null],
+        '-',
+        [tr('Xuất danh sách kết nối…', 'Export connections…'), '', handleExportConnections],
+        [tr('Nhập danh sách kết nối…', 'Import connections…'), '', handleImportConnectionsClick],
         '-',
         [tr('Nhập dữ liệu…', 'Import wizard…'), '', () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 })],
         [tr('Xuất dữ liệu…', 'Export wizard…'), '', () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 })],
@@ -248,6 +301,14 @@ export function MenuBar() {
         <span>{t.paletteHint}</span>
         <span style={{ fontFamily: 'var(--mono)', opacity: 0.7 }}>⌘K</span>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={handleFileSelected}
+      />
     </div>
   )
 }

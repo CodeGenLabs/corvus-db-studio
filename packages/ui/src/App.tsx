@@ -11,6 +11,7 @@ import { Toolbar } from './components/Toolbar'
 import { AboutDialog } from './components/dialogs/AboutDialog'
 import { CommandPalette } from './components/dialogs/CommandPalette'
 import { ConnectionDialog } from './components/dialogs/ConnectionDialog'
+import { ImportConnectionsDialog } from './components/dialogs/ImportConnectionsDialog'
 import { SettingsDialog } from './components/dialogs/SettingsDialog'
 import { UpdatesDialog } from './components/dialogs/UpdatesDialog'
 import { UsersDialog } from './components/dialogs/UsersDialog'
@@ -118,6 +119,14 @@ function Shell() {
       {s.dialog === 'updates' && <UpdatesDialog />}
       {s.showConn && <ConnectionDialog />}
       {s.showPalette && <CommandPalette />}
+      {s.importConnData?.open && (
+        <ImportConnectionsDialog
+          open={s.importConnData.open}
+          connections={s.importConnData.connections}
+          fileName={s.importConnData.fileName}
+          onClose={() => set({ importConnData: null })}
+        />
+      )}
     </div>
   )
 }
