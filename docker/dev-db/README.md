@@ -24,3 +24,19 @@ Thời gian đo kiểm thử tích hợp trên đường testcontainers ban đ�
 | `@corvus/app-web-server` | 2 | 29 / 0 / 29 | 41.70s | WebSocket & HTTP streaming |
 
 > Mốc baseline này dùng để đối chiếu chứng minh tiêu chí **SC-006** (cải thiện thời gian chạy integration test ≥ 60% sau khi chuyển sang stack cố định ở local).
+
+---
+
+## Ma Trận Độ Phủ Seed (FR-019 / Task T021)
+
+| Engine | Bảng có PK + FK | View | Function / Procedure | Trigger | Index | Bảng phân trang lớn (≥ 100k) | Khai báo engine không hỗ trợ |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|---|
+| **PostgreSQL** | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ `04-bulk-100k.sql` | Đầy đủ tính năng |
+| **MySQL** | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ `04-bulk-100k.sql` | Không có Sequence (dùng AUTO_INCREMENT) |
+| **MariaDB** | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ `04-bulk-100k.sql` | Dùng chung dialect MySQL |
+| **SQL Server** | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ `04-bulk-100k.sql` | Đầy đủ tính năng |
+| **Oracle** | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ Có | ✅ `04-bulk-100k.sql` | Đầy đủ tính năng |
+| **SQLite** | ✅ Có | ✅ Có | ❌ N/A | ✅ Có | ✅ Có | ✅ `.corvus-data/sample.sqlite` | Không hỗ trợ Stored Procedures |
+| **MongoDB** | ❌ N/A | ❌ N/A | ❌ N/A | ❌ N/A | ✅ Có | ✅ `01-seed.js` | Document DB (Collections & Documents) |
+| **Redis** | ❌ N/A | ❌ N/A | ❌ N/A | ❌ N/A | ❌ N/A | ✅ `01-seed.redis` | Key-Value Store (5 Data Types + TTL) |
+

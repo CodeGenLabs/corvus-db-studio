@@ -40,6 +40,13 @@ export const VI = {
   'group.domains': 'Domains',
   'group.types': 'Kiểu dữ liệu',
   'group.events': 'Events',
+  'disabled.no-connection': 'Chưa mở kết nối',
+  'disabled.engine-unsupported': 'Engine hiện tại không hỗ trợ tính năng này',
+  'disabled.wrong-object-kind': 'Không áp dụng cho loại đối tượng này',
+  'disabled.no-selection': 'Chưa chọn đối tượng nào',
+  'disabled.multi-selection-unsupported': 'Lệnh này chỉ áp dụng cho 1 đối tượng',
+  'disabled.insufficient-permission': 'Không đủ quyền thực thi',
+  'disabled.capabilities-unknown': 'Đang xác định năng lực kết nối…',
 } as const
 
 export type Dict = Record<keyof typeof VI, string>
@@ -86,6 +93,13 @@ export const EN: Dict = {
   'group.domains': 'Domains',
   'group.types': 'Types',
   'group.events': 'Events',
+  'disabled.no-connection': 'No active connection',
+  'disabled.engine-unsupported': 'Current engine does not support this feature',
+  'disabled.wrong-object-kind': 'Not applicable to this object kind',
+  'disabled.no-selection': 'No object selected',
+  'disabled.multi-selection-unsupported': 'This command only applies to a single object',
+  'disabled.insufficient-permission': 'Insufficient permissions',
+  'disabled.capabilities-unknown': 'Determining engine capabilities…',
 }
 
 export const JA: Dict = {
@@ -130,6 +144,13 @@ export const JA: Dict = {
   'group.domains': 'ドメイン',
   'group.types': '型',
   'group.events': 'イベント',
+  'disabled.no-connection': '接続が開かれていません',
+  'disabled.engine-unsupported': '現在のエンジンはこの機能をサポートしていません',
+  'disabled.wrong-object-kind': 'このオブジェクトの種類には適用できません',
+  'disabled.no-selection': 'オブジェクトが選択されていません',
+  'disabled.multi-selection-unsupported': 'このコマンドは単一のオブジェクトにのみ適用されます',
+  'disabled.insufficient-permission': '実行権限が不足しています',
+  'disabled.capabilities-unknown': 'エンジンの機能を判別中…',
 }
 
 /**

@@ -10,6 +10,9 @@ export default defineConfig({
     include: ['packages/*/src/**/*.{test,spec}.{ts,tsx}', 'apps/**/src/**/*.{test,spec}.{ts,tsx}', 'tools/**/*.{test,spec}.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/*.integration.test.ts'],
     environment: 'node',
+    environmentMatchGlobs: [
+      ['packages/ui/src/**/*.dom.test.tsx', 'jsdom'],
+    ],
     passWithNoTests: false,
     reporters: ['default'],
     coverage: {

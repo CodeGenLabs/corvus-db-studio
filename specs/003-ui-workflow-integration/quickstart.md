@@ -100,9 +100,11 @@ Cổng ratchet in ra sau mỗi lần `pnpm verify`. Cả ba **chỉ được gi�
 
 | Hằng số | Khởi điểm 2026-08-24 | Đích | Nghĩa |
 |---|---:|---:|---|
-| `UI_WIRING_DEBT` | 46 | 0 | Phương thức RPC chưa có đường vào từ UI (SC-010) |
-| `SURFACE_DEBT` | 11 | 0 | Bề mặt context menu chưa phản hồi nhấp phải (SC-015) |
-| `HARDCODED_CHROME_DEBT` | đo lúc hiện thực | 0 | Chuỗi cứng mô tả kết nối/database/engine (SC-001) |
+| `UI_WIRING_DEBT` | **46** (đo: 46 / 76 methods) | 0 | Phương thức RPC chưa có đường vào từ UI (SC-010) |
+| `SURFACE_DEBT` | **11** (11 / 11 surfaces) | 0 | Bề mặt context menu chưa phản hồi nhấp phải (SC-015) |
+| `HARDCODED_CHROME_DEBT` | **9** vị trí trong chrome UI | 0 | Chuỗi cứng mô tả kết nối/database/engine (SC-001) |
+
+> ⏱️ **Baseline Verification**: Chạy qua `pnpm verify` (lint + typecheck + build + vitest 61 test files / 403 tests trong ~9.8s + `check:contract` + `check:ui-wiring` + `check:devdb`). Ratchet gates hoạt động đầy đủ.
 
 Tăng bất kỳ số nào là hồi quy, không phải nợ mới. Khuôn mẫu: `HANDLER_DEBT` trong
 [tools/check-contract.ts](../../tools/check-contract.ts) — hiện đã về 0.
