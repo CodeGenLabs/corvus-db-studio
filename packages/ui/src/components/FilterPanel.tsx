@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { TableMeta } from '@corvus/contract'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 
 const ADD_BTN: CSSProperties = {
   width: 24,
@@ -47,23 +48,25 @@ function whereClause(crit: { join: string; field: string; op: string; value: str
 
 export function FilterPanel() {
   const { s, set, t, tr, filterCriteria, sortCriteria, activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
 
   const tab = activeTab()
-  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
-  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
-  const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
+  const targetTable = ctx.selection.primaryTarget || (tab?.identity.type === 'object' ? tab.identity.name : '')
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || ctx.connectionId || 'conn-1'
+  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : ctx.namespace ?? undefined
+  const database = tab?.identity.type === 'object' ? tab.identity.database : ctx.database ?? undefined
 
   const { data: tableMeta } = useQuery({
-    queryKey: ['tableMeta', connectionId, s.selTable],
+    queryKey: ['tableMeta', connectionId, targetTable],
     queryFn: () =>
       client.request<TableMeta>('introspect.tableMeta', {
         connectionId,
         database,
         schema,
-        table: s.selTable,
+        table: targetTable,
       }),
-    enabled: !!s.selTable,
+    enabled: !!targetTable,
   })
 
   const firstField = tableMeta?.columns?.[0]?.name ?? 'id'
@@ -73,7 +76,7 @@ export function FilterPanel() {
     : ''
   const preview =
     'SELECT * FROM `' +
-    s.selTable +
+    targetTable +
     '`' +
     (filterCriteria.length ? ' WHERE ' + whereText.replace(/\n/g, ' ') : '') +
     orderText

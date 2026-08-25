@@ -14,7 +14,7 @@ import type { Surface } from '../packages/ui/src/commands/types'
 
 // Khởi điểm nợ tối đa cho phép (ratchet: chỉ được giảm khi hoàn thành US4 và US2)
 const MAX_UI_WIRING_DEBT = 46
-const MAX_SURFACE_DEBT = 11
+const MAX_SURFACE_DEBT = 0
 
 const CTX_SURFACES: Surface[] = [
   'ctx-nav',

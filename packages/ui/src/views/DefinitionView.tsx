@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useClient, useStudio } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 
 export function DefinitionView() {
-  const { s, t, activeTab } = useStudio()
+  const { t, activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
   const [copied, setCopied] = useState(false)
 
   const tab = activeTab()
   const identity = tab?.identity.type === 'object' ? tab.identity : undefined
 
-  const connectionId = identity?.connectionId ?? ''
-  const database = identity?.database
-  const schema = identity?.namespace
-  const name = identity?.name ?? s.selTable
-  const kind = identity?.objectKind ?? 'table'
+  const connectionId = identity?.connectionId ?? ctx.connectionId ?? ''
+  const database = identity?.database ?? ctx.database ?? undefined
+  const schema = identity?.namespace ?? ctx.namespace ?? undefined
+  const name = identity?.name ?? ctx.selection.primaryTarget ?? ''
+  const kind = identity?.objectKind ?? ctx.selection.objectKind ?? 'table'
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['ddl', connectionId, database, schema, name, kind],

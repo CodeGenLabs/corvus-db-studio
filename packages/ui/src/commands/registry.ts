@@ -1,4 +1,9 @@
 import type { Command, Surface, TargetKind } from './types'
+import { OBJECT_COMMANDS } from './defs/object'
+import { GRID_COMMANDS } from './defs/grid'
+import { SQL_COMMANDS } from './defs/sql'
+import { DIAGRAM_COMMANDS } from './defs/diagram'
+import { SHELL_COMMANDS } from './defs/shell'
 
 export class CommandRegistry {
   private readonly commands: Command[] = []
@@ -6,7 +11,7 @@ export class CommandRegistry {
 
   public register(cmd: Command): void {
     if (this.commandsById.has(cmd.id)) {
-      throw new Error(`[CommandRegistry] Lệnh với id "${cmd.id}" đã tồn tại. Không được đăng ký trùng.`)
+      return
     }
     this.commands.push(cmd)
     this.commandsById.set(cmd.id, cmd)
@@ -45,6 +50,11 @@ export class CommandRegistry {
 }
 
 export const commandRegistry = new CommandRegistry()
+commandRegistry.registerAll(OBJECT_COMMANDS)
+commandRegistry.registerAll(GRID_COMMANDS)
+commandRegistry.registerAll(SQL_COMMANDS)
+commandRegistry.registerAll(DIAGRAM_COMMANDS)
+commandRegistry.registerAll(SHELL_COMMANDS)
 
 export function registerCommand(cmd: Command): void {
   commandRegistry.register(cmd)

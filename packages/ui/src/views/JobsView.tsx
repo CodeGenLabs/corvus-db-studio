@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from '../components/useContextMenu'
+import { ContextMenu } from '../components/ContextMenu'
+import type { DialogId } from '@corvus/contract'
 
 const PILL_COLOR: Record<string, string> = {
   ok: 'var(--green)',
@@ -29,8 +33,10 @@ interface RunLogItem {
 }
 
 export function JobsView() {
-  const { t, rowH } = useStudio()
+  const { set, t, rowH, openTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-job-list')
 
   const [activeTab, setActiveTab] = useState<'jobs' | 'history'>('jobs')
   const [schedules, setSchedules] = useState<ScheduleItemResult[]>([])
@@ -136,7 +142,12 @@ export function JobsView() {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div
+      data-testid="jobs-view"
+      onContextMenu={(e) => openContextMenu(e, 'empty')}
+      onKeyDown={(e) => handleKeyDown(e, 'empty')}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
       <div
         style={{
           height: 34,
@@ -228,6 +239,12 @@ export function JobsView() {
             {schedules.map((s) => (
               <div
                 key={s.id}
+                onContextMenu={(e) => {
+                  e.stopPropagation()
+                  openContextMenu(e, 'job')
+                }}
+                onKeyDown={(e) => handleKeyDown(e, 'job')}
+                tabIndex={0}
                 className="hv-row"
                 style={{
                   display: 'grid',
@@ -468,6 +485,23 @@ export function JobsView() {
             </div>
           </div>
         </div>
+      )}
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-job-list"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
       )}
     </div>
   )

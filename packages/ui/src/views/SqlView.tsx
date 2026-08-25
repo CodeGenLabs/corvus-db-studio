@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from '../components/useContextMenu'
+import { ContextMenu } from '../components/ContextMenu'
 import { DataGrid } from '../components/grid'
 import { splitStatements } from '@corvus/sql'
-import type { CellValue, ColumnDef } from '@corvus/contract'
+import type { CellValue, ColumnDef, DialogId } from '@corvus/contract'
 
 interface QueryTabResult {
   statement: string
@@ -14,9 +17,11 @@ interface QueryTabResult {
 }
 
 export function SqlView() {
-  const { t, setView, activeTab: getActiveTab } = useStudio()
+  const { set, t, setView, openTab, activeTab: getActiveTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
   const goCompare = setView('compare')
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-sql-editor')
 
   const tab = getActiveTab()
   const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
@@ -355,6 +360,14 @@ export function SqlView() {
         <textarea
           value={sqlText}
           onChange={(e) => setSqlText(e.target.value)}
+          onContextMenu={(e) => {
+            const hasSel = (e.currentTarget.selectionEnd - e.currentTarget.selectionStart) > 0
+            openContextMenu(e, hasSel ? 'editor-selection' : 'empty')
+          }}
+          onKeyDown={(e) => {
+            const hasSel = (e.currentTarget.selectionEnd - e.currentTarget.selectionStart) > 0
+            handleKeyDown(e, hasSel ? 'editor-selection' : 'empty')
+          }}
           spellCheck={false}
           style={{
             width: '100%',
@@ -642,6 +655,23 @@ export function SqlView() {
             </div>
           </div>
         </div>
+      )}
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-sql-editor"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
       )}
     </div>
   )

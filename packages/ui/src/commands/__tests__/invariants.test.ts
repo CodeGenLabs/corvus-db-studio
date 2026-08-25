@@ -81,25 +81,32 @@ describe('CommandRegistry 10 Invariants (contracts/command-registry.md §2)', ()
       return
     }
 
-    const ctxSurfaces: Surface[] = [
-      'ctx-nav',
-      'ctx-object-list',
-      'ctx-data-grid',
-      'ctx-sql-editor',
-      'ctx-query-builder',
-      'ctx-er-diagram',
-      'ctx-tab-bar',
-      'ctx-toolbar',
-      'ctx-snippet',
-      'ctx-job-list',
-      'ctx-diff',
-    ]
+    const surfaceTargetMap: Record<Surface, string[]> = {
+      'ctx-nav': ['connection', 'database', 'namespace', 'object-group', 'object', 'sub-element'],
+      'ctx-object-list': ['object', 'empty'],
+      'ctx-data-grid': ['cell', 'row-header', 'column-header', 'empty'],
+      'ctx-sql-editor': ['editor-selection', 'empty'],
+      'ctx-query-builder': ['canvas-node', 'canvas-edge', 'empty'],
+      'ctx-er-diagram': ['canvas-node', 'canvas-edge', 'empty'],
+      'ctx-tab-bar': ['tab'],
+      'ctx-toolbar': ['empty'],
+      'ctx-snippet': ['snippet', 'empty'],
+      'ctx-job-list': ['job', 'empty'],
+      'ctx-diff': ['diff-item', 'empty'],
+      toolbar: ['empty'],
+      menubar: ['empty'],
+      'object-toolbar': ['object'],
+      'command-palette': ['empty'],
+    }
 
-    for (const s of ctxSurfaces) {
-      const cmds = commandRegistry.commandsFor(s)
-      // Khi bề mặt đã được khai báo lệnh, kiểm tra không bị rỗng
-      if (cmds.length > 0) {
-        expect(cmds.length).toBeGreaterThan(0)
+    for (const [surface, targets] of Object.entries(surfaceTargetMap)) {
+      if (surface.startsWith('ctx-')) {
+        const cmds = commandRegistry.commandsFor(surface as Surface)
+        expect(cmds.length, `Surface ${surface} không có lệnh nào`).toBeGreaterThan(0)
+        for (const target of targets) {
+          const targetCmds = commandRegistry.commandsFor(surface as Surface, target as any)
+          expect(targetCmds.length, `Surface ${surface} không có lệnh nào cho target "${target}"`).toBeGreaterThan(0)
+        }
       }
     }
   })

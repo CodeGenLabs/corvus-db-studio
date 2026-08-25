@@ -1,4 +1,9 @@
 import { useState } from 'react'
+import { useStudio, useClient } from '../../store/studio'
+import { useActiveContext } from '../../context/useActiveContext'
+import { useContextMenu } from '../useContextMenu'
+import { ContextMenu } from '../ContextMenu'
+import type { DialogId } from '@corvus/contract'
 
 export interface Snippet {
   id: string
@@ -13,6 +18,10 @@ export interface SnippetPickerProps {
 }
 
 export function SnippetPicker({ onInsertSnippet, onClose }: SnippetPickerProps) {
+  const { set, openTab } = useStudio()
+  const ctx = useActiveContext()
+  const client = useClient()
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-snippet')
   const [filter, setFilter] = useState('')
 
   const snippets: Snippet[] = [
@@ -80,6 +89,12 @@ export function SnippetPicker({ onInsertSnippet, onClose }: SnippetPickerProps) 
               onInsertSnippet(s.template)
               onClose()
             }}
+            onContextMenu={(e) => {
+              e.stopPropagation()
+              openContextMenu(e, 'snippet')
+            }}
+            onKeyDown={(e) => handleKeyDown(e, 'snippet')}
+            tabIndex={0}
             className="hv-row"
             style={{
               padding: '6px 8px',
@@ -114,6 +129,23 @@ export function SnippetPicker({ onInsertSnippet, onClose }: SnippetPickerProps) 
           </div>
         ))}
       </div>
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-snippet"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

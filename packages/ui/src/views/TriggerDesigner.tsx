@@ -1,18 +1,21 @@
 import { useState } from 'react'
 import { selectValue } from '../utils/select-value'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 
 export function TriggerDesigner() {
-  const { s, activeTab } = useStudio()
+  const { activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
 
   const tab = activeTab()
-  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || ctx.connectionId || 'conn-1'
+  const primaryTable = ctx.selection.primaryTarget || 'target_table'
 
-  const [triggerName, setTriggerName] = useState(`trg_${s.selTable || 'customer'}_audit`)
+  const [triggerName, setTriggerName] = useState(`trg_${primaryTable}_audit`)
   const [timing, setTiming] = useState<'BEFORE' | 'AFTER'>('AFTER')
   const [event, setEvent] = useState<'INSERT' | 'UPDATE' | 'DELETE'>('UPDATE')
-  const [targetTable, setTargetTable] = useState(s.selTable || 'customer')
+  const [targetTable, setTargetTable] = useState(primaryTable)
   const [body, setBody] = useState(
     `BEGIN\n  IF OLD.email <> NEW.email THEN\n    INSERT INTO customer_audit_log (customer_id, old_email, new_email, changed_at)\n    VALUES (NEW.customer_id, OLD.email, NEW.email, NOW());\n  END IF;\nEND`,
   )

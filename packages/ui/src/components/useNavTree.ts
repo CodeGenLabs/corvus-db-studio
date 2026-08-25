@@ -82,7 +82,9 @@ export function useNavTree(
   // ── 3. Danh sách Databases cho các kết nối có catalogs ─────────────────────
   const dbQueryTargets: Array<{ conn: ConnectionProfile; caps?: CapabilitySet }> = []
   openConnections.forEach((c, idx) => {
-    const caps = openConnQueries[idx]?.data
+    const connQ = openConnQueries[idx]
+    if (connQ?.isError) return
+    const caps = connQ?.data
     // Nếu chưa load xong caps thì vẫn query databases theo mặc định an toàn
     const hasCatalogs = caps?.hierarchy ? caps.hierarchy.hasCatalogs : true
     if (hasCatalogs) {
@@ -112,7 +114,8 @@ export function useNavTree(
 
     if (levels.includes('database')) {
       const dbTargetIdx = dbQueryTargets.findIndex((t) => t.conn.id === conn.id)
-      const dbs = dbTargetIdx >= 0 ? dbQueries[dbTargetIdx]?.data ?? [] : []
+      const rawDbs = dbTargetIdx >= 0 ? dbQueries[dbTargetIdx]?.data : []
+      const dbs = Array.isArray(rawDbs) ? rawDbs : []
       for (const db of dbs) {
         if (open[`${conn.id}/${db}`]) {
           openDatabases.push({ conn, database: db, caps })
@@ -158,7 +161,8 @@ export function useNavTree(
     if (levels.includes('database') && levels.includes('namespace')) {
       // 3 cấp: conn › db › schema › group › object
       const dbTargetIdx = dbQueryTargets.findIndex((t) => t.conn.id === conn.id)
-      const dbs = dbTargetIdx >= 0 ? dbQueries[dbTargetIdx]?.data ?? [] : []
+      const rawDbs = dbTargetIdx >= 0 ? dbQueries[dbTargetIdx]?.data : []
+      const dbs = Array.isArray(rawDbs) ? rawDbs : []
       for (const db of dbs) {
         const dbPath = `${conn.id}/${db}`
         if (!open[dbPath]) continue
@@ -166,7 +170,8 @@ export function useNavTree(
         const sTargetIdx = schemaQueryTargets.findIndex(
           (t) => t.conn.id === conn.id && t.database === db,
         )
-        const schemas = sTargetIdx >= 0 ? schemaQueries[sTargetIdx]?.data ?? [] : []
+        const rawSchemas = sTargetIdx >= 0 ? schemaQueries[sTargetIdx]?.data : []
+        const schemas = Array.isArray(rawSchemas) ? rawSchemas : []
         for (const sc of schemas) {
           const schemaPath = `${dbPath}/${sc}`
           if (!open[schemaPath]) continue
@@ -182,7 +187,8 @@ export function useNavTree(
     } else if (levels.includes('database') && !levels.includes('namespace')) {
       // 2 cấp: conn › db › group › object (MySQL, SQLite attach, Redis)
       const dbTargetIdx = dbQueryTargets.findIndex((t) => t.conn.id === conn.id)
-      const dbs = dbTargetIdx >= 0 ? dbQueries[dbTargetIdx]?.data ?? [] : []
+      const rawDbs = dbTargetIdx >= 0 ? dbQueries[dbTargetIdx]?.data : []
+      const dbs = Array.isArray(rawDbs) ? rawDbs : []
       for (const db of dbs) {
         const dbPath = `${conn.id}/${db}`
         if (!open[dbPath]) continue
@@ -196,7 +202,8 @@ export function useNavTree(
       }
     } else if (!levels.includes('database') && levels.includes('namespace')) {
       // 2 cấp: conn › schema › group › object (Oracle)
-      const schemas = schemaQueries[0]?.data ?? []
+      const rawSchemas = schemaQueries[0]?.data
+      const schemas = Array.isArray(rawSchemas) ? rawSchemas : []
       for (const sc of schemas) {
         const schemaPath = `${conn.id}/${sc}`
         if (!open[schemaPath]) continue
@@ -239,7 +246,7 @@ export function useNavTree(
   connections.forEach((conn) => {
     const connPath = conn.id
     const isConnOpen = !!open[connPath]
-    const openConnIdx = openConnections.indexOf(conn)
+    const openConnIdx = openConnections.findIndex((c) => c.id === conn.id)
     const connOpenQ = openConnIdx >= 0 ? openConnQueries[openConnIdx] : undefined
     const caps = connOpenQ?.data
     const levels = caps?.hierarchy ? levelsOf(caps.hierarchy) : ['database', 'namespace']
@@ -296,7 +303,8 @@ export function useNavTree(
 
       if (!isFolderOpen) return
 
-      for (const obj of objQ?.data ?? []) {
+      const objects = Array.isArray(objQ?.data) ? objQ.data : []
+      for (const obj of objects) {
         rows.push({
           path: `${folderPath}/${obj.name}`,
           label: obj.name,
@@ -319,7 +327,8 @@ export function useNavTree(
     }
 
     if (levels.includes('database') && levels.includes('namespace')) {
-      for (const db of dbQ?.data ?? []) {
+      const dbs = Array.isArray(dbQ?.data) ? dbQ.data : []
+      for (const db of dbs) {
         const dbPath = `${conn.id}/${db}`
         const isDbOpen = !!open[dbPath]
         const sTargetIdx = schemaQueryTargets.findIndex(
@@ -343,7 +352,8 @@ export function useNavTree(
 
         if (!isDbOpen) continue
 
-        for (const sc of schemaQ?.data ?? []) {
+        const schemas = Array.isArray(schemaQ?.data) ? schemaQ.data : []
+        for (const sc of schemas) {
           const schemaPath = `${dbPath}/${sc}`
           const isSchemaOpen = !!open[schemaPath]
 
@@ -368,7 +378,8 @@ export function useNavTree(
         }
       }
     } else if (levels.includes('database') && !levels.includes('namespace')) {
-      for (const db of dbQ?.data ?? []) {
+      const dbs = Array.isArray(dbQ?.data) ? dbQ.data : []
+      for (const db of dbs) {
         const dbPath = `${conn.id}/${db}`
         const isDbOpen = !!open[dbPath]
 
@@ -393,7 +404,8 @@ export function useNavTree(
       }
     } else if (!levels.includes('database') && levels.includes('namespace')) {
       const sQ = schemaQueries[0]
-      for (const sc of sQ?.data ?? []) {
+      const schemas = Array.isArray(sQ?.data) ? sQ.data : []
+      for (const sc of schemas) {
         const schemaPath = `${conn.id}/${sc}`
         const isSchemaOpen = !!open[schemaPath]
 

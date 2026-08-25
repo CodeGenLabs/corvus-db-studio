@@ -98,13 +98,13 @@ Feature này **mở rộng** `verify`: thêm `tools/check-ui-wiring.ts` và đư
 
 Cổng ratchet in ra sau mỗi lần `pnpm verify`. Cả ba **chỉ được giảm**:
 
-| Hằng số | Khởi điểm 2026-08-24 | Đích | Nghĩa |
-|---|---:|---:|---|
-| `UI_WIRING_DEBT` | **46** (đo: 46 / 76 methods) | 0 | Phương thức RPC chưa có đường vào từ UI (SC-010) |
-| `SURFACE_DEBT` | **11** (11 / 11 surfaces) | 0 | Bề mặt context menu chưa phản hồi nhấp phải (SC-015) |
-| `HARDCODED_CHROME_DEBT` | **9** vị trí trong chrome UI | 0 | Chuỗi cứng mô tả kết nối/database/engine (SC-001) |
+| Hằng số | Khởi điểm 2026-08-24 | Sau Phase 3 (US1) | Đích | Nghĩa |
+|---|---:|---:|---:|---|
+| `UI_WIRING_DEBT` | **46** (đo: 46 / 76) | **44** (32 / 76 đã nối) | 0 | Phương thức RPC chưa có đường vào từ UI (SC-010) |
+| `SURFACE_DEBT` | **11** (11 / 11 surfaces) | **11** (11 / 11 surfaces) | 0 | Bề mặt context menu chưa phản hồi nhấp phải (SC-015) |
+| `HARDCODED_CHROME_DEBT` | **9** vị trí trong chrome UI | **0** (100% sạch chuỗi cứng) | 0 | Chuỗi cứng mô tả kết nối/database/engine (SC-001) |
 
-> ⏱️ **Baseline Verification**: Chạy qua `pnpm verify` (lint + typecheck + build + vitest 61 test files / 403 tests trong ~9.8s + `check:contract` + `check:ui-wiring` + `check:devdb`). Ratchet gates hoạt động đầy đủ.
+> ⏱️ **Phase 3 (User Story 1 - P1 MVP) Checkpoint**: Toàn bộ 69 test files (439 tests) xanh trong `pnpm verify` (lint + typecheck 24 packages + build + test + contract ratchet + ui-wiring ratchet + devdb doctor). `HARDCODED_CHROME_DEBT` đã chính thức về **0**!
 
 Tăng bất kỳ số nào là hồi quy, không phải nợ mới. Khuôn mẫu: `HANDLER_DEBT` trong
 [tools/check-contract.ts](../../tools/check-contract.ts) — hiện đã về 0.

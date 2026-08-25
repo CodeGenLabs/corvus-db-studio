@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Modal } from './Modal'
 import { useStudio } from '../../store/studio'
+import { useActiveContext } from '../../context/useActiveContext'
 
 const DEFAULT_USERS: [string, string, string, string, string][] = [
   ['root', 'localhost', 'SUPERADMIN', '2026-08-20', 'active'],
@@ -24,6 +25,7 @@ const PRIVILEGES = [
 
 export function UsersDialog() {
   const { s, set, t, rowH } = useStudio()
+  const ctx = useActiveContext()
   const close = () => set({ dialog: null })
 
   const [activeTab, setActiveTab] = useState<'users' | 'privileges' | 'designer'>('users')
@@ -47,6 +49,8 @@ export function UsersDialog() {
     setUserPrivs({ ...userPrivs, [priv]: next })
   }
 
+  const targetConnText = [ctx.database, ctx.connectionName ?? ctx.connectionId].filter(Boolean).join(' @ ')
+
   return (
     <Modal onClose={close} surface={{ width: 760, height: 480, display: 'flex', flexDirection: 'column' }}>
       <div
@@ -62,7 +66,11 @@ export function UsersDialog() {
         }}
       >
         <span style={{ fontWeight: 600 }}>{t.usersTitle}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>sakila @ Local Dev</span>
+        {targetConnText && (
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>
+            {targetConnText}
+          </span>
+        )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
           <button

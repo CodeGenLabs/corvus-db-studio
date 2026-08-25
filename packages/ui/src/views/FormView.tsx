@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 import type { TableMeta, CellValue } from '@corvus/contract'
 
 interface FormColumn {
@@ -12,13 +13,14 @@ interface FormColumn {
 type FormFieldValue = string | number | boolean | null
 
 export function FormView() {
-  const { s, activeTab } = useStudio()
+  const { activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
 
   const tab = activeTab()
   const objIdent = tab?.identity.type === 'object' ? tab.identity : null
-  const connectionId = objIdent?.connectionId || 'conn-1'
-  const tableName = objIdent?.name || s.selTable || 'customer'
+  const connectionId = objIdent?.connectionId || ctx.connectionId || ''
+  const tableName = objIdent?.name || ctx.selection.primaryTarget || ''
   const database = objIdent?.database
   const schema = objIdent?.namespace
 

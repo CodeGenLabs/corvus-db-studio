@@ -42,7 +42,7 @@ export function evaluate(
 
   // 3. Kiểm tra loại đối tượng (ObjectKind)
   if (availability.objectKinds !== undefined && availability.objectKinds.length > 0) {
-    if (ctx.selection.kind === null || !availability.objectKinds.includes(ctx.selection.kind)) {
+    if (!ctx.selection.kind || !availability.objectKinds.includes(ctx.selection.kind)) {
       return { state: 'disabled', reason: 'wrong-object-kind' }
     }
   }
@@ -64,10 +64,11 @@ export function evaluate(
     return { state: 'disabled', reason: 'multi-selection-unsupported' }
   }
 
-  // 5. Kiểm tra phân quyền (nếu có cấu hình)
+  // 5. Kiểm tra phân quyền (nếu có cấu hình - FR-048)
   if (availability.permission !== undefined) {
-    // Hiện tại khi có permission yêu cầu nhưng không đạt quyền
-    // Có thể mở rộng đối chiếu ctx khi tích hợp RBAC
+    if (ctx.permissions !== undefined && !ctx.permissions.includes(availability.permission)) {
+      return { state: 'disabled', reason: 'insufficient-permission' }
+    }
   }
 
   return { state: 'enabled' }

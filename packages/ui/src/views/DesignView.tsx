@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 import { generateCreateTable } from '@corvus/sql'
 import type { FieldDesign, IndexDesign, ForeignKeyDesign, TableDesign, TableMeta } from '@corvus/contract'
 
 const COLS = '30px 1fr 140px 80px 100px 60px 60px 1fr'
 
 export function DesignView() {
-  const { s, activeTab } = useStudio()
+  const { activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
 
   const tab = activeTab()
   const objIdent = tab?.identity.type === 'object' ? tab.identity : null
 
-  const connectionId = objIdent?.connectionId || 'conn-1'
-  const table = objIdent?.name || s.selTable || 'customer'
+  const connectionId = objIdent?.connectionId || ctx.connectionId || ''
+  const table = objIdent?.name || ctx.selection.primaryTarget || ''
   const schema = objIdent?.namespace
   const database = objIdent?.database
 

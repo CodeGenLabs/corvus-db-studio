@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react'
 import { selectValue } from '../utils/select-value'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from '../components/useContextMenu'
+import { ContextMenu } from '../components/ContextMenu'
 import { buildSelect, type QueryModel } from '@corvus/sql'
+import type { DialogId } from '@corvus/contract'
 
 export function QueryBuilderView() {
-  const { setView, activeTab: getActiveTab } = useStudio()
+  const { set, setView, openTab, activeTab: getActiveTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
   const goSql = setView('sql')
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-query-builder')
 
   const tab = getActiveTab()
   const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
@@ -127,7 +133,12 @@ export function QueryBuilderView() {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div
+      data-testid="query-builder-view"
+      onContextMenu={(e) => openContextMenu(e, 'empty')}
+      onKeyDown={(e) => handleKeyDown(e, 'empty')}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
       <div
         style={{
           height: 32,
@@ -420,6 +431,23 @@ export function QueryBuilderView() {
           />
         </div>
       </div>
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-query-builder"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

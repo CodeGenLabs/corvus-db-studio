@@ -1,4 +1,5 @@
 import type { ContentKind, ObjectKind, ToolKind } from '@corvus/contract'
+import type { ActiveContext } from '../context/activeContext'
 
 export interface ObjectTabIdentity {
   type: 'object'
@@ -27,6 +28,7 @@ export interface Tab {
   title: string
   dirty?: boolean
   missing?: boolean
+  context?: ActiveContext
 }
 
 /**
@@ -72,7 +74,7 @@ export function tabTitleOf(identity: TabIdentity): string {
     if (identity.contentKind === 'design') return `Design: ${identity.name}`
     if (identity.contentKind === 'definition') return `Def: ${identity.name}`
     if (identity.contentKind === 'er') return `ER: ${identity.name}`
-    return identity.name
+    return identity.database ? `${identity.name} @${identity.database}` : identity.name
   }
   const toolNames: Record<ToolKind, string> = {
     sql: 'SQL Query',

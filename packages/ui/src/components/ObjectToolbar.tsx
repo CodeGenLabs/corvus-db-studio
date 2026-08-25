@@ -24,9 +24,6 @@ export function ObjectToolbar() {
     { label: t.openTable, c: 'var(--accent)', onClick: setView('data') },
     { label: t.designTable, c: 'var(--amber)', onClick: setView('design') },
     { label: t.newTable, c: 'var(--green)', onClick: setView('design'), listOnly: true },
-    { label: t.deleteTable, c: 'var(--red)', onClick: setView('objects'), listOnly: true },
-    { label: t.importW, c: 'var(--text3)', onClick: setView('jobs') },
-    { label: t.exportW, c: 'var(--text3)', onClick: setView('jobs') },
     {
       label: t.flButton,
       c: 'var(--accent)',

@@ -1,5 +1,9 @@
 import { useState } from 'react'
-import type { CellValue, ColumnDef } from '@corvus/contract'
+import type { CellValue, ColumnDef, DialogId } from '@corvus/contract'
+import { useStudio, useClient } from '../../store/studio'
+import { useActiveContext } from '../../context/useActiveContext'
+import { useContextMenu } from '../useContextMenu'
+import { ContextMenu } from '../ContextMenu'
 import { renderCellValue, isNullValue } from './cell-formatter'
 import { exportGridData } from './export-helper'
 import { NavigationBar } from './NavigationBar'
@@ -34,6 +38,10 @@ export function DataGrid({
   onPageSizeChange,
   onCellEdit,
 }: DataGridProps) {
+  const { set, openTab } = useStudio()
+  const ctx = useActiveContext()
+  const client = useClient()
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-data-grid')
   const [selection, setSelection] = useState<GridSelection | null>(null)
   const [editingCell, setEditingCell] = useState<{ row: number; col: number; val: string } | null>(null)
 
@@ -71,7 +79,12 @@ export function DataGrid({
   const gridTemplate = `40px ${columns.map(() => 'minmax(120px, 1fr)').join(' ')}`
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div
+      data-testid="data-grid"
+      onContextMenu={(e) => openContextMenu(e, 'empty')}
+      onKeyDown={(e) => handleKeyDown(e, 'empty')}
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+    >
       <div
         style={{
           height: 28,
@@ -169,6 +182,12 @@ export function DataGrid({
               <div
                 key={c.name + i}
                 onClick={() => handleHeaderClick(c.name)}
+                onContextMenu={(e) => {
+                  e.stopPropagation()
+                  openContextMenu(e, 'column-header')
+                }}
+                onKeyDown={(e) => handleKeyDown(e, 'column-header')}
+                tabIndex={0}
                 style={{
                   padding: '4px 8px 3px',
                   borderRight: i === columns.length - 1 ? 'none' : '1px solid var(--grid-line)',
@@ -209,6 +228,12 @@ export function DataGrid({
             }}
           >
             <div
+              onContextMenu={(e) => {
+                e.stopPropagation()
+                openContextMenu(e, 'row-header')
+              }}
+              onKeyDown={(e) => handleKeyDown(e, 'row-header')}
+              tabIndex={0}
               style={{
                 padding: '0 6px',
                 textAlign: 'right',
@@ -216,6 +241,7 @@ export function DataGrid({
                 fontFamily: 'var(--mono)',
                 fontSize: 10.5,
                 borderRight: '1px solid var(--grid-line)',
+                cursor: 'pointer',
               }}
             >
               {(currentPage - 1) * pageSize + rIdx + 1}
@@ -266,6 +292,13 @@ export function DataGrid({
                   key={col.name + cIdx}
                   onClick={() => handleCellClick(rIdx, cIdx)}
                   onDoubleClick={() => handleCellDoubleClick(rIdx, cIdx)}
+                  onContextMenu={(e) => {
+                    e.stopPropagation()
+                    handleCellClick(rIdx, cIdx)
+                    openContextMenu(e, 'cell')
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, 'cell')}
+                  tabIndex={0}
                   style={{
                     padding: '0 8px',
                     textAlign: col.align === 'r' ? 'right' : 'left',
@@ -295,6 +328,23 @@ export function DataGrid({
         onPageChange={onPageChange || (() => {})}
         onPageSizeChange={onPageSizeChange || (() => {})}
       />
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-data-grid"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

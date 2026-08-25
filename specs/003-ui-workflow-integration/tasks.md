@@ -86,37 +86,37 @@ Không có (xem [plan.md §Kitchen Recipe Reference](./plan.md)). Không có `de
 
 ### Hạ tầng ngữ cảnh
 
-- [ ] T023 [US1] Mở rộng `Tab` trong `packages/ui/src/store/shell.ts` thêm trường `context: ActiveContext`; **xoá** ba trường `selTable`, `selNode`, `selField` (data-model.md §Cái bị xoá bỏ). Không giữ song song — hai nguồn sự thật là đúng lỗi C-04 gây ra
-- [ ] T024 [US1] Tạo `packages/ui/src/context/useActiveContext.ts` — trả ngữ cảnh của tab đang hoạt động (FR-004)
-- [ ] T025 [US1] Tạo `packages/ui/src/context/useCapabilities.ts` — đọc **đúng khoá react-query** `['connection', id, 'open']` mà `useNavTree.ts:70-77` đang dùng. **Cấm** tạo khoá mới: khoá mới ⇒ `connection.open` chạy hai lần và hai bản caps có thể lệch ([contracts/active-context.md §3](./contracts/active-context.md))
-- [ ] T026 [US1] Tạo `packages/ui/src/context/useConnectionStatus.ts` — gọi `connection.status` (chưa từng được UI gọi) lấy `serverVersion` + `serverEncoding`, cache ở `['connection', id, 'status']`
+- [x] T023 [US1] Mở rộng `Tab` trong `packages/ui/src/store/shell.ts` thêm trường `context: ActiveContext`; **xoá** ba trường `selTable`, `selNode`, `selField` (data-model.md §Cái bị xoá bỏ). Không giữ song song — hai nguồn sự thật là đúng lỗi C-04 gây ra
+- [x] T024 [US1] Tạo `packages/ui/src/context/useActiveContext.ts` — trả ngữ cảnh của tab đang hoạt động (FR-004)
+- [x] T025 [US1] Tạo `packages/ui/src/context/useCapabilities.ts` — đọc **đúng khoá react-query** `['connection', id, 'open']` mà `useNavTree.ts:70-77` đang dùng. **Cấm** tạo khoá mới: khoá mới ⇒ `connection.open` chạy hai lần và hai bản caps có thể lệch ([contracts/active-context.md §3](./contracts/active-context.md))
+- [x] T026 [US1] Tạo `packages/ui/src/context/useConnectionStatus.ts` — gọi `connection.status` (chưa từng được UI gọi) lấy `serverVersion` + `serverEncoding`, cache ở `['connection', id, 'status']`
 
 ### Bỏ chuỗi cứng khỏi chrome
 
-- [ ] T027 [US1] Sửa `packages/ui/src/components/Toolbar.tsx` dòng 133 và 139 — bỏ trạng thái "đã kết nối" cứng và chuỗi `MySQL 8.0.36 · utf8mb4`; đọc từ ngữ cảnh. Chưa kết nối thì hiện trạng thái "chưa kết nối" (FR-003, sửa C-06)
-- [ ] T028 [P] [US1] Sửa `packages/ui/src/components/TitleBar.tsx:87` — bỏ `Corvus DB Studio — sakila @ Local Dev`, sinh từ ngữ cảnh (sửa C-07)
-- [ ] T029 [P] [US1] Sửa `packages/ui/src/components/StatusBar.tsx:26` — bỏ `Local Dev · sakila` (sửa C-07)
-- [ ] T030 [P] [US1] Sửa `packages/ui/src/components/InfoPane.tsx` dòng 78, 86, 202 — bỏ `Mở bảng country @sakila` / `Opened table country @sakila` / `sakila`; đọc từ ngữ cảnh (sửa C-07)
-- [ ] T031 [P] [US1] Sửa `packages/ui/src/components/dialogs/UsersDialog.tsx:65` — bỏ `sakila @ Local Dev` (sửa C-07)
-- [ ] T032 [US1] Xoá khoá `tabData: 'country @sakila'` khỏi **cả ba** ngôn ngữ trong `packages/ui/src/i18n/dictionaries.ts` (dòng 16, 62, 106) và sinh tiêu đề tab từ ngữ cảnh trong `packages/ui/src/tabs/tabIdentity.ts` — tên đối tượng không phải nội dung dịch được
-- [ ] T033 [P] [US1] Sửa `packages/ui/src/components/dialogs/ConnectionDialog.tsx:57` — giá trị gợi ý mặc định phải trỏ tới môi trường phát triển thật có tài liệu (`docker-dev-connections.json`) hoặc để trống; **không** trỏ tới `10.4.12.31` / `sakila` không tồn tại (FR-009, sửa C-09)
-- [ ] T034 [US1] Sửa `packages/ui/src/components/dialogs/CommandPalette.tsx` dòng 32-34 — bỏ ba bảng cứng `customer`/`film`/`actor`; truy vấn `introspect.objects` của kết nối đang mở (FR-008, sửa C-08)
+- [x] T027 [US1] Sửa `packages/ui/src/components/Toolbar.tsx` dòng 133 và 139 — bỏ trạng thái "đã kết nối" cứng và chuỗi `MySQL 8.0.36 · utf8mb4`; đọc từ ngữ cảnh. Chưa kết nối thì hiện trạng thái "chưa kết nối" (FR-003, sửa C-06)
+- [x] T028 [P] [US1] Sửa `packages/ui/src/components/TitleBar.tsx:87` — bỏ `Corvus DB Studio — sakila @ Local Dev`, sinh từ ngữ cảnh (sửa C-07)
+- [x] T029 [P] [US1] Sửa `packages/ui/src/components/StatusBar.tsx:26` — bỏ `Local Dev · sakila` (sửa C-07)
+- [x] T030 [P] [US1] Sửa `packages/ui/src/components/InfoPane.tsx` dòng 78, 86, 202 — bỏ `Mở bảng country @sakila` / `Opened table country @sakila` / `sakila`; đọc từ ngữ cảnh (sửa C-07)
+- [x] T031 [P] [US1] Sửa `packages/ui/src/components/dialogs/UsersDialog.tsx:65` — bỏ `sakila @ Local Dev` (sửa C-07)
+- [x] T032 [US1] Xoá khoá `tabData: 'country @sakila'` khỏi **cả ba** ngôn ngữ trong `packages/ui/src/i18n/dictionaries.ts` (dòng 16, 62, 106) và sinh tiêu đề tab từ ngữ cảnh trong `packages/ui/src/tabs/tabIdentity.ts` — tên đối tượng không phải nội dung dịch được
+- [x] T033 [P] [US1] Sửa `packages/ui/src/components/dialogs/ConnectionDialog.tsx:57` — giá trị gợi ý mặc định phải trỏ tới môi trường phát triển thật có tài liệu (`docker-dev-connections.json`) hoặc để trống; **không** trỏ tới `10.4.12.31` / `sakila` không tồn tại (FR-009, sửa C-09)
+- [x] T034 [US1] Sửa `packages/ui/src/components/dialogs/CommandPalette.tsx` dòng 32-34 — bỏ ba bảng cứng `customer`/`film`/`actor`; truy vấn `introspect.objects` của kết nối đang mở (FR-008, sửa C-08)
 
 ### Mở / đóng / phục hồi kết nối
 
-- [ ] T035 [US1] Sửa `packages/ui/src/components/useNavTree.ts` — giữ `retry: 0` cho lần mở tự động (mở kết nối sai mật khẩu nhiều lần có thể khoá tài khoản) nhưng phơi `refetch()` để nút "Thử lại" gọi được (research.md R5)
-- [ ] T036 [US1] Sửa `packages/ui/src/components/NavPane.tsx` — thay ký tự `!` đỏ ở dòng 245/286/296/306 bằng thông điệp lỗi đọc được **ngay trên giao diện** kèm nút "Thử lại"; lỗi lấy từ `RedactedError` (FR-005, sửa C-14)
-- [ ] T037 [US1] Sửa `packages/ui/src/components/NavPane.tsx` dòng 28-34 / 75 / 166 — **tách** hành vi "chọn" (một nhấp: cập nhật ngữ cảnh) khỏi "mở/kết nối" (nhấp đúp: mở kết nối, mở bảng), theo quy ước công cụ tham chiếu (FR-006, sửa C-15)
-- [ ] T038 [US1] Nối `connection.close` — người dùng đóng được kết nối; khi đóng phải xoá ngữ cảnh của **mọi** tab có `connectionId` đó, không chỉ tab đang hoạt động, và xử lý rõ các tab phụ thuộc (FR-007)
-- [ ] T039 [US1] Thêm `data-testid` vào `Toolbar`, `TitleBar`, `StatusBar`, `InfoPane`, `NavPane`, `TabStrip` cho mọi vùng hiển thị ngữ cảnh — hiện toàn `packages/ui` chỉ có 7 `data-testid`, và testing-strategy.md §5 cấm chọn selector theo text (vì i18n 3 ngôn ngữ)
+- [x] T035 [US1] Sửa `packages/ui/src/components/useNavTree.ts` — giữ `retry: 0` cho lần mở tự động (mở kết nối sai mật khẩu nhiều lần có thể khoá tài khoản) nhưng phơi `refetch()` để nút "Thử lại" gọi được (research.md R5)
+- [x] T036 [US1] Sửa `packages/ui/src/components/NavPane.tsx` — thay ký tự `!` đỏ ở dòng 245/286/296/306 bằng thông điệp lỗi đọc được **ngay trên giao diện** kèm nút "Thử lại"; lỗi lấy từ `RedactedError` (FR-005, sửa C-14)
+- [x] T037 [US1] Sửa `packages/ui/src/components/NavPane.tsx` dòng 28-34 / 75 / 166 — **tách** hành vi "chọn" (một nhấp: cập nhật ngữ cảnh) khỏi "mở/kết nối" (nhấp đúp: mở kết nối, mở bảng), theo quy ước công cụ tham chiếu (FR-006, sửa C-15)
+- [x] T038 [US1] Nối `connection.close` — người dùng đóng được kết nối; khi đóng phải xoá ngữ cảnh của **mọi** tab có `connectionId` đó, không chỉ tab đang hoạt động, và xử lý rõ các tab phụ thuộc (FR-007)
+- [x] T039 [US1] Thêm `data-testid` vào `Toolbar`, `TitleBar`, `StatusBar`, `InfoPane`, `NavPane`, `TabStrip` cho mọi vùng hiển thị ngữ cảnh — hiện toàn `packages/ui` chỉ có 7 `data-testid`, và testing-strategy.md §5 cấm chọn selector theo text (vì i18n 3 ngôn ngữ)
 
 ### Test US1
 
-- [ ] T040 [P] [US1] Viết `packages/ui/src/context/__tests__/activeContext.test.ts` — 8 bất biến A-1…A-8 của [contracts/active-context.md §5](./contracts/active-context.md), phần kiểm được không cần DB
-- [ ] T041 [US1] Viết `packages/ui/src/__tests__/chrome-context.dom.test.tsx` — với **mỗi** trong 7 engine: mở kết nối, khẳng định chrome hiển thị đúng tên kết nối/database/engine/phiên bản đọc từ `connection.status`, và **không** khớp bất kỳ chuỗi trong danh sách cấm (`sakila`, `Local Dev`, `MySQL 8.0.36`, `utf8mb4`)
-- [ ] T042 [P] [US1] Viết `packages/ui/src/__tests__/no-hardcoded-chrome.test.ts` — quét `TitleBar`/`StatusBar`/`Toolbar`/`InfoPane`/`dictionaries.ts` khẳng định không còn tên kết nối/database/engine/phiên bản dạng chuỗi cứng; đây là cổng của `HARDCODED_CHROME_DEBT` (bất biến A-7, SC-001)
-- [ ] T043 [US1] Viết `packages/ui/src/__tests__/connection-error.dom.test.tsx` — với **mỗi** 7 engine: container tắt → khẳng định thông điệp lỗi hiện trên giao diện, có nút thử lại, và **không** chứa mật khẩu / chuỗi kết nối đầy đủ / đường dẫn nội bộ / vết ngăn xếp (bất biến A-8, SR-002, Cấm 6)
-- [ ] T044 [US1] Viết `packages/ui/src/__tests__/connection-lifecycle.dom.test.tsx` — mở A → mở B khác engine → chrome cập nhật hoàn toàn không còn dấu vết A; đóng kết nối → ngữ cảnh xoá, chrome về "chưa kết nối" (kịch bản 3, 5, 6 của US1)
+- [x] T040 [P] [US1] Viết `packages/ui/src/context/__tests__/activeContext.test.ts` — 8 bất biến A-1…A-8 của [contracts/active-context.md §5](./contracts/active-context.md), phần kiểm được không cần DB
+- [x] T041 [US1] Viết `packages/ui/src/__tests__/chrome-context.dom.test.tsx` — với **mỗi** trong 7 engine: mở kết nối, khẳng định chrome hiển thị đúng tên kết nối/database/engine/phiên bản đọc từ `connection.status`, và **không** khớp bất kỳ chuỗi trong danh sách cấm (`sakila`, `Local Dev`, `MySQL 8.0.36`, `utf8mb4`)
+- [x] T042 [P] [US1] Viết `tools/__tests__/no-hardcoded-chrome.test.ts` — quét `TitleBar`/`StatusBar`/`Toolbar`/`InfoPane`/`dictionaries.ts` khẳng định không còn tên kết nối/database/engine/phiên bản dạng chuỗi cứng; đây là cổng của `HARDCODED_CHROME_DEBT` (bất biến A-7, SC-001)
+- [x] T043 [US1] Viết `packages/ui/src/__tests__/connection-error.dom.test.tsx` — với **mỗi** 7 engine: container tắt → khẳng định thông điệp lỗi hiện trên giao diện, có nút thử lại, và **không** chứa mật khẩu / chuỗi kết nối đầy đủ / đường dẫn nội bộ / vết ngăn xếp (bất biến A-8, SR-002, Cấm 6)
+- [x] T044 [US1] Viết `packages/ui/src/__tests__/connection-lifecycle.dom.test.tsx` — mở A → mở B khác engine → chrome cập nhật hoàn toàn không còn dấu vết A; đóng kết nối → ngữ cảnh xoá, chrome về "chưa kết nối" (kịch bản 3, 5, 6 của US1)
 
 **Checkpoint**: `pnpm verify` xanh; `HARDCODED_CHROME_DEBT` về 0; xác minh bằng mắt bước 1–2 và 7–8 của [quickstart.md §5](./quickstart.md) đạt. **US1 giao được độc lập như MVP.**
 
@@ -130,46 +130,46 @@ Không có (xem [plan.md §Kitchen Recipe Reference](./plan.md)). Không có `de
 
 ### Chuyển các bề mặt tĩnh sang registry
 
-- [ ] T045 [US2] Khai báo nhóm lệnh điều hướng và đối tượng vào `packages/ui/src/commands/defs/object.ts` — mở bảng, thiết kế, tạo mới, xoá, làm mới, sao chép tên, sao chép tên có quote (dùng `quoteIdentifier` của `@corvus/sql`), với `availability.capability` là vị từ trên `CapabilitySet`
-- [ ] T046 [US2] Sửa `packages/ui/src/components/Toolbar.tsx` — lấy toàn bộ mục từ `commandsFor('toolbar', …)`; thêm trạng thái vô hiệu hoá kèm lý do (hiện Toolbar **không có** thuộc tính `disabled` nào — C-13)
-- [ ] T047 [US2] Sửa `packages/ui/src/components/Toolbar.tsx` dòng 30-32 — ba lệnh `Table`/`View`/`Function` phải dẫn tới danh sách **đã lọc theo đúng loại**, không cùng `setView('objects')` (FR-014, sửa C-10)
-- [ ] T048 [US2] Sửa `packages/ui/src/components/MenuBar.tsx` — lấy mục từ `commandsFor('menubar', …)`; **xoá** biến thể `null` khỏi kiểu `MenuEntry` ở dòng 8 để mục chết không compile được (sửa C-12)
-- [ ] T049 [US2] Sửa `packages/ui/src/components/MenuBar.tsx` dòng 81-82 — `Import wizard…` và `Export wizard…` hiện chỉ mở tab Automation. Tạm **ẩn** hai mục (FR-026: lệnh chưa triển khai không được xuất hiện) tới khi US4 nối xong L-5, rồi hiện lại (sửa C-11)
-- [ ] T050 [US2] Sửa `packages/ui/src/components/ObjectToolbar.tsx` — lấy mục từ `commandsFor('object-toolbar', …)`; lệnh `deleteTable` hiện chỉ `setView('objects')` (không xoá gì) và `importW`/`exportW` chỉ `setView('jobs')` — xử lý như T049
-- [ ] T051 [US2] Sửa `packages/ui/src/components/dialogs/CommandPalette.tsx` — lấy lệnh từ `commandsFor('command-palette', …)` thay danh sách viết tay
-- [ ] T052 [US2] Sửa `packages/ui/src/components/useNavTree.ts` + `packages/ui/src/navigation/objectGroups.ts` — cây chỉ hiện nhóm loại đối tượng mà engine hiện tại hỗ trợ (FR-013); MySQL không hiện Materialized View / Sequence / Domain / Type nhưng có Event; MongoDB hiện Collection thay Table
+- [x] T045 [US2] Khai báo nhóm lệnh điều hướng và đối tượng vào `packages/ui/src/commands/defs/object.ts` — mở bảng, thiết kế, tạo mới, xoá, làm mới, sao chép tên, sao chép tên có quote (dùng `quoteIdentifier` của `@corvus/sql`), với `availability.capability` là vị từ trên `CapabilitySet`
+- [x] T046 [US2] Sửa `packages/ui/src/components/Toolbar.tsx` — lấy toàn bộ mục từ `commandsFor('toolbar', …)`; thêm trạng thái vô hiệu hoá kèm lý do (hiện Toolbar **không có** thuộc tính `disabled` nào — C-13)
+- [x] T047 [US2] Sửa `packages/ui/src/components/Toolbar.tsx` dòng 30-32 — ba lệnh `Table`/`View`/`Function` phải dẫn tới danh sách **đã lọc theo đúng loại**, không cùng `setView('objects')` (FR-014, sửa C-10)
+- [x] T048 [US2] Sửa `packages/ui/src/components/MenuBar.tsx` — lấy mục từ `commandsFor('menubar', …)`; **xoá** biến thể `null` khỏi kiểu `MenuEntry` ở dòng 8 để mục chết không compile được (sửa C-12)
+- [x] T049 [US2] Sửa `packages/ui/src/components/MenuBar.tsx` dòng 81-82 — `Import wizard…` và `Export wizard…` hiện chỉ mở tab Automation. Tạm **ẩn** hai mục (FR-026: lệnh chưa triển khai không được xuất hiện) tới khi US4 nối xong L-5, rồi hiện lại (sửa C-11)
+- [x] T050 [US2] Sửa `packages/ui/src/components/ObjectToolbar.tsx` — lấy mục từ `commandsFor('object-toolbar', …)`; lệnh `deleteTable` hiện chỉ `setView('objects')` (không xoá gì) và `importW`/`exportW` chỉ `setView('jobs')` — xử lý như T049
+- [x] T051 [US2] Sửa `packages/ui/src/components/dialogs/CommandPalette.tsx` — lấy lệnh từ `commandsFor('command-palette', …)` thay danh sách viết tay
+- [x] T052 [US2] Sửa `packages/ui/src/components/useNavTree.ts` + `packages/ui/src/navigation/objectGroups.ts` — cây chỉ hiện nhóm loại đối tượng mà engine hiện tại hỗ trợ (FR-013); MySQL không hiện Materialized View / Sequence / Domain / Type nhưng có Event; MongoDB hiện Collection thay Table
 
 ### Gắn context menu lên 11 bề mặt
 
-- [ ] T053 [US2] Sửa `packages/ui/src/components/navigation/ObjectContextMenu.tsx` — **bỏ** chuỗi tiếng Việt cứng và hex `#ef4444`, chuyển sang nhận lệnh từ registry qua `ContextMenu.tsx`. Đây là code chết hiện tại (C-19/C-20); sửa và đưa vào dùng, **không viết lại** (AGENTS.md §4)
-- [ ] T054 [US2] Sửa `packages/ui/src/components/grid/CellContextMenu.tsx` — cùng cách xử lý T053
-- [ ] T055 [US2] Gắn `useContextMenu` vào `packages/ui/src/components/NavPane.tsx` — bề mặt **S-01**, 6 mục tiêu: connection / database / namespace / object-group / object / sub-element
-- [ ] T056 [P] [US2] Gắn vào `packages/ui/src/views/ObjectsView.tsx` — bề mặt **S-02**, 3 mục tiêu: một đối tượng / nhiều đối tượng đã chọn / vùng trống
-- [ ] T057 [P] [US2] Gắn vào `packages/ui/src/components/grid/` (DataGrid) — bề mặt **S-03**, 4 mục tiêu: ô / tiêu đề dòng / tiêu đề cột / vùng trống
-- [ ] T058 [P] [US2] Gắn vào `packages/ui/src/views/SqlView.tsx` — bề mặt **S-04**, 2 mục tiêu: vùng văn bản đã chọn / vùng trống
-- [ ] T059 [P] [US2] Gắn vào `packages/ui/src/views/QueryBuilderView.tsx` — bề mặt **S-05**, 3 mục tiêu: đối tượng / đường join / vùng trống
-- [ ] T060 [P] [US2] Gắn vào `packages/ui/src/views/ErView.tsx` — bề mặt **S-06**, 3 mục tiêu: bảng / đường quan hệ / vùng trống
-- [ ] T061 [P] [US2] Gắn vào `packages/ui/src/components/TabStrip.tsx` — bề mặt **S-07**, mục tiêu: một tab
-- [ ] T062 [P] [US2] Gắn vào `packages/ui/src/components/Toolbar.tsx` — bề mặt **S-08**, mục tiêu: chính thanh công cụ (đổi cỡ icon, hiện/ẩn nhãn)
-- [ ] T063 [P] [US2] Gắn vào `packages/ui/src/components/common/SnippetPicker.tsx` — bề mặt **S-09**, 2 mục tiêu: một snippet / vùng trống
-- [ ] T064 [P] [US2] Gắn vào `packages/ui/src/views/JobsView.tsx` — bề mặt **S-10**, 2 mục tiêu: một item / toàn danh sách (tạm dừng, tiếp tục, dừng, xoá mục đã xong)
-- [ ] T065 [P] [US2] Gắn vào `packages/ui/src/views/CompareView.tsx` — bề mặt **S-11**, mục tiêu: khung (bật/tắt hiển thị khác biệt)
+- [x] T053 [US2] Sửa `packages/ui/src/components/navigation/ObjectContextMenu.tsx` — **bỏ** chuỗi tiếng Việt cứng và hex `#ef4444`, chuyển sang nhận lệnh từ registry qua `ContextMenu.tsx`. Đây là code chết hiện tại (C-19/C-20); sửa và đưa vào dùng, **không viết lại** (AGENTS.md §4)
+- [x] T054 [US2] Sửa `packages/ui/src/components/grid/CellContextMenu.tsx` — cùng cách xử lý T053
+- [x] T055 [US2] Gắn `useContextMenu` vào `packages/ui/src/components/NavPane.tsx` — bề mặt **S-01**, 6 mục tiêu: connection / database / namespace / object-group / object / sub-element
+- [x] T056 [P] [US2] Gắn vào `packages/ui/src/views/ObjectsView.tsx` — bề mặt **S-02**, 3 mục tiêu: một đối tượng / nhiều đối tượng đã chọn / vùng trống
+- [x] T057 [P] [US2] Gắn vào `packages/ui/src/components/grid/` (DataGrid) — bề mặt **S-03**, 4 mục tiêu: ô / tiêu đề dòng / tiêu đề cột / vùng trống
+- [x] T058 [P] [US2] Gắn vào `packages/ui/src/views/SqlView.tsx` — bề mặt **S-04**, 2 mục tiêu: vùng văn bản đã chọn / vùng trống
+- [x] T059 [P] [US2] Gắn vào `packages/ui/src/views/QueryBuilderView.tsx` — bề mặt **S-05**, 3 mục tiêu: đối tượng / đường join / vùng trống
+- [x] T060 [P] [US2] Gắn vào `packages/ui/src/views/ErView.tsx` — bề mặt **S-06**, 3 mục tiêu: bảng / đường quan hệ / vùng trống
+- [x] T061 [P] [US2] Gắn vào `packages/ui/src/components/TabStrip.tsx` — bề mặt **S-07**, mục tiêu: một tab
+- [x] T062 [P] [US2] Gắn vào `packages/ui/src/components/Toolbar.tsx` — bề mặt **S-08**, mục tiêu: chính thanh công cụ (đổi cỡ icon, hiện/ẩn nhãn)
+- [x] T063 [P] [US2] Gắn vào `packages/ui/src/components/common/SnippetPicker.tsx` — bề mặt **S-09**, 2 mục tiêu: một snippet / vùng trống
+- [x] T064 [P] [US2] Gắn vào `packages/ui/src/views/JobsView.tsx` — bề mặt **S-10**, 2 mục tiêu: một item / toàn danh sách (tạm dừng, tiếp tục, dừng, xoá mục đã xong)
+- [x] T065 [P] [US2] Gắn vào `packages/ui/src/views/CompareView.tsx` — bề mặt **S-11**, mục tiêu: khung (bật/tắt hiển thị khác biệt)
 
 ### Multi-select và quyền
 
-- [ ] T066 [US2] Cài `ObjectSelection` đa phần tử vào `NavPane` và `ObjectsView` — nhấp phải ngoài vùng chọn phải **thay** vùng chọn bằng mục dưới con trỏ rồi đặt `anchor`; chọn lẫn loại ⇒ `kind = null` (bất biến A-4, A-5)
-- [ ] T067 [US2] Cài `cardinality` vào tầng trình bày — lệnh `'single'` khi `names.length > 1` phải vô hiệu hoá kèm lý do `multi-selection-unsupported`; **cấm** lấy `names[0]` (FR-051)
-- [ ] T068 [US2] Nối `security.privileges` để gating theo quyền (FR-016); trước khi nối xong với engine nào thì mặc định **an toàn**: coi như không đủ quyền cho lệnh ghi, kèm lý do rõ
+- [x] T066 [US2] Cài `ObjectSelection` đa phần tử vào `NavPane` và `ObjectsView` — nhấp phải ngoài vùng chọn phải **thay** vùng chọn bằng mục dưới con trỏ rồi đặt `anchor`; chọn lẫn loại ⇒ `kind = null` (bất biến A-4, A-5)
+- [x] T067 [US2] Cài `cardinality` vào tầng trình bày — lệnh `'single'` khi `names.length > 1` phải vô hiệu hoá kèm lý do `multi-selection-unsupported`; **cấm** lấy `names[0]` (FR-051)
+- [x] T068 [US2] Nối `security.privileges` để gating theo quyền (FR-016); trước khi nối xong với engine nào thì mặc định **an toàn**: coi như không đủ quyền cho lệnh ghi, kèm lý do rõ
 
 ### Test US2
 
-- [ ] T069 [P] [US2] Viết `packages/ui/src/commands/__tests__/availability-matrix.test.ts` — với **cả 7 engine**, đối chiếu kết quả `evaluate()` cho mọi lệnh với [capability-matrix.md](../../docs/02-architecture/capability-matrix.md) §2. Bảng năng lực là nguồn đối chiếu; lệch nhau phải xử lý lệch đó trước (plan.md D-02)
-- [ ] T070 [US2] Viết `packages/ui/src/__tests__/gating.dom.test.tsx` — SQLite: lệnh tạo Procedure/Function disabled kèm lý do; MySQL: cây không có Materialized View/Sequence/Domain/Type nhưng có Event; Redis: Explain/ER/Table Designer disabled; MongoDB: hiện Collection, Explain khả dụng, không Sequence/Trigger; chưa kết nối: mọi lệnh phụ thuộc kết nối disabled (kịch bản 1–5 của US2)
-- [ ] T071 [US2] Viết `packages/ui/src/__tests__/context-menu-surfaces.dom.test.tsx` — cả **11 bề mặt** phản hồi nhấp phải; với mỗi bề mặt, mỗi `TargetKind` cho menu **không rỗng** và tập lệnh khớp mục tiêu (bất biến I-10, FR-025B)
-- [ ] T072 [US2] Viết `packages/ui/src/__tests__/context-menu-keyboard.dom.test.tsx` — cả 11 bề mặt mở được menu bằng `Shift+F10` và phím Menu; mũi tên điều hướng, Enter chọn, Escape đóng và trả tiêu điểm về mục ban đầu (FR-025C, FR-047B)
-- [ ] T073 [US2] Viết `packages/ui/src/__tests__/gating-presentation.dom.test.tsx` — cùng một lệnh mà engine không hỗ trợ: **ẩn** trong context menu nhưng **disabled kèm lý do** trên thanh công cụ; khẳng định `evaluate()` chỉ được gọi từ một chỗ (FR-046, FR-046B, kịch bản 9 của US2)
-- [ ] T074 [US2] Viết `packages/ui/src/__tests__/multi-select.dom.test.tsx` — chọn nhiều bảng: Drop/Maintain khả dụng cho cả tập, Design Table disabled kèm lý do; nhấp phải ngoài vùng chọn đổi vùng chọn (kịch bản 10 của US2, FR-051)
-- [ ] T075 [US2] Hạ `SURFACE_DEBT` trong `tools/check-ui-wiring.ts` xuống **0** và xác nhận `pnpm verify` xanh
+- [x] T069 [P] [US2] Viết `packages/ui/src/commands/__tests__/availability-matrix.test.ts` — với **cả 7 engine**, đối chiếu kết quả `evaluate()` cho mọi lệnh với [capability-matrix.md](../../docs/02-architecture/capability-matrix.md) §2. Bảng năng lực là nguồn đối chiếu; lệch nhau phải xử lý lệch đó trước (plan.md D-02)
+- [x] T070 [US2] Viết `packages/ui/src/__tests__/gating.dom.test.tsx` — SQLite: lệnh tạo Procedure/Function disabled kèm lý do; MySQL: cây không có Materialized View/Sequence/Domain/Type nhưng có Event; Redis: Explain/ER/Table Designer disabled; MongoDB: hiện Collection, Explain khả dụng, không Sequence/Trigger; chưa kết nối: mọi lệnh phụ thuộc kết nối disabled (kịch bản 1–5 của US2)
+- [x] T071 [US2] Viết `packages/ui/src/__tests__/context-menu-surfaces.dom.test.tsx` — cả **11 bề mặt** phản hồi nhấp phải; với mỗi bề mặt, mỗi `TargetKind` cho menu **không rỗng** và tập lệnh khớp mục tiêu (bất biến I-10, FR-025B)
+- [x] T072 [US2] Viết `packages/ui/src/__tests__/context-menu-keyboard.dom.test.tsx` — cả 11 bề mặt mở được menu bằng `Shift+F10` và phím Menu; mũi tên điều hướng, Enter chọn, Escape đóng và trả tiêu điểm về mục ban đầu (FR-025C, FR-047B)
+- [x] T073 [US2] Viết `packages/ui/src/__tests__/gating-presentation.dom.test.tsx` — cùng một lệnh mà engine không hỗ trợ: **ẩn** trong context menu nhưng **disabled kèm lý do** trên thanh công cụ; khẳng định `evaluate()` chỉ được gọi từ một chỗ (FR-046, FR-046B, kịch bản 9 của US2)
+- [x] T074 [US2] Viết `packages/ui/src/__tests__/multi-select.dom.test.tsx` — chọn nhiều bảng: Drop/Maintain khả dụng cho cả tập, Design Table disabled kèm lý do; nhấp phải ngoài vùng chọn đổi vùng chọn (kịch bản 10 của US2, FR-051)
+- [x] T075 [US2] Hạ `SURFACE_DEBT` trong `tools/check-ui-wiring.ts` xuống **0** và xác nhận `pnpm verify` xanh
 
 **Checkpoint**: `pnpm verify` xanh; `SURFACE_DEBT = 0`; xác minh bằng mắt bước 3–6 của [quickstart.md §5](./quickstart.md) đạt
 
@@ -183,18 +183,18 @@ Không có (xem [plan.md §Kitchen Recipe Reference](./plan.md)). Không có `de
 
 > Phase này chạy **song song** được với Phase 3–4 (khác file), nhưng phải xanh trước khi mở Phase 6.
 
-- [ ] T076 [US3] Viết `e2e/fixtures/containers.ts` — tiền kiểm container + seed cho tầng sâu; thiếu thì dừng sớm với thông điệp chỉ rõ lệnh cần chạy (FR-021). Chỉ nhận host/port của stack container dự án (SR-007)
-- [ ] T077 [US3] Viết `e2e/fixtures/seedInventory.ts` — bản tầng sâu của `SeedInventory`, đọc từ DB thật lúc chạy; dùng **chung một bộ seed** với tầng rộng để hai tầng không lệch (plan.md Complexity Tracking)
-- [ ] T078 [US3] Viết `e2e/specs/L1-connection.spec.ts` — tạo → test → mở → duyệt cây → đóng, trên PostgreSQL và MySQL (research.md R8). Khẳng định cây liệt kê **chính xác** tập đối tượng của seed, không thiếu không thừa (FR-023B, kịch bản 2 của US3)
-- [ ] T079 [P] [US3] Viết `e2e/specs/L2-L3-sql.spec.ts` — gõ SQL → chạy → đọc nhiều result set → huỷ truy vấn đang chạy (L-2, L-3)
-- [ ] T080 [P] [US3] Viết `e2e/specs/L4-data-edit.spec.ts` — sửa ô → xem trước câu lệnh → apply → truy vấn lại DB xác nhận đổi thật; huỷ bỏ giao dịch → DB không đổi (L-4, kịch bản 4 của US3)
-- [ ] T081 [US3] Viết `packages/ui/src/__tests__/nav-tree-seed.dom.test.tsx` — với **cả 7 engine**, khẳng định cây liệt kê chính xác tập bảng/view/function/procedure/trigger của seed, so với `SeedInventory` đọc lúc chạy. **Cấm** danh sách viết cứng (FR-020)
-- [ ] T082 [P] [US3] Viết `packages/ui/src/__tests__/data-browse-paging.dom.test.tsx` — mở bảng 100k dòng trên 7 engine: phân trang hoạt động, không nạp toàn bộ, first paint ≤ 1,5 s (research.md R9)
-- [ ] T083 [US3] Viết `packages/ui/src/__tests__/inventory.test.ts` — kiểm kê **ba chiều** của FR-025: (a) mọi lệnh có hành động; (b) mọi phương thức trong 76 method mà registry khai báo đều được gọi thật; (c) mọi lệnh **thực sự xuất hiện** trên đúng tập bề mặt đã khai báo (SC-016)
-- [ ] T084 [US3] Viết `packages/ui/src/__tests__/preview-token-required.test.ts` — khẳng định không lệnh nào có `rpc` chứa `apply*` mà gọi được không qua `requestPreview`; và `write === 'preview-required'` ⇒ có cặp `preview*`/`apply*` khớp `METHODS` (bất biến I-4, I-5, Cấm 5)
-- [ ] T085 [US3] Viết `packages/ui/src/__tests__/idempotent-run.dom.test.tsx` — chạy hai lần liên tiếp cho kết quả giống nhau; bộ kiểm thử tự dọn hoặc tự đặt lại dữ liệu nó tạo (FR-022, SC-009)
-- [ ] T086 [US3] Kiểm chứng SC-007: `git stash` các thay đổi US1/US2, chạy bộ kiểm thử, khẳng định nó **đỏ** đúng ở C-06/C-07/C-10/C-13/C-19; `git stash pop`, chạy lại, khẳng định **xanh**. Ghi output cả hai lần vào PR
-- [ ] T087 [US3] Nối tầng kiểm thử UI vào `pnpm verify` và xác nhận `test:e2e` **thực sự có nội dung chạy** — trước feature này nó là lệnh rỗng (C-16, FR-024)
+- [x] T076 [US3] Viết `e2e/fixtures/containers.ts` — tiền kiểm container + seed cho tầng sâu; thiếu thì dừng sớm với thông điệp chỉ rõ lệnh cần chạy (FR-021). Chỉ nhận host/port của stack container dự án (SR-007)
+- [x] T077 [US3] Viết `e2e/fixtures/seedInventory.ts` — bản tầng sâu của `SeedInventory`, đọc từ DB thật lúc chạy; dùng **chung một bộ seed** với tầng rộng để hai tầng không lệch (plan.md Complexity Tracking)
+- [x] T078 [US3] Viết `e2e/specs/L1-connection.spec.ts` — tạo → test → mở → duyệt cây → đóng, trên PostgreSQL và MySQL (research.md R8). Khẳng định cây liệt kê **chính xác** tập đối tượng của seed, không thiếu không thừa (FR-023B, kịch bản 2 của US3)
+- [x] T079 [P] [US3] Viết `e2e/specs/L2-L3-sql.spec.ts` — gõ SQL → chạy → đọc nhiều result set → huỷ truy vấn đang chạy (L-2, L-3)
+- [x] T080 [P] [US3] Viết `e2e/specs/L4-data-edit.spec.ts` — sửa ô → xem trước câu lệnh → apply → truy vấn lại DB xác nhận đổi thật; huỷ bỏ giao dịch → DB không đổi (L-4, kịch bản 4 của US3)
+- [x] T081 [US3] Viết `packages/ui/src/__tests__/nav-tree-seed.dom.test.tsx` — với **cả 7 engine**, khẳng định cây liệt kê chính xác tập bảng/view/function/procedure/trigger của seed, so với `SeedInventory` đọc lúc chạy. **Cấm** danh sách viết cứng (FR-020)
+- [x] T082 [P] [US3] Viết `packages/ui/src/__tests__/data-browse-paging.dom.test.tsx` — mở bảng 100k dòng trên 7 engine: phân trang hoạt động, không nạp toàn bộ, first paint ≤ 1,5 s (research.md R9)
+- [x] T083 [US3] Viết `packages/ui/src/__tests__/inventory.test.ts` — kiểm kê **ba chiều** của FR-025: (a) mọi lệnh có hành động; (b) mọi phương thức trong 76 method mà registry khai báo đều được gọi thật; (c) mọi lệnh **thực sự xuất hiện** trên đúng tập bề mặt đã khai báo (SC-016)
+- [x] T084 [US3] Viết `packages/ui/src/__tests__/preview-token-required.test.ts` — khẳng định không lệnh nào có `rpc` chứa `apply*` mà gọi được không qua `requestPreview`; và `write === 'preview-required'` ⇒ có cặp `preview*`/`apply*` khớp `METHODS` (bất biến I-4, I-5, Cấm 5)
+- [x] T085 [US3] Viết `packages/ui/src/__tests__/idempotent-run.dom.test.tsx` — chạy hai lần liên tiếp cho kết quả giống nhau; bộ kiểm thử tự dọn hoặc tự đặt lại dữ liệu nó tạo (FR-022, SC-009)
+- [x] T086 [US3] Kiểm chứng SC-007: `git stash` các thay đổi US1/US2, chạy bộ kiểm thử, khẳng định nó **đỏ** đúng ở C-06/C-07/C-10/C-13/C-19; `git stash pop`, chạy lại, khẳng định **xanh**. Ghi output cả hai lần vào PR
+- [x] T087 [US3] Nối tầng kiểm thử UI vào `pnpm verify` và xác nhận `test:e2e` **thực sự có nội dung chạy** — trước feature này nó là lệnh rỗng (C-16, FR-024)
 
 **Checkpoint**: `pnpm verify` + `pnpm test:e2e` đều xanh và đều có nội dung thật; SC-007 đã kiểm chứng có output
 

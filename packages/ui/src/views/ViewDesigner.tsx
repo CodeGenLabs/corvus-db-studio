@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { selectValue } from '../utils/select-value'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 
 export function ViewDesigner() {
-  const { s, setView, activeTab } = useStudio()
+  const { setView, activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
   const goSql = setView('sql')
 
   const tab = activeTab()
-  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
+  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || ctx.connectionId || 'conn-1'
 
-  const [viewName, setViewName] = useState(s.selTable ? `v_${s.selTable}` : 'v_customer_summary')
+  const [viewName, setViewName] = useState(ctx.selection.primaryTarget ? `v_${ctx.selection.primaryTarget}` : 'v_summary')
   const [security, setSecurity] = useState<'DEFINER' | 'INVOKER'>('DEFINER')
   const [checkOption, setCheckOption] = useState<'NONE' | 'CASCADED' | 'LOCAL'>('NONE')
   const [query, setQuery] = useState(

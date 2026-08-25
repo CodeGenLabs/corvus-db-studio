@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { useStudio, useClient } from '../store/studio'
-import type { TableMeta } from '@corvus/contract'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from '../components/useContextMenu'
+import { ContextMenu } from '../components/ContextMenu'
+import type { TableMeta, DialogId } from '@corvus/contract'
 
 const KEY_COLOR: Record<string, string> = {
   PK: 'var(--amber)',
@@ -74,8 +77,10 @@ const DEFAULT_ER: ErEntity[] = [
 ]
 
 export function ErView() {
-  const { activeTab } = useStudio()
+  const { set, openTab, activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-er-diagram')
 
   const tab = activeTab()
   const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
@@ -188,8 +193,11 @@ export function ErView() {
   return (
     <div
       ref={containerRef}
+      data-testid="er-view"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onContextMenu={(e) => openContextMenu(e, 'empty')}
+      onKeyDown={(e) => handleKeyDown(e, 'empty')}
       style={{
         height: '100%',
         position: 'relative',
@@ -334,6 +342,23 @@ export function ErView() {
           +
         </button>
       </div>
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-er-diagram"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

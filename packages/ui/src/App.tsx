@@ -32,7 +32,7 @@ import { WelcomeView } from './views/WelcomeView'
 function ActiveView() {
   const { s } = useStudio()
 
-  if (s.tabs.length === 0 && !s.selTable && !s.selNode) {
+  if (s.tabs.length === 0) {
     return <WelcomeView />
   }
 

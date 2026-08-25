@@ -1,9 +1,14 @@
-import { useRef } from 'react'
+import { useState, useRef } from 'react'
 import { dbMark, ICON_COLOR, ICONS } from '../data/icons'
 import { SearchIcon } from './SearchIcon'
 import { useClient, useStudio } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from './useContextMenu'
+import { ContextMenu } from './ContextMenu'
 import { useNavTree, type NavRow } from './useNavTree'
 import { CONTENT_FOR_KIND } from '../navigation/contentForKind'
+import type { DialogId } from '@corvus/contract'
+import type { TargetKind } from '../commands/types'
 
 function iconFor(kind: string, label: string): string {
   if (kind === 'folder') return label.toLowerCase().includes('view') ? 'view' : 'table'
@@ -20,19 +25,24 @@ function colorFor(kind: string, label: string): string {
 }
 
 export function NavPane() {
-  const { s, set, t, rowH, navOpen, beginDrag, openTab } = useStudio()
+  const { s, set, t, tr, rowH, navOpen, beginDrag, openTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
   const tree = useNavTree(client, s.open, t as unknown as Record<string, string>)
   const treeContainerRef = useRef<HTMLDivElement>(null)
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const { menuState, openContextMenu, handleKeyDown: handleContextMenuKey, closeContextMenu } = useContextMenu('ctx-nav')
 
   const handleRowClick = (row: NavRow) => {
-    set((prev) => ({
-      selNode: row.path,
-      open: row.expandable
-        ? { ...prev.open, [row.path]: !prev.open[row.path] }
-        : prev.open,
-    }))
+    setSelectedPath(row.path)
+    if (row.expandable) {
+      set((prev) => ({
+        open: { ...prev.open, [row.path]: !prev.open[row.path] },
+      }))
+    }
+  }
 
+  const handleRowDoubleClick = (row: NavRow) => {
     if (row.level === 'object' && row.ref.object) {
       const objectKind = row.objectKind ?? 'table'
       const contentKind = CONTENT_FOR_KIND[objectKind] ?? 'data'
@@ -45,6 +55,10 @@ export function NavPane() {
         objectKind,
         name: row.ref.object,
       })
+    } else if (row.expandable && !row.open) {
+      set((prev) => ({
+        open: { ...prev.open, [row.path]: true },
+      }))
     }
   }
 
@@ -79,6 +93,7 @@ export function NavPane() {
   return (
     <>
       <div
+        data-testid="nav-pane"
         style={{
           width: navOpen ? s.navW : 0,
           flex: 'none',
@@ -156,17 +171,77 @@ export function NavPane() {
             </div>
           )}
 
-          {tree.rows.map((row, index) => (
-            <NavRowView
-              key={row.path}
-              row={row}
-              index={index}
-              rowH={rowH}
-              selected={s.selNode === row.path}
-              onToggle={() => handleRowClick(row)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-            />
-          ))}
+          {tree.rows.map((row, index) => {
+            const targetKind: TargetKind =
+              row.level === 'connection'
+                ? 'connection'
+                : row.level === 'database'
+                  ? 'database'
+                  : row.level === 'namespace'
+                    ? 'namespace'
+                    : row.level === 'group'
+                      ? 'object-group'
+                      : 'object'
+
+            return (
+              <div key={row.path}>
+                <NavRowView
+                  row={row}
+                  index={index}
+                  rowH={rowH}
+                  selected={selectedPath === row.path}
+                  onToggle={() => handleRowClick(row)}
+                  onDoubleClick={() => handleRowDoubleClick(row)}
+                  onKeyDown={(e) => {
+                    handleKeyDown(e, index)
+                    handleContextMenuKey(e, targetKind)
+                  }}
+                  onContextMenu={(e) => {
+                    setSelectedPath(row.path)
+                    openContextMenu(e, targetKind)
+                  }}
+                />
+                {row.error && (
+                  <div
+                    data-testid={`nav-error-${row.path}`}
+                    style={{
+                      padding: '4px 8px 6px ' + (24 + row.depth * 14) + 'px',
+                      fontSize: 10.5,
+                      color: 'var(--red)',
+                      background: 'var(--red-soft, rgba(235, 87, 87, 0.08))',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 8,
+                    }}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {row.error}
+                    </span>
+                    <button
+                      data-testid={`nav-retry-${row.path}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        tree.refetchAll()
+                      }}
+                      style={{
+                        padding: '2px 6px',
+                        fontSize: 10,
+                        borderRadius: 3,
+                        border: '1px solid var(--border)',
+                        background: 'var(--pane)',
+                        color: 'var(--text)',
+                        cursor: 'pointer',
+                        flex: 'none',
+                      }}
+                    >
+                      {tr('Thử lại', 'Retry')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* Filter bar */}
@@ -186,6 +261,23 @@ export function NavPane() {
           <span style={{ fontSize: 11 }}>{t.filterObjects}</span>
         </div>
       </div>
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-nav"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
 
       <div
         className="hv-accent-bg"
@@ -223,10 +315,12 @@ interface NavRowViewProps {
   rowH: number
   selected: boolean
   onToggle: () => void
+  onDoubleClick?: () => void
   onKeyDown: (e: React.KeyboardEvent) => void
+  onContextMenu?: (e: React.MouseEvent) => void
 }
 
-function NavRowView({ row, index, rowH, selected, onToggle, onKeyDown }: NavRowViewProps) {
+function NavRowView({ row, index, rowH, selected, onToggle, onDoubleClick, onKeyDown, onContextMenu }: NavRowViewProps) {
   const mark = row.kind === 'conn' ? dbMark(row.meta) : null
   const iconKey = iconFor(row.kind, row.label)
 
@@ -241,7 +335,9 @@ function NavRowView({ row, index, rowH, selected, onToggle, onKeyDown }: NavRowV
       aria-level={row.depth + 1}
       aria-selected={selected}
       onClick={onToggle}
+      onDoubleClick={onDoubleClick}
       onKeyDown={onKeyDown}
+      onContextMenu={onContextMenu}
       title={row.error ?? row.path}
       style={{
         display: 'flex',

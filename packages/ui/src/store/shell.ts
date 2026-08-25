@@ -8,6 +8,7 @@ import type {
   FilterCriterion,
   InfoTab,
   MenuKey,
+  ObjectKind,
   SettingsSection,
   SortCriterion,
   View,
@@ -46,9 +47,6 @@ export interface ShellState {
   theme: 'light' | 'dark'
   view: View
   infoTab: InfoTab
-  selTable: string
-  selNode: string
-  selField: string
   open: Record<string, boolean>
   tabs: Tab[]
   activeTabId: string | null
@@ -78,6 +76,7 @@ export interface ShellState {
   connKind: string
   userMenu: boolean
   userSel: string | null
+  selectedObjectKind?: ObjectKind
   importConnData: { open: boolean; connections: ImportableConnectionProfile[]; fileName?: string } | null
 }
 
@@ -86,9 +85,6 @@ const INITIAL_SHELL_STATE: ShellState = {
   theme: 'light',
   view: 'objects',
   infoTab: 'info',
-  selTable: '',
-  selNode: '',
-  selField: '',
   open: {},
   tabs: [],
   activeTabId: null,
@@ -115,9 +111,10 @@ const INITIAL_SHELL_STATE: ShellState = {
   bkPct: 0,
   bkRunning: false,
   bkSel: null,
-  connKind: 'MySQL / MariaDB',
+  connKind: 'mysql',
   userMenu: false,
   userSel: null,
+  selectedObjectKind: 'table',
   importConnData: null,
 }
 
@@ -171,12 +168,10 @@ export const useShellStore = create<ShellStore>((setState, getState) => ({
       options,
     )
     const view = identity.type === 'object' ? identity.contentKind : identity.toolKind
-    const selTable = identity.type === 'object' ? identity.name : s.selTable
     setState({
       tabs: nextState.tabs,
       activeTabId: nextState.activeTabId,
       view,
-      selTable,
       showPalette: false,
     })
   },
@@ -185,19 +180,16 @@ export const useShellStore = create<ShellStore>((setState, getState) => ({
     const s = getState()
     const { nextState } = closeTabInState({ tabs: s.tabs, activeTabId: s.activeTabId }, tabId)
     let nextView = s.view
-    let nextTable = s.selTable
     if (nextState.activeTabId) {
       const current = nextState.tabs.find((t) => t.id === nextState.activeTabId)
       if (current) {
         nextView = current.identity.type === 'object' ? current.identity.contentKind : current.identity.toolKind
-        if (current.identity.type === 'object') nextTable = current.identity.name
       }
     }
     setState({
       tabs: nextState.tabs,
       activeTabId: nextState.activeTabId,
       view: nextView,
-      selTable: nextTable,
     })
   },
 
@@ -206,11 +198,9 @@ export const useShellStore = create<ShellStore>((setState, getState) => ({
     const target = s.tabs.find((t) => t.id === tabId)
     if (!target) return
     const view = target.identity.type === 'object' ? target.identity.contentKind : target.identity.toolKind
-    const selTable = target.identity.type === 'object' ? target.identity.name : s.selTable
     setState({
       activeTabId: tabId,
       view,
-      selTable,
     })
   },
 

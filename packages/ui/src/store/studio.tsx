@@ -22,16 +22,22 @@ import { useShellStore, type ShellState } from './shell'
 export type { ShellState, ShellState as StudioState }
 export { DEFAULT_CONFIG } from './shell'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60_000,
-      retry: 1,
+export function createStudioQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,
+        retry: 0,
+      },
     },
-  },
-})
+  })
+}
 
 const ClientContext = createContext<Client | null>(null)
+
+export function useOptionalClient(): Client | null {
+  return useContext(ClientContext)
+}
 
 export function useClient(): Client {
   const c = useContext(ClientContext)
@@ -62,20 +68,28 @@ export interface Studio {
   sortCriteria: SortCriterion[]
   navOpen: boolean
   infoOpen: boolean
+  closeConnection: (connectionId: string) => Promise<void>
 }
 
 export function StudioProvider({
   children,
   transport,
+  queryClient: customQueryClient,
 }: {
   children: ReactNode
   transport: Transport
+  queryClient?: QueryClient
 }) {
   const set = useShellStore((state) => state.set)
 
   const client = useMemo(() => {
     return createClient(transport)
   }, [transport])
+
+  const activeQueryClient = useMemo(
+    () => customQueryClient ?? createStudioQueryClient(),
+    [customQueryClient],
+  )
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -95,13 +109,44 @@ export function StudioProvider({
 
   return (
     <ClientContext.Provider value={client}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={activeQueryClient}>{children}</QueryClientProvider>
     </ClientContext.Provider>
   )
 }
 
 export function useStudio(): Studio {
   const store = useShellStore()
+  const client = useContext(ClientContext)
+
+  const closeConnection = async (connectionId: string) => {
+    if (client) {
+      try {
+        await client.request('connection.close', { id: connectionId })
+      } catch {
+        // ignore
+      }
+    }
+    store.set((prev) => {
+      const nextOpen = { ...prev.open }
+      for (const k of Object.keys(nextOpen)) {
+        if (k === connectionId || k.startsWith(`${connectionId}/`)) {
+          delete nextOpen[k]
+        }
+      }
+      const nextTabs = prev.tabs.filter((t) => {
+        const tConnId = t.identity.type === 'object' ? t.identity.connectionId : t.identity.connectionId
+        return tConnId !== connectionId
+      })
+      const nextActiveTabId = nextTabs.some((t) => t.id === prev.activeTabId)
+        ? prev.activeTabId
+        : (nextTabs[0]?.id ?? null)
+      return {
+        open: nextOpen,
+        tabs: nextTabs,
+        activeTabId: nextActiveTabId,
+      }
+    })
+  }
 
   return {
     s: store,
@@ -126,5 +171,6 @@ export function useStudio(): Studio {
     sortCriteria: store.sortCriteria(),
     navOpen: store.nav,
     infoOpen: store.info,
+    closeConnection,
   }
 }

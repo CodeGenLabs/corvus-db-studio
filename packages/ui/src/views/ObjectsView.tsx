@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useStudio, useClient } from '../store/studio'
-import type { ObjectKind } from '@corvus/contract'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from '../components/useContextMenu'
+import { ContextMenu } from '../components/ContextMenu'
+import type { ObjectKind, DialogId } from '@corvus/contract'
 
 const COLS = '1fr 110px 130px 110px 110px 150px'
 
@@ -24,14 +27,18 @@ function formatBytes(bytes?: number): string {
 
 export function ObjectsView() {
   const { s, set, t, row, activeTab, openTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-object-list')
 
   const tab = activeTab()
   const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
   const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
   const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
+  const targetKind = s.selectedObjectKind ?? 'table'
 
   const [objects, setObjects] = useState<ObjectRowItem[]>([])
+  const [selectedObject, setSelectedObject] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -48,7 +55,7 @@ export function ObjectsView() {
         }>>('introspect.objects', {
           connectionId,
           schema,
-          kind: 'table',
+          kind: targetKind,
         })
 
         if (!cancelled && Array.isArray(list)) {
@@ -58,15 +65,15 @@ export function ObjectsView() {
               kind: o.kind,
               rows: o.rowCount !== undefined ? o.rowCount.toLocaleString() : '-',
               size: formatBytes(o.sizeBytes),
-              engine: o.engine || '—',
+              engine: o.engine || '-',
               autoInc: o.autoIncrement !== undefined ? String(o.autoIncrement) : '-',
-              modified: o.updatedAt || '-',
+              modified: o.updatedAt ? new Date(o.updatedAt).toLocaleDateString() : '-',
             })),
           )
         }
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setObjects([])
+          console.error('Failed to fetch objects:', err)
         }
       }
     }
@@ -75,10 +82,10 @@ export function ObjectsView() {
     return () => {
       cancelled = true
     }
-  }, [client, connectionId, schema, database])
+  }, [client, connectionId, schema, database, targetKind])
 
   const handleOpenObject = (name: string) => {
-    set({ selTable: name })
+    setSelectedObject(name)
     openTab(
       {
         type: 'object',
@@ -86,7 +93,7 @@ export function ObjectsView() {
         database,
         namespace: schema,
         name,
-        objectKind: 'table',
+        objectKind: targetKind,
         contentKind: 'data',
       },
       { title: name },
@@ -94,7 +101,12 @@ export function ObjectsView() {
   }
 
   return (
-    <div>
+    <div
+      data-testid="objects-view"
+      onContextMenu={(e) => openContextMenu(e, 'empty')}
+      onKeyDown={(e) => handleKeyDown(e, 'empty')}
+      style={{ minHeight: '100%' }}
+    >
       <div
         style={{
           position: 'sticky',
@@ -118,13 +130,20 @@ export function ObjectsView() {
       </div>
 
       {objects.map((r) => {
-        const sel = s.selTable === r.name
+        const sel = selectedObject === r.name
         return (
           <div
             key={r.name}
             className="hv-row"
-            onClick={() => set({ selTable: r.name })}
+            onClick={() => setSelectedObject(r.name)}
             onDoubleClick={() => handleOpenObject(r.name)}
+            onContextMenu={(e) => {
+              e.stopPropagation()
+              setSelectedObject(r.name)
+              openContextMenu(e, 'object')
+            }}
+            onKeyDown={(e) => handleKeyDown(e, 'object')}
+            tabIndex={0}
             style={row({
               display: 'grid',
               gridTemplateColumns: COLS,
@@ -163,6 +182,23 @@ export function ObjectsView() {
           </div>
         )
       })}
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-object-list"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

@@ -1,10 +1,17 @@
 import { useStudio } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 
 export function StatusBar() {
   const { s, set, t, tr, navOpen, infoOpen } = useStudio()
+  const ctx = useActiveContext()
 
   const statusText =
     s.view === 'compare' ? tr('5 khác biệt / 599 dòng', '5 differences / 599 rows') : t.statusSel
+
+  const connInfo =
+    ctx.connectionState === 'open'
+      ? [ctx.connectionName ?? ctx.connectionId, ctx.database, ctx.namespace].filter(Boolean).join(' · ')
+      : t.navEmpty
 
   return (
     <div
@@ -23,7 +30,9 @@ export function StatusBar() {
     >
       <span>{statusText}</span>
       <span style={{ color: 'var(--text3)' }}>|</span>
-      <span style={{ fontFamily: 'var(--mono)' }}>Local Dev · sakila</span>
+      <span data-testid="statusbar-connection-info" style={{ fontFamily: 'var(--mono)' }}>
+        {connInfo}
+      </span>
       <span style={{ color: 'var(--text3)' }}>|</span>
       <span style={{ fontFamily: 'var(--mono)' }}>{t.latency} 3 ms</span>
 

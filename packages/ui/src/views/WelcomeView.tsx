@@ -27,7 +27,6 @@ export function WelcomeView() {
   }, [client])
 
   const handleOpenProfile = (p: ConnectionProfile) => {
-    set({ selTable: undefined })
     openTab(
       {
         type: 'tool',

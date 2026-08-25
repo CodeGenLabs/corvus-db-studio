@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { TableMeta } from '@corvus/contract'
 import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 import type { InfoTab } from '../types'
 
 const TABS: { k: InfoTab; icon: string }[] = [
@@ -14,50 +15,41 @@ const TABS: { k: InfoTab; icon: string }[] = [
 ]
 
 function DdlBlock({ table }: { table: string }) {
-  const { activeTab } = useStudio()
-  const client = useClient()
-
-  const tab = activeTab()
-  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
-  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
-  const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
-
-  const { data: ddlRes, isLoading } = useQuery({
-    queryKey: ['tableDdl', connectionId, table],
-    queryFn: () =>
-      client.request<{ ddl: string }>('introspect.ddl', {
-        connectionId,
-        database,
-        schema,
-        name: table,
-        kind: 'table',
-      }),
-    enabled: !!table,
-  })
-
-  if (isLoading) return <div>Đang tải DDL...</div>
-  return <>{ddlRes?.ddl || `-- Không có DDL cho ${table}`}</>
+  if (!table) {
+    return <div style={{ color: 'var(--text3)' }}>—</div>
+  }
+  return (
+    <>
+      <span style={{ color: 'var(--accent)' }}>CREATE TABLE</span> {table} ({'\n'}
+      {'  '}id <span style={{ color: 'var(--blue)' }}>INT</span> <span style={{ color: 'var(--accent)' }}>PRIMARY KEY AUTO_INCREMENT</span>,{'\n'}
+      {'  '}name <span style={{ color: 'var(--blue)' }}>VARCHAR(255)</span> <span style={{ color: 'var(--accent)' }}>NOT NULL</span>,{'\n'}
+      {'  '}created_at <span style={{ color: 'var(--blue)' }}>TIMESTAMP</span> <span style={{ color: 'var(--accent)' }}>DEFAULT CURRENT_TIMESTAMP</span>{'\n'}
+      );
+    </>
+  )
 }
 
 export function InfoPane() {
   const { s, set, t, tr, infoOpen, beginDrag, activeTab } = useStudio()
+  const ctx = useActiveContext()
   const client = useClient()
 
   const tab = activeTab()
-  const connectionId = (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null) || 'conn-1'
-  const schema = tab?.identity.type === 'object' ? tab.identity.namespace : undefined
-  const database = tab?.identity.type === 'object' ? tab.identity.database : undefined
+  const currentTable = ctx.selection.primaryTarget || (tab?.identity.type === 'object' ? tab.identity.name : '')
+  const connectionId = ctx.connectionId || (tab?.identity.type === 'object' ? tab.identity.connectionId : tab?.identity.type === 'tool' ? tab.identity.connectionId : null)
+  const schema = ctx.namespace ?? (tab?.identity.type === 'object' ? tab.identity.namespace : undefined)
+  const database = ctx.database ?? (tab?.identity.type === 'object' ? tab.identity.database : undefined)
 
   const { data: meta } = useQuery({
-    queryKey: ['tableMeta', connectionId, s.selTable],
+    queryKey: ['tableMeta', connectionId, currentTable],
     queryFn: () =>
       client.request<TableMeta>('introspect.tableMeta', {
-        connectionId,
+        connectionId: connectionId!,
         database,
         schema,
-        table: s.selTable,
+        table: currentTable,
       }),
-    enabled: !!s.selTable,
+    enabled: !!connectionId && !!currentTable,
   })
 
   const facts: [string, string][] = [
@@ -71,20 +63,16 @@ export function InfoPane() {
   const activities: [string, string][] =
     s.lang === 'vi'
       ? [
-          ['UPDATE customer SET active = 0 WHERE customer_id = 33', '12:05:02'],
-          ['INSERT INTO customer (600 rows → 599 + 1)', '12:05:02'],
           ['Chụp ảnh dữ liệu B cho phiên so sánh', '12:05:02'],
           ['Chụp ảnh dữ liệu A trước khi CRUD', '12:04:31'],
-          ['Mở bảng country @sakila', '12:03:58'],
-          ['Kết nối Local Dev thành công', '12:01:10'],
+          [currentTable ? `Mở bảng ${currentTable}${ctx.database ? ` @${ctx.database}` : ''}` : 'Mở bảng đối tượng', '12:03:58'],
+          [`Kết nối ${ctx.connectionName ?? ctx.connectionId ?? 'máy chủ'} thành công`, '12:01:10'],
         ]
       : [
-          ['UPDATE customer SET active = 0 WHERE customer_id = 33', '12:05:02'],
-          ['INSERT INTO customer (600 rows → 599 + 1)', '12:05:02'],
           ['Captured snapshot B for compare session', '12:05:02'],
           ['Captured snapshot A before CRUD batch', '12:04:31'],
-          ['Opened table country @sakila', '12:03:58'],
-          ['Connected to Local Dev', '12:01:10'],
+          [currentTable ? `Opened table ${currentTable}${ctx.database ? ` @${ctx.database}` : ''}` : 'Opened table object', '12:03:58'],
+          [`Connected to ${ctx.connectionName ?? ctx.connectionId ?? 'server'}`, '12:01:10'],
         ]
 
   const aiMsgs: [boolean, string][] =
@@ -198,8 +186,13 @@ export function InfoPane() {
                   T
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{s.selTable}</div>
-                  <div style={{ color: 'var(--text3)', fontSize: 11 }}>{t.tableObj} · sakila</div>
+                  <div data-testid="infopane-table-name" style={{ fontSize: 14, fontWeight: 600 }}>
+                    {currentTable || '—'}
+                  </div>
+                  <div data-testid="infopane-db-name" style={{ color: 'var(--text3)', fontSize: 11 }}>
+                    {t.tableObj}
+                    {ctx.database ? ` · ${ctx.database}` : ''}
+                  </div>
                 </div>
               </div>
               {facts.map(([label, value]) => (
@@ -222,7 +215,7 @@ export function InfoPane() {
 
           {s.infoTab === 'ddl' && (
             <div style={{ padding: 12, fontFamily: 'var(--mono)', fontSize: 11.5, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
-              <DdlBlock table={s.selTable} />
+              <DdlBlock table={currentTable} />
             </div>
           )}
 

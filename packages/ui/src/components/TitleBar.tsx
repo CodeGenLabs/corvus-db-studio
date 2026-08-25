@@ -1,5 +1,6 @@
 import { LANG_LABEL } from '../i18n/dictionaries'
 import { useStudio } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
 
 type DragStyle = React.CSSProperties & { WebkitAppRegion?: 'drag' | 'no-drag' }
 
@@ -26,6 +27,7 @@ interface WindowWithCorvus {
 
 export function TitleBar() {
   const { s, set, tr, cycleLang, toggleTheme } = useStudio()
+  const ctx = useActiveContext()
 
   const handleMinimize = () => {
     if (typeof window !== 'undefined') {
@@ -48,8 +50,15 @@ export function TitleBar() {
     [tr('Quản lý người dùng & quyền', 'Users & privileges'), '⌘U', () => set({ dialog: 'users' })],
     [tr('Cài đặt hệ thống', 'System settings'), '⌘,', () => set({ dialog: 'settings' })],
     [tr('Nhật ký hoạt động', 'Activity log'), '', () => set({ view: 'jobs' })],
+    [tr('Kiểm tra cập nhật', 'Check for updates'), '', () => set({ dialog: 'updates' })],
+    [tr('Về Corvus DB Studio', 'About Corvus DB Studio'), '', () => set({ dialog: 'about' })],
     [tr('Đăng xuất', 'Sign out'), '', null],
   ]
+
+  const titleText =
+    ctx.connectionState === 'open'
+      ? `Corvus DB Studio — ${ctx.database ? `${ctx.database} @ ` : ''}${ctx.connectionName ?? ctx.connectionId}`
+      : 'Corvus DB Studio'
 
   return (
     <div
@@ -83,8 +92,11 @@ export function TitleBar() {
         >
           C
         </div>
-        <span style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--text2)', letterSpacing: '.1px' }}>
-          Corvus DB Studio — sakila @ Local Dev
+        <span
+          data-testid="titlebar-title"
+          style={{ fontSize: 11.5, fontWeight: 500, color: 'var(--text2)', letterSpacing: '.1px' }}
+        >
+          {titleText}
         </span>
       </div>
 

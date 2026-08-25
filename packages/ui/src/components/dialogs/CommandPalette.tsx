@@ -1,38 +1,91 @@
 import { useState, useEffect, useRef } from 'react'
 import { SearchIcon } from '../SearchIcon'
-import { useStudio } from '../../store/studio'
+import { useStudio, useClient } from '../../store/studio'
+import { useActiveContext } from '../../context/useActiveContext'
+import { commandsFor } from '../../commands/registry'
+import { evaluate } from '../../commands/availability'
+import { useQuery } from '@tanstack/react-query'
+import type { ObjectKind, DialogId } from '@corvus/contract'
 
 interface PaletteItem {
   id: string
   label: string
   category: 'Views' | 'Tables' | 'Actions' | 'Tools'
   shortcut?: string
+  disabled?: boolean
   action: () => void
 }
 
 export function CommandPalette() {
-  const { set, t, tr, setView } = useStudio()
+  const { set, t, openTab } = useStudio()
+  const ctx = useActiveContext()
+  const client = useClient()
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const close = () => set({ showPalette: false })
 
-  const allItems: PaletteItem[] = [
-    { id: 'v-objects', label: tr('Mở xem cấu trúc Đối tượng (Objects View)', 'Open Objects View'), category: 'Views', shortcut: '⌘1', action: () => { setView('objects')(); close(); } },
-    { id: 'v-data', label: tr('Xem & Sửa Dữ liệu bảng (Data View)', 'Open Data View'), category: 'Views', shortcut: '⌘2', action: () => { setView('data')(); close(); } },
-    { id: 'v-sql', label: tr('Mở trình soạn thảo SQL (SQL Editor)', 'Open SQL Editor'), category: 'Views', shortcut: '⌘3', action: () => { setView('sql')(); close(); } },
-    { id: 'v-design', label: tr('Thiết kế Bảng (Table Designer)', 'Open Table Designer'), category: 'Views', shortcut: '⌘4', action: () => { setView('design')(); close(); } },
-    { id: 'v-er', label: tr('Sơ đồ quan hệ ER Diagram', 'Open ER Diagram'), category: 'Views', shortcut: '⌘5', action: () => { setView('er')(); close(); } },
-    { id: 'v-backup', label: tr('Sao lưu & Khôi phục (Backup / Restore)', 'Open Backup View'), category: 'Views', shortcut: '⌘6', action: () => { setView('backup')(); close(); } },
-    { id: 'v-jobs', label: tr('Quản lý Tác vụ tự động (Automation Jobs)', 'Open Jobs View'), category: 'Views', shortcut: '⌘7', action: () => { setView('jobs')(); close(); } },
-    { id: 'a-conn', label: tr('Tạo kết nối mới…', 'New Connection…'), category: 'Actions', shortcut: '⌘⇧N', action: () => { set({ showConn: true }); close(); } },
-    { id: 'a-users', label: tr('Quản lý người dùng & Phân quyền…', 'Manage Users & Permissions…'), category: 'Tools', action: () => { set({ dialog: 'users' }); close(); } },
-    { id: 'a-settings', label: tr('Cài đặt hệ thống…', 'Preferences / Settings…'), category: 'Tools', shortcut: '⌘,', action: () => { set({ dialog: 'settings' }); close(); } },
-    { id: 't-cust', label: 'customer (Table in sakila)', category: 'Tables', action: () => { setView('data')(); close(); } },
-    { id: 't-film', label: 'film (Table in sakila)', category: 'Tables', action: () => { setView('data')(); close(); } },
-    { id: 't-actor', label: 'actor (Table in sakila)', category: 'Tables', action: () => { setView('data')(); close(); } },
-  ]
+  const { data: objects = [] } = useQuery({
+    queryKey: ['introspect', ctx.connectionId, ctx.database, ctx.namespace, 'objects'],
+    queryFn: async () => {
+      if (!ctx.connectionId) return []
+      const res = await client.request<Array<{ name: string; kind: ObjectKind }>>('introspect.objects', {
+        connectionId: ctx.connectionId,
+        database: ctx.database ?? undefined,
+        schema: ctx.namespace ?? undefined,
+      })
+      return Array.isArray(res) ? res : []
+    },
+    enabled: !!ctx.connectionId && ctx.connectionState === 'open',
+  })
+
+  const registryCommands = commandsFor('command-palette', 'empty')
+  const commandItems: PaletteItem[] = registryCommands
+    .filter((cmd) => evaluate(cmd, ctx).state !== 'hidden')
+    .map((cmd) => {
+      const verdict = evaluate(cmd, ctx)
+      const label = t[cmd.labelKey] ?? cmd.id
+      return {
+        id: cmd.id,
+        label,
+        category: cmd.id.startsWith('view.') ? 'Views' : 'Actions',
+        disabled: verdict.state === 'disabled',
+        action: () => {
+          if (verdict.state === 'enabled') {
+            void cmd.run({
+              active: ctx,
+              client,
+              openTab,
+              openDialog: (d) => set({ dialog: d as DialogId }),
+            })
+            close()
+          }
+        },
+      }
+    })
+
+  const objectItems: PaletteItem[] = objects.map((obj) => ({
+    id: `obj-${obj.kind}-${obj.name}`,
+    label: `${obj.name} (${obj.kind}${ctx.database ? ` in ${ctx.database}` : ''})`,
+    category: 'Tables',
+    action: () => {
+      if (ctx.connectionId) {
+        openTab({
+          type: 'object',
+          contentKind: 'data',
+          connectionId: ctx.connectionId,
+          database: ctx.database ?? undefined,
+          namespace: ctx.namespace ?? undefined,
+          objectKind: obj.kind,
+          name: obj.name,
+        })
+      }
+      close()
+    },
+  }))
+
+  const allItems: PaletteItem[] = [...commandItems, ...objectItems]
 
   const filtered = allItems.filter((i) =>
     i.label.toLowerCase().includes(query.toLowerCase()) ||

@@ -1,5 +1,9 @@
 import type { CSSProperties } from 'react'
-import { useStudio } from '../store/studio'
+import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from '../components/useContextMenu'
+import { ContextMenu } from '../components/ContextMenu'
+import type { DialogId } from '@corvus/contract'
 
 const DEFAULT_DIFF: [string, string, string, string, string, string][] = []
 
@@ -54,10 +58,18 @@ const GHOST_BTN: CSSProperties = {
 }
 
 export function CompareView() {
-  const { s, set, t, rowH } = useStudio()
+  const { s, set, t, rowH, openTab } = useStudio()
+  const ctx = useActiveContext()
+  const client = useClient()
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-diff')
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div
+      data-testid="compare-view"
+      onContextMenu={(e) => openContextMenu(e, 'empty')}
+      onKeyDown={(e) => handleKeyDown(e, 'empty')}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
       <div
         style={{
           flex: 'none',
@@ -66,22 +78,21 @@ export function CompareView() {
           background: 'var(--pane2)',
           display: 'flex',
           gap: 10,
-          alignItems: 'stretch',
         }}
       >
         <div
           style={{
             flex: 1,
-            border: '1px solid var(--border-strong)',
-            borderRadius: 6,
-            padding: '8px 10px',
             background: 'var(--pane)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '8px 12px',
           }}
         >
           <div
             style={{
-              fontSize: 10.5,
-              fontWeight: 600,
+              fontSize: 10,
+              fontWeight: 700,
               letterSpacing: '.5px',
               textTransform: 'uppercase',
               color: 'var(--text3)',
@@ -100,9 +111,9 @@ export function CompareView() {
               textOverflow: 'ellipsis',
             }}
           >
-            SELECT * FROM customer WHERE store_id = 1
+            SELECT * FROM sakila.customer ORDER BY customer_id
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>12:04:31 · 599 rows · 5 cols</div>
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>12:00:00 · 599 rows · 5 cols</div>
         </div>
 
         <div
@@ -111,11 +122,19 @@ export function CompareView() {
           ⇄
         </div>
 
-        <div style={{ flex: 1, border: '1px solid var(--accent)', borderRadius: 6, padding: '8px 10px', background: 'var(--pane)' }}>
+        <div
+          style={{
+            flex: 1,
+            background: 'var(--pane)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '8px 12px',
+          }}
+        >
           <div
             style={{
-              fontSize: 10.5,
-              fontWeight: 600,
+              fontSize: 10,
+              fontWeight: 700,
               letterSpacing: '.5px',
               textTransform: 'uppercase',
               color: 'var(--accent)',
@@ -207,6 +226,12 @@ export function CompareView() {
         {DEFAULT_DIFF.map((d) => (
           <div
             key={d[0] + d[1]}
+            onContextMenu={(e) => {
+              e.stopPropagation()
+              openContextMenu(e, 'diff-item')
+            }}
+            onKeyDown={(e) => handleKeyDown(e, 'diff-item')}
+            tabIndex={0}
             style={{
               display: 'grid',
               gridTemplateColumns: COLS,
@@ -246,6 +271,23 @@ export function CompareView() {
           </div>
         ))}
       </div>
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-diff"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }

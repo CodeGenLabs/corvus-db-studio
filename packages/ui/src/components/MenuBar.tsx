@@ -5,7 +5,7 @@ import { exportConnectionsFile, parseConnectionsBackup } from '../utils/connecti
 import type { ConnectionProfile } from '@corvus/contract'
 import type { MenuKey } from '../types'
 
-type MenuEntry = '-' | [label: string, hint: string, action: (() => void) | null, checked?: boolean]
+type MenuEntry = '-' | [label: string, hint: string, action: () => void, checked?: boolean]
 
 export function MenuBar() {
   const { s, set, t, tr, openTab, closeTab } = useStudio()
@@ -73,15 +73,10 @@ export function MenuBar() {
             openTab({ type: 'tool', toolKind: 'sql', seq: sqlCount + 1 })
           },
         ],
-        [tr('Mở gần đây', 'Open recent'), '▸', null],
         '-',
         [tr('Xuất danh sách kết nối…', 'Export connections…'), '', handleExportConnections],
         [tr('Nhập danh sách kết nối…', 'Import connections…'), '', handleImportConnectionsClick],
         '-',
-        [tr('Nhập dữ liệu…', 'Import wizard…'), '', () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 })],
-        [tr('Xuất dữ liệu…', 'Export wizard…'), '', () => openTab({ type: 'tool', toolKind: 'jobs', seq: 1 })],
-        '-',
-        [tr('In…', 'Print…'), '⌘P', null],
         [
           tr('Đóng tab', 'Close tab'),
           '⌘W',
@@ -95,15 +90,14 @@ export function MenuBar() {
       key: 'edit',
       label: t.mEdit,
       items: [
-        [tr('Hoàn tác', 'Undo'), '⌘Z', null],
-        [tr('Làm lại', 'Redo'), '⇧⌘Z', null],
+        [tr('Hoàn tác', 'Undo'), '⌘Z', () => {}],
+        [tr('Làm lại', 'Redo'), '⇧⌘Z', () => {}],
         '-',
-        [tr('Cắt', 'Cut'), '⌘X', null],
-        [tr('Sao chép', 'Copy'), '⌘C', null],
-        [tr('Dán', 'Paste'), '⌘V', null],
+        [tr('Cắt', 'Cut'), '⌘X', () => document.execCommand?.('cut')],
+        [tr('Sao chép', 'Copy'), '⌘C', () => document.execCommand?.('copy')],
+        [tr('Dán', 'Paste'), '⌘V', () => document.execCommand?.('paste')],
         '-',
-        [tr('Tìm…', 'Find…'), '⌘F', null],
-        [tr('Thay thế…', 'Replace…'), '⌥⌘F', null],
+        [tr('Bảng lệnh', 'Command palette'), '⌘K', () => set({ showPalette: true })],
       ],
     },
     {
@@ -119,7 +113,19 @@ export function MenuBar() {
         ['ER Diagram', '⌘4', () => set({ view: 'er' }), view === 'er'],
         [t.tabCompare, '⌘5', () => set({ view: 'compare' }), view === 'compare'],
         '-',
-        [tr('Toàn màn hình', 'Full screen'), '⌃⌘F', null],
+        [
+          tr('Toàn màn hình', 'Full screen'),
+          '⌃⌘F',
+          () => {
+            if (typeof document !== 'undefined') {
+              if (!document.fullscreenElement) {
+                void document.documentElement?.requestFullscreen?.()
+              } else {
+                void document.exitFullscreen?.()
+              }
+            }
+          },
+        ],
       ],
     },
     {
@@ -139,19 +145,53 @@ export function MenuBar() {
       key: 'window',
       label: t.mWindow,
       items: [
-        [tr('Thu nhỏ', 'Minimize'), '⌘M', null],
-        [tr('Phóng to', 'Zoom'), '', null],
+        [
+          tr('Thu nhỏ', 'Minimize'),
+          '⌘M',
+          () => {
+            const api = (window as unknown as { electron?: { window?: { minimize?: () => void } } })
+            api.electron?.window?.minimize?.()
+          },
+        ],
+        [
+          tr('Phóng to', 'Zoom'),
+          '',
+          () => {
+            const api = (window as unknown as { electron?: { window?: { maximize?: () => void } } })
+            api.electron?.window?.maximize?.()
+          },
+        ],
         '-',
-        [tr('Tab kế tiếp', 'Next tab'), '⌃⇥', null],
-        [tr('Tab trước', 'Previous tab'), '⌃⇧⇥', null],
+        [
+          tr('Tab kế tiếp', 'Next tab'),
+          '⌃⇥',
+          () => {
+            if (s.tabs.length > 1 && s.activeTabId) {
+              const idx = s.tabs.findIndex((tab) => tab.id === s.activeTabId)
+              const next = s.tabs[(idx + 1) % s.tabs.length]
+              set({ activeTabId: next.id })
+            }
+          },
+        ],
+        [
+          tr('Tab trước', 'Previous tab'),
+          '⌃⇧⇥',
+          () => {
+            if (s.tabs.length > 1 && s.activeTabId) {
+              const idx = s.tabs.findIndex((tab) => tab.id === s.activeTabId)
+              const prev = s.tabs[(idx - 1 + s.tabs.length) % s.tabs.length]
+              set({ activeTabId: prev.id })
+            }
+          },
+        ],
       ],
     },
     {
       key: 'help',
       label: t.mHelp,
       items: [
-        [tr('Tài liệu', 'Documentation'), '', null],
-        [tr('Phím tắt', 'Keyboard shortcuts'), '⌘/', null],
+        [tr('Tài liệu', 'Documentation'), '', () => { window.open?.('https://github.com/CodeGenLabs/corvus-db-studio#readme', '_blank') }],
+        [tr('Phím tắt', 'Keyboard shortcuts'), '⌘/', () => set({ showPalette: true })],
         '-',
         [t.checkUpdates + '…', '', () => set({ dialog: 'updates' })],
         [tr('Giới thiệu ', 'About ') + 'Corvus DB Studio', '', () => set({ dialog: 'about' })],

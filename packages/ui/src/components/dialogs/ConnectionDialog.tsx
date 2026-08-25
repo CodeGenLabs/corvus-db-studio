@@ -54,13 +54,13 @@ export function ConnectionDialog() {
   })
 
   const presets: Record<string, Preset> = {
-    'MySQL / MariaDB': { name: 'Staging MySQL', host: '10.4.12.31', port: '3306', user: 'corvus_app', db: 'sakila', dbLabel: tr('Database mặc định', 'Default database') },
-    PostgreSQL: { name: 'Analytics PG', host: 'pg.analytics.internal', port: '5432', user: 'corvus_ro', db: 'public', dbLabel: tr('Database / schema', 'Database / schema') },
-    'SQL Server': { name: 'Reporting DW', host: 'mssql-dw-01', port: '1433', user: 'sa', db: 'dw', dbLabel: tr('Database mặc định', 'Default database') },
-    Oracle: { name: 'Legacy ERP', host: 'erp-oracle.corp', port: '1521', user: 'ERP_APP', db: 'ERPPROD', dbLabel: 'Service name / SID' },
-    SQLite: { name: 'Mobile cache', host: '~/data/mobile.sqlite', port: '—', user: '—', db: 'main', dbLabel: tr('Tệp cơ sở dữ liệu', 'Database file') },
-    MongoDB: { name: 'Events cluster', host: 'mongo-0.events.svc', port: '27017', user: 'events_rw', db: 'events', dbLabel: tr('Bộ sưu tập mặc định', 'Default database') },
-    Redis: { name: 'Session cache', host: 'redis.cache.svc', port: '6379', user: 'default', db: 'db0', dbLabel: tr('Chỉ số DB', 'Database index') },
+    'MySQL / MariaDB': { name: 'MySQL Local Dev', host: '127.0.0.1', port: '3306', user: 'corvus', db: 'corvus_dev', dbLabel: tr('Database mặc định', 'Default database') },
+    PostgreSQL: { name: 'PostgreSQL Local Dev', host: '127.0.0.1', port: '5432', user: 'corvus', db: 'corvus_dev', dbLabel: tr('Database / schema', 'Database / schema') },
+    'SQL Server': { name: 'SQL Server Local Dev', host: '127.0.0.1', port: '1434', user: 'sa', db: 'corvus_dev', dbLabel: tr('Database mặc định', 'Default database') },
+    Oracle: { name: 'Oracle Local Dev', host: '127.0.0.1', port: '1521', user: 'CORVUS_DEV', db: 'FREEPDB1', dbLabel: 'Service name / SID' },
+    SQLite: { name: 'SQLite Local Dev', host: '.corvus-data/sample.sqlite', port: '—', user: '—', db: 'main', dbLabel: tr('Tệp cơ sở dữ liệu', 'Database file') },
+    MongoDB: { name: 'MongoDB Local Dev', host: '127.0.0.1', port: '27017', user: 'corvus', db: 'corvus_dev', dbLabel: tr('Bộ sưu tập mặc định', 'Default database') },
+    Redis: { name: 'Redis Local Dev', host: '127.0.0.1', port: '6379', user: 'default', db: '0', dbLabel: tr('Chỉ số DB', 'Database index') },
   }
 
   const p = presets[activeKind] ?? presets['PostgreSQL']!

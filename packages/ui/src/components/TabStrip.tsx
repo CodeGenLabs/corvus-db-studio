@@ -1,5 +1,9 @@
-import { useStudio } from '../store/studio'
+import { useStudio, useClient } from '../store/studio'
+import { useActiveContext } from '../context/useActiveContext'
+import { useContextMenu } from './useContextMenu'
+import { ContextMenu } from './ContextMenu'
 import type { Tab } from '../tabs'
+import type { DialogId } from '@corvus/contract'
 
 function colorForTab(tab: Tab): string {
   if (tab.identity.type === 'object') {
@@ -35,7 +39,10 @@ function colorForTab(tab: Tab): string {
 }
 
 export function TabStrip() {
-  const { s, focusTab, closeTab, openTab } = useStudio()
+  const { s, set, focusTab, closeTab, openTab } = useStudio()
+  const ctx = useActiveContext()
+  const client = useClient()
+  const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-tab-bar')
 
   const handleNewSqlTab = () => {
     const existingSqlTabs = s.tabs.filter(
@@ -62,6 +69,9 @@ export function TabStrip() {
 
   return (
     <div
+      data-testid="tab-strip"
+      onContextMenu={(e) => openContextMenu(e, 'tab')}
+      onKeyDown={(e) => handleKeyDown(e, 'tab')}
       style={{
         height: 30,
         flex: 'none',
@@ -81,6 +91,11 @@ export function TabStrip() {
             key={tab.id}
             className="hv-text"
             onClick={() => focusTab(tab.id)}
+            onContextMenu={(e) => {
+              e.stopPropagation()
+              focusTab(tab.id)
+              openContextMenu(e, 'tab')
+            }}
             data-testid={`tab-${tab.id}`}
             title={tab.title}
             style={{
@@ -155,6 +170,23 @@ export function TabStrip() {
       >
         +
       </div>
+
+      {menuState?.isOpen && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          surface="ctx-tab-bar"
+          targetKind={menuState.targetKind}
+          activeContext={ctx}
+          commandContext={{
+            active: ctx,
+            client,
+            openTab,
+            openDialog: (d) => set({ dialog: d as DialogId }),
+          }}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   )
 }
