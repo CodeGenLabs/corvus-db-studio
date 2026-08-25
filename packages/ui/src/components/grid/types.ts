@@ -7,7 +7,7 @@ export interface GridSelection {
   endCol: number
 }
 
-export type ExportFormat = 'tsv' | 'json' | 'markdown' | 'insert'
+export type ExportFormat = 'tsv' | 'json' | 'markdown' | 'insert' | 'update'
 
 export interface GridProps {
   columns: ColumnDef[]

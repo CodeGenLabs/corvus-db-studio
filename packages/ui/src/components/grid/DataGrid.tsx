@@ -6,7 +6,7 @@ import { useContextMenu } from '../useContextMenu'
 import { ContextMenu } from '../ContextMenu'
 import { renderCellValue, isNullValue } from './cell-formatter'
 import { exportGridData } from './export-helper'
-import { NavigationBar } from './NavigationBar'
+import { DataGridBottomBar } from './DataGridBottomBar'
 import type { ExportFormat, GridSelection } from './types'
 
 export interface DataGridProps {
@@ -18,10 +18,18 @@ export interface DataGridProps {
   tableName?: string
   sortColumn?: string
   sortDirection?: 'asc' | 'desc' | null
+  hasPendingChanges?: boolean
+  isLoading?: boolean
   onSortChange?: (colName: string, dir: 'asc' | 'desc' | null) => void
   onPageChange?: (page: number) => void
   onPageSizeChange?: (size: number) => void
   onCellEdit?: (rowIdx: number, colIdx: number, val: CellValue) => void
+  onAddRow?: () => void
+  onDeleteRow?: (rowIdx: number) => void
+  onApplyChanges?: () => void
+  onDiscardChanges?: () => void
+  onRefresh?: () => void
+  onFilterByValue?: (colName: string, val: string) => void
 }
 
 export function DataGrid({
@@ -33,10 +41,18 @@ export function DataGrid({
   tableName = 'table',
   sortColumn,
   sortDirection,
+  hasPendingChanges = false,
+  isLoading = false,
   onSortChange,
   onPageChange,
   onPageSizeChange,
   onCellEdit,
+  onAddRow,
+  onDeleteRow,
+  onApplyChanges,
+  onDiscardChanges,
+  onRefresh,
+  onFilterByValue,
 }: DataGridProps) {
   const { set, openTab } = useStudio()
   const ctx = useActiveContext()
@@ -44,6 +60,8 @@ export function DataGrid({
   const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-data-grid')
   const [selection, setSelection] = useState<GridSelection | null>(null)
   const [editingCell, setEditingCell] = useState<{ row: number; col: number; val: string } | null>(null)
+
+  const selectedRowIndex = selection ? selection.startRow : null
 
   const handleHeaderClick = (colName: string) => {
     if (!onSortChange) return
@@ -71,6 +89,18 @@ export function DataGrid({
     setEditingCell(null)
   }
 
+  const handleSetNull = (r: number, c: number) => {
+    if (onCellEdit) {
+      onCellEdit(r, c, { k: 'null' })
+    }
+  }
+
+  const handleSetEmptyString = (r: number, c: number) => {
+    if (onCellEdit) {
+      onCellEdit(r, c, { k: 'str', v: '' })
+    }
+  }
+
   const handleCopy = (format: ExportFormat) => {
     const text = exportGridData(columns, rows, selection, format, tableName)
     navigator.clipboard.writeText(text)
@@ -82,84 +112,20 @@ export function DataGrid({
     <div
       data-testid="data-grid"
       onContextMenu={(e) => openContextMenu(e, 'empty')}
-      onKeyDown={(e) => handleKeyDown(e, 'empty')}
+      onKeyDown={(e) => {
+        handleKeyDown(e, 'empty')
+        if (e.key === 'Insert' || (e.ctrlKey && e.key === 'n')) {
+          e.preventDefault()
+          onAddRow?.()
+        }
+        if (e.ctrlKey && e.key === 'Delete' && selectedRowIndex !== null) {
+          e.preventDefault()
+          onDeleteRow?.(selectedRowIndex)
+        }
+      }}
       style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
     >
-      <div
-        style={{
-          height: 28,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '0 8px',
-          background: 'var(--pane2)',
-          borderBottom: '1px solid var(--border)',
-          fontSize: 11,
-        }}
-      >
-        <span style={{ color: 'var(--text3)' }}>Sao chép:</span>
-        <button
-          onClick={() => handleCopy('tsv')}
-          style={{
-            height: 20,
-            padding: '0 6px',
-            border: '1px solid var(--border-strong)',
-            background: 'transparent',
-            borderRadius: 3,
-            color: 'var(--text)',
-            cursor: 'pointer',
-            fontSize: 10.5,
-          }}
-        >
-          TSV / Excel
-        </button>
-        <button
-          onClick={() => handleCopy('json')}
-          style={{
-            height: 20,
-            padding: '0 6px',
-            border: '1px solid var(--border-strong)',
-            background: 'transparent',
-            borderRadius: 3,
-            color: 'var(--text)',
-            cursor: 'pointer',
-            fontSize: 10.5,
-          }}
-        >
-          JSON
-        </button>
-        <button
-          onClick={() => handleCopy('markdown')}
-          style={{
-            height: 20,
-            padding: '0 6px',
-            border: '1px solid var(--border-strong)',
-            background: 'transparent',
-            borderRadius: 3,
-            color: 'var(--text)',
-            cursor: 'pointer',
-            fontSize: 10.5,
-          }}
-        >
-          Markdown
-        </button>
-        <button
-          onClick={() => handleCopy('insert')}
-          style={{
-            height: 20,
-            padding: '0 6px',
-            border: '1px solid var(--border-strong)',
-            background: 'transparent',
-            borderRadius: 3,
-            color: 'var(--text)',
-            cursor: 'pointer',
-            fontSize: 10.5,
-          }}
-        >
-          INSERT SQL
-        </button>
-      </div>
-
+      {/* ── Main Data Scroll Area ── */}
       <div style={{ flex: 1, overflow: 'auto' }}>
         <div
           style={{
@@ -230,6 +196,7 @@ export function DataGrid({
             <div
               onContextMenu={(e) => {
                 e.stopPropagation()
+                handleCellClick(rIdx, 0)
                 openContextMenu(e, 'row-header')
               }}
               onKeyDown={(e) => handleKeyDown(e, 'row-header')}
@@ -244,7 +211,7 @@ export function DataGrid({
                 cursor: 'pointer',
               }}
             >
-              {(currentPage - 1) * pageSize + rIdx + 1}
+              {pageSize > 0 ? (currentPage - 1) * pageSize + rIdx + 1 : rIdx + 1}
             </div>
 
             {columns.map((col, cIdx) => {
@@ -297,7 +264,12 @@ export function DataGrid({
                     handleCellClick(rIdx, cIdx)
                     openContextMenu(e, 'cell')
                   }}
-                  onKeyDown={(e) => handleKeyDown(e, 'cell')}
+                  onKeyDown={(e) => {
+                    handleKeyDown(e, 'cell')
+                    if (e.key === 'Delete' && e.ctrlKey) {
+                      handleSetNull(rIdx, cIdx)
+                    }
+                  }}
                   tabIndex={0}
                   style={{
                     padding: '0 8px',
@@ -321,14 +293,26 @@ export function DataGrid({
         ))}
       </div>
 
-      <NavigationBar
+      {/* ── Navicat Standard Bottom Navigation Bar ── */}
+      <DataGridBottomBar
         currentPage={currentPage}
         pageSize={pageSize}
-        totalRows={totalRows}
-        onPageChange={onPageChange || (() => {})}
-        onPageSizeChange={onPageSizeChange || (() => {})}
+        totalRecords={totalRows || rows.length}
+        selectedRowIndex={selectedRowIndex}
+        hasPendingChanges={hasPendingChanges}
+        isLoading={isLoading}
+        onAddRow={onAddRow}
+        onDeleteRow={() => {
+          if (selectedRowIndex !== null) onDeleteRow?.(selectedRowIndex)
+        }}
+        onApplyChanges={onApplyChanges}
+        onDiscardChanges={onDiscardChanges}
+        onRefresh={onRefresh}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
 
+      {/* ── Context Menu (with Cell Quick Actions) ── */}
       {menuState?.isOpen && (
         <ContextMenu
           x={menuState.x}
@@ -341,6 +325,19 @@ export function DataGrid({
             client,
             openTab,
             openDialog: (d) => set({ dialog: d as DialogId }),
+            ...(selection && {
+              setNull: () => handleSetNull(selection.startRow, selection.startCol),
+              setEmptyString: () => handleSetEmptyString(selection.startRow, selection.startCol),
+              copyAsInsert: () => handleCopy('insert'),
+              copyAsUpdate: () => handleCopy('update'),
+              copyAsTsv: () => handleCopy('tsv'),
+              filterByValue: () => {
+                const col = columns[selection.startCol]?.name
+                const raw = rows[selection.startRow]?.[selection.startCol]
+                const val = renderCellValue(raw)
+                if (col && onFilterByValue) onFilterByValue(col, val)
+              },
+            }),
           }}
           onClose={closeContextMenu}
         />

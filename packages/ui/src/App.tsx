@@ -15,6 +15,7 @@ import { ImportConnectionsDialog } from './components/dialogs/ImportConnectionsD
 import { SettingsDialog } from './components/dialogs/SettingsDialog'
 import { UpdatesDialog } from './components/dialogs/UpdatesDialog'
 import { UsersDialog } from './components/dialogs/UsersDialog'
+import { FindInDatabaseDialog } from './components/dialogs/FindInDatabaseDialog'
 import { MockModeBanner } from './components/MockModeBanner'
 import { StudioProvider, useStudio } from './store/studio'
 import { BackupView } from './views/BackupView'
@@ -117,6 +118,7 @@ function Shell() {
       {s.dialog === 'settings' && <SettingsDialog />}
       {s.dialog === 'about' && <AboutDialog />}
       {s.dialog === 'updates' && <UpdatesDialog />}
+      {s.dialog === 'findInDatabase' && <FindInDatabaseDialog />}
       {s.showConn && <ConnectionDialog />}
       {s.showPalette && <CommandPalette />}
       {s.importConnData?.open && (

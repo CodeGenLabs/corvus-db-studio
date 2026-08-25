@@ -12,6 +12,7 @@ Tài liệu này theo dõi trạng thái đối chiếu năng lực giữa Corvu
 | **L-4** | Chỉnh sửa dữ liệu & Giao dịch | ✅ ĐÃ CÓ (100%) | Lưới dữ liệu DataGrid hỗ trợ sửa trực tiếp, `tx.begin`, `tx.commit`, `tx.rollback`, `tx.status`, tra cứu khoá ngoại `data.fkLookup` |
 | **L-5** | Nhập / Xuất dữ liệu & Quản trị DDL | ✅ ĐÃ CÓ (100%) | `ImportWizard`, `ExportWizard` kết nối qua RPC file stream an toàn; `ddl.preview*` / `ddl.apply*` tuân thủ Preview Token |
 | **L-6** | Bộ công cụ di trú (Data Migration Tools) | ✅ ĐÃ CÓ (100%) | `DataTransferWizard`, `DataSyncWizard`, `StructureSyncWizard`, `DumpExecuteSqlWizard` chạy qua RPC `job.*` |
+| **L-7** | Tiện ích trải nghiệm Navicat (UI Ergonomics) | ✅ ĐÃ CÓ (100%) | Bottom Navigation Bar (`+ - ✓ ✗ ↻`, paging, limit selector), Visual Filter & Multi-Sort, Tabbed Table Designer 4 tabs, Query Pinning & Split layout, Connection Colorings, Find in Database |
 
 ---
 

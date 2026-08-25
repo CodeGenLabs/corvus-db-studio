@@ -2,6 +2,21 @@ import type { Command } from '../types'
 
 export const TOOL_COMMANDS: readonly Command[] = [
   {
+    id: 'tools.findInDatabase',
+    labelKey: 'findInDatabase',
+    surfaces: ['ctx-nav'],
+    targets: ['connection', 'database', 'empty'],
+    cardinality: 'single',
+    availability: {
+      needsConnection: true,
+    },
+    write: 'none',
+    rpc: ['introspect.objects', 'introspect.tableMeta', 'query.execute'],
+    async run(ctx) {
+      ctx.openDialog('findInDatabase')
+    },
+  },
+  {
     id: 'tools.dataTransfer',
     labelKey: 'dataTransfer',
     surfaces: ['ctx-nav'],

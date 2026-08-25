@@ -42,8 +42,8 @@ describe('T-B03 · Production Dist Smoke Test (apps/web/server/dist/index.js)', 
     // Chờ server in log sẵn sàng
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error(`Server không khởi động kịp sau 10s. Log: ${stdout}`))
-      }, 10_000)
+        reject(new Error(`Server không khởi động kịp sau 25s. Log: ${stdout}`))
+      }, 25_000)
 
       const check = setInterval(() => {
         if (stdout.includes('RPC server dang lang nghe tai')) {

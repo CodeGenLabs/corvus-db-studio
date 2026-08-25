@@ -69,5 +69,24 @@ export function exportGridData(
       })
       return lines.join('\n')
     }
+
+    case 'update': {
+      const quotedTable = quoteIdentifier(tableName, dialect)
+      const lines = targetRows.map((r) => {
+        const setParts = targetCols
+          .map((col, idx) => {
+            const c = r[idx]
+            const quotedCol = quoteIdentifier(col.name, dialect)
+            if (!c || (typeof c === 'object' && c.k === 'null')) return `${quotedCol} = NULL`
+            if (typeof c === 'object' && 'v' in c) {
+              if (typeof c.v === 'number' || typeof c.v === 'boolean') return `${quotedCol} = ${String(c.v)}`
+              return `${quotedCol} = ${quoteLiteral(String(c.v), dialect)}`
+            }
+            return `${quotedCol} = ${quoteLiteral(String(c), dialect)}`
+          })
+        return 'UPDATE ' + quotedTable + ' SET ' + setParts + ';'
+      })
+      return lines.join('\n')
+    }
   }
 }

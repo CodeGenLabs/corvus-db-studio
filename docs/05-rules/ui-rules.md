@@ -300,3 +300,32 @@ Mọi bề mặt tương tác đều phải hỗ trợ mở menu chuột phải 
 10. `ctx-job-list`: Danh sách tác vụ chạy nền (job, empty).
 11. `ctx-diff`: Khung so sánh dữ liệu / cấu trúc (diff-item, empty).
 
+---
+
+## 13. Quy chuẩn trải nghiệm tiện ích (Navicat UI Ergonomics)
+
+### 13.1 DataGrid Bottom Navigation Bar
+- Gắn cố định ở chân lưới dữ liệu (`DataGridBottomBar.tsx`, cao 26px).
+- Cụm nút thao tác dòng: `[+]` Thêm dòng (`Insert` / `Ctrl+N`), `[-]` Xoá dòng (`Ctrl+Delete`), `[✓]` Áp dụng lưu (`Ctrl+S`), `[✗]` Huỷ thay đổi (`Escape`), `[↻]` Làm mới (`F5`).
+- Cụm lật trang: `[⏮]` (Trang đầu), `[◀]` (Trang trước), `[Ô nhập trang / Tổng trang]`, `[▶]` (Trang sau), `[⏭]` (Trang cuối).
+- Nhãn đếm dòng: `Record A of B in page C`.
+- Bộ chọn Limit: `100`, `200`, `500`, `1000`, `All`.
+
+### 13.2 Visual Filter & Sort Toolbar
+- Bảng lọc `FilterPanel.tsx` hỗ trợ chọn cột trực quan, toán tử đa dạng (`=`, `!=`, `<`, `<=`, `>`, `>=`, `contains`, `starts_with`, `ends_with`, `is_null`, `is_not_null`, `between`), và kết hợp `AND` / `OR`.
+- Hỗ trợ sắp xếp đa cột (Multi-Column Sorting `ASC`/`DESC`).
+- Lọc nhanh từ menu chuột phải trên ô (`Filter -> Field Value`).
+
+### 13.3 Tabbed Table Designer
+- Chia 4 tab chuẩn: `Fields` (Cột), `Indexes` (Chỉ mục), `Foreign Keys` (Khoá ngoại), `SQL Preview` (Xem trước DDL).
+- Quy trình lưu DDL bắt buộc qua Preview Token (`ddl.previewTable` $\rightarrow$ `ddl.applyTable`) để xem trước câu lệnh an toàn trước khi thực thi.
+
+### 13.4 Query Results Pinning & View Split Layout
+- Nút `[📌 Pin]` trên từng tab kết quả truy vấn trong `SqlView.tsx`. Khi tab đang active được ghim, câu lệnh tiếp theo tự động mở thêm tab `Result 2`, `Result 3`.
+- Nút chuyển đổi bố cục `[Bottom Split]` $\leftrightarrow$ `[Right Split]` với thanh chia Splitter mượt mà.
+
+### 13.5 Connection Colorings & Find in Database
+- Phân biệt môi trường kết nối (Production = Đỏ, Staging = Vàng/Cam, Development = Xanh lá) bằng chấm màu nhận diện trên `NavPane.tsx` và dải viền trên `TabStrip.tsx`.
+- Hộp thoại `FindInDatabaseDialog.tsx` (`Ctrl+Shift+F`) quét tìm kiếm chuỗi văn bản trên các bảng trong database (an toàn Read-only + LIMIT) và nhảy thẳng tới dòng kết quả.
+
+

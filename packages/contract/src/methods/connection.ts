@@ -29,6 +29,18 @@ const SshConfigSchema = z.object({
   passphrase: z.string().optional(),
 })
 
+export const ConnectionColorSchema = z.enum([
+  'red',
+  'orange',
+  'yellow',
+  'green',
+  'blue',
+  'purple',
+  'gray',
+])
+
+export type ConnectionColor = z.infer<typeof ConnectionColorSchema>
+
 export const ConnectionProfileSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -40,7 +52,7 @@ export const ConnectionProfileSchema = z.object({
   ssl: SslConfigSchema.optional(),
   ssh: SshConfigSchema.optional(),
   readOnly: z.boolean().optional(),
-  color: z.string().optional(),
+  color: ConnectionColorSchema.optional(),
   group: z.string().optional(),
 })
 

@@ -2,6 +2,22 @@ import { z } from 'zod'
 import { defineStream, defineUnary } from '../define'
 import { ResultChunkSchema } from './query'
 
+export const FilterRuleSchema = z.object({
+  join: z.string().default('AND'),
+  field: z.string(),
+  op: z.string(),
+  value: z.string(),
+})
+
+export type FilterRule = z.infer<typeof FilterRuleSchema>
+
+export const SortRuleSchema = z.object({
+  field: z.string(),
+  dir: z.enum(['ASC', 'DESC']),
+})
+
+export type SortRule = z.infer<typeof SortRuleSchema>
+
 export const dataBrowse = defineStream({
   name: 'data.browse',
   params: z.object({
@@ -9,8 +25,8 @@ export const dataBrowse = defineStream({
     database: z.string().optional(),
     schema: z.string().optional(),
     table: z.string(),
-    filter: z.array(z.object({ join: z.string(), field: z.string(), op: z.string(), value: z.string() })).optional(),
-    sort: z.array(z.object({ field: z.string(), dir: z.enum(['ASC', 'DESC']) })).optional(),
+    filter: z.array(FilterRuleSchema).optional(),
+    sort: z.array(SortRuleSchema).optional(),
     limit: z.number().int().default(100),
     offset: z.number().int().default(0),
   }),

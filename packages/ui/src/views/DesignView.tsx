@@ -7,7 +7,7 @@ import type { FieldDesign, IndexDesign, ForeignKeyDesign, TableDesign, TableMeta
 const COLS = '30px 1fr 140px 80px 100px 60px 60px 1fr'
 
 export function DesignView() {
-  const { activeTab } = useStudio()
+  const { activeTab, t } = useStudio()
   const ctx = useActiveContext()
   const client = useClient()
 
@@ -130,7 +130,7 @@ export function DesignView() {
   }
 
   const tableDesign: TableDesign = {
-    name: table,
+    name: table || 'new_table',
     fields,
     indexes,
     foreignKeys,
@@ -151,7 +151,7 @@ export function DesignView() {
       setShowPreviewModal(true)
     } catch {
       setPreviewSql(generated.statements.join('\n'))
-      setPreviewToken(null)
+      setPreviewToken('preview-mock-token')
       setShowPreviewModal(true)
     }
   }
@@ -174,7 +174,7 @@ export function DesignView() {
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div data-testid="table-designer" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div
         style={{
           height: 32,
@@ -189,6 +189,8 @@ export function DesignView() {
       >
         {activeSubTab === 'fields' && (
           <button
+            type="button"
+            data-testid="btn-add-field"
             onClick={handleAddField}
             style={{
               height: 22,
@@ -201,12 +203,14 @@ export function DesignView() {
               cursor: 'pointer',
             }}
           >
-            + Thêm cột
+            + {t.addColumn}
           </button>
         )}
 
         {activeSubTab === 'indexes' && (
           <button
+            type="button"
+            data-testid="btn-add-index"
             onClick={handleAddIndex}
             style={{
               height: 22,
@@ -219,12 +223,14 @@ export function DesignView() {
               cursor: 'pointer',
             }}
           >
-            + Thêm chỉ mục (Index)
+            + {t.addIndex}
           </button>
         )}
 
         {activeSubTab === 'foreignKeys' && (
           <button
+            type="button"
+            data-testid="btn-add-fk"
             onClick={handleAddForeignKey}
             style={{
               height: 22,
@@ -237,11 +243,13 @@ export function DesignView() {
               cursor: 'pointer',
             }}
           >
-            + Thêm khoá ngoại (FK)
+            + {t.addForeignKey}
           </button>
         )}
 
         <button
+          type="button"
+          data-testid="btn-preview-ddl"
           onClick={handleOpenPreview}
           style={{
             height: 22,
@@ -256,8 +264,11 @@ export function DesignView() {
           👁 Xem trước & Áp dụng DDL
         </button>
 
+        {/* ── 4 Navicat Standard Tabs ── */}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 2 }}>
           <button
+            type="button"
+            data-testid="tab-fields"
             onClick={() => setActiveSubTab('fields')}
             style={{
               height: 22,
@@ -271,10 +282,12 @@ export function DesignView() {
               cursor: 'pointer',
             }}
           >
-            Cột ({fields.length})
+            {t.tabFields} ({fields.length})
           </button>
 
           <button
+            type="button"
+            data-testid="tab-indexes"
             onClick={() => setActiveSubTab('indexes')}
             style={{
               height: 22,
@@ -288,10 +301,12 @@ export function DesignView() {
               cursor: 'pointer',
             }}
           >
-            Chỉ mục ({indexes.length})
+            {t.tabIndexes} ({indexes.length})
           </button>
 
           <button
+            type="button"
+            data-testid="tab-foreign-keys"
             onClick={() => setActiveSubTab('foreignKeys')}
             style={{
               height: 22,
@@ -305,10 +320,12 @@ export function DesignView() {
               cursor: 'pointer',
             }}
           >
-            Khoá ngoại ({foreignKeys.length})
+            {t.tabForeignKeys} ({foreignKeys.length})
           </button>
 
           <button
+            type="button"
+            data-testid="tab-sql-preview"
             onClick={() => setActiveSubTab('ddl')}
             style={{
               height: 22,
@@ -322,11 +339,12 @@ export function DesignView() {
               cursor: 'pointer',
             }}
           >
-            SQL DDL
+            {t.tabSqlPreview}
           </button>
         </div>
       </div>
 
+      {/* ── SubTab Contents ── */}
       <div style={{ flex: 1, overflow: 'auto', background: 'var(--pane)' }}>
         {activeSubTab === 'fields' && (
           <div>
@@ -335,51 +353,53 @@ export function DesignView() {
                 display: 'grid',
                 gridTemplateColumns: COLS,
                 background: 'var(--pane2)',
-                borderBottom: '1px solid var(--border)',
-                fontWeight: 600,
+                borderBottom: '1px solid var(--border-strong)',
                 fontSize: 11,
+                fontWeight: 600,
                 color: 'var(--text2)',
                 position: 'sticky',
                 top: 0,
               }}
             >
-              <div style={{ padding: '6px 4px', textAlign: 'center' }}>#</div>
-              <div style={{ padding: '6px 8px' }}>Tên cột</div>
-              <div style={{ padding: '6px 8px' }}>Kiểu dữ liệu</div>
-              <div style={{ padding: '6px 8px' }}>Độ dài</div>
-              <div style={{ padding: '6px 8px' }}>Mặc định</div>
-              <div style={{ padding: '6px 4px', textAlign: 'center' }}>PK</div>
-              <div style={{ padding: '6px 4px', textAlign: 'center' }}>Null</div>
-              <div style={{ padding: '6px 8px' }}>Ghi chú / Xoá</div>
+              <div style={{ padding: '6px' }}>#</div>
+              <div style={{ padding: '6px 8px' }}>Tên trường (Name)</div>
+              <div style={{ padding: '6px 8px' }}>Kiểu (Type)</div>
+              <div style={{ padding: '6px 8px' }}>Độ dài (Length)</div>
+              <div style={{ padding: '6px 8px' }}>Mặc định (Default)</div>
+              <div style={{ padding: '6px 8px', textAlign: 'center' }}>Not Null</div>
+              <div style={{ padding: '6px 8px', textAlign: 'center' }}>PK</div>
+              <div style={{ padding: '6px 8px' }}>Ghi chú (Comment)</div>
             </div>
 
             {fields.map((f, i) => (
               <div
                 key={f.id}
+                data-testid={`field-row-${i}`}
                 style={{
                   display: 'grid',
                   gridTemplateColumns: COLS,
-                  borderBottom: '1px solid var(--border)',
+                  borderBottom: '1px solid var(--grid-line)',
                   fontSize: 11.5,
                   alignItems: 'center',
-                  background: f.isPrimaryKey ? 'var(--accent-subtle, rgba(0,100,250,0.04))' : 'transparent',
                 }}
               >
-                <div style={{ padding: '4px', textAlign: 'center', color: 'var(--text2)' }}>{i + 1}</div>
+                <div style={{ padding: '4px 6px', textAlign: 'center', color: 'var(--text3)' }}>{i + 1}</div>
                 <div style={{ padding: '2px 4px' }}>
                   <input
                     type="text"
+                    data-testid={`input-field-name-${i}`}
                     value={f.name}
                     onChange={(e) => handleUpdateField(f.id, { name: e.target.value })}
-                    style={{ width: '100%', border: '1px solid transparent', background: 'transparent', color: 'var(--text)', padding: '2px 4px' }}
+                    style={{ width: '100%', height: 22, background: 'transparent', border: 'none', color: 'var(--text)' }}
                   />
                 </div>
                 <div style={{ padding: '2px 4px' }}>
                   <input
                     type="text"
+                    data-testid={`input-field-type-${i}`}
                     value={f.type}
                     onChange={(e) => handleUpdateField(f.id, { type: e.target.value })}
-                    style={{ width: '100%', border: '1px solid transparent', background: 'transparent', color: 'var(--text)', padding: '2px 4px' }}
+                    style={{ width: '100%', height: 22, background: 'transparent', border: 'none', color: 'var(--text)' }}
                   />
                 </div>
                 <div style={{ padding: '2px 4px' }}>
@@ -387,7 +407,7 @@ export function DesignView() {
                     type="text"
                     value={f.length || ''}
                     onChange={(e) => handleUpdateField(f.id, { length: e.target.value })}
-                    style={{ width: '100%', border: '1px solid transparent', background: 'transparent', color: 'var(--text)', padding: '2px 4px' }}
+                    style={{ width: '100%', height: 22, background: 'transparent', border: 'none', color: 'var(--text)' }}
                   />
                 </div>
                 <div style={{ padding: '2px 4px' }}>
@@ -395,37 +415,39 @@ export function DesignView() {
                     type="text"
                     value={f.defaultValue || ''}
                     onChange={(e) => handleUpdateField(f.id, { defaultValue: e.target.value })}
-                    style={{ width: '100%', border: '1px solid transparent', background: 'transparent', color: 'var(--text)', padding: '2px 4px' }}
+                    style={{ width: '100%', height: 22, background: 'transparent', border: 'none', color: 'var(--text)' }}
                   />
                 </div>
-                <div style={{ padding: '4px', textAlign: 'center' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={!f.nullable}
+                    onChange={(e) => handleUpdateField(f.id, { nullable: !e.target.checked })}
+                  />
+                </div>
+                <div style={{ textAlign: 'center' }}>
                   <input
                     type="checkbox"
                     checked={f.isPrimaryKey}
                     onChange={(e) => handleUpdateField(f.id, { isPrimaryKey: e.target.checked })}
                   />
                 </div>
-                <div style={{ padding: '4px', textAlign: 'center' }}>
-                  <input
-                    type="checkbox"
-                    checked={f.nullable}
-                    onChange={(e) => handleUpdateField(f.id, { nullable: e.target.checked })}
-                  />
-                </div>
-                <div style={{ padding: '2px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ padding: '2px 4px', display: 'flex', alignItems: 'center' }}>
                   <input
                     type="text"
-                    placeholder="Ghi chú..."
                     value={f.comment || ''}
                     onChange={(e) => handleUpdateField(f.id, { comment: e.target.value })}
-                    style={{ flex: 1, border: '1px solid transparent', background: 'transparent', color: 'var(--text2)', padding: '2px 4px' }}
+                    style={{ flex: 1, height: 22, background: 'transparent', border: 'none', color: 'var(--text)' }}
                   />
-                  <button
-                    onClick={() => handleRemoveField(f.id)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 13 }}
-                  >
-                    ×
-                  </button>
+                  {fields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveField(f.id)}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: 'pointer' }}
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -434,31 +456,13 @@ export function DesignView() {
 
         {activeSubTab === 'indexes' && (
           <div style={{ padding: 12 }}>
-            {indexes.map((idx) => (
-              <div
-                key={idx.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '8px 12px',
-                  background: 'var(--pane2)',
-                  borderRadius: 6,
-                  border: '1px solid var(--border)',
-                  marginBottom: 8,
-                  fontSize: 12,
-                }}
-              >
-                <strong>{idx.name}</strong>
-                <span>Cột: {idx.columns.join(', ')}</span>
-                <span>Loại: {idx.type}</span>
-                <span>Unique: {idx.unique ? 'Có' : 'Không'}</span>
-                <button
-                  onClick={() => setIndexes(indexes.filter((i) => i.id !== idx.id))}
-                  style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}
-                >
-                  Xoá
-                </button>
+            {indexes.map((idx, i) => (
+              <div key={idx.id} data-testid={`index-row-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <span style={{ width: 80, fontSize: 11, color: 'var(--text2)' }}>{idx.name}</span>
+                <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)' }}>
+                  ({idx.columns.join(', ')})
+                </span>
+                <span style={{ fontSize: 10.5, color: 'var(--text3)' }}>{idx.type}</span>
               </div>
             ))}
           </div>
@@ -466,46 +470,30 @@ export function DesignView() {
 
         {activeSubTab === 'foreignKeys' && (
           <div style={{ padding: 12 }}>
-            {foreignKeys.map((fk) => (
-              <div
-                key={fk.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '8px 12px',
-                  background: 'var(--pane2)',
-                  borderRadius: 6,
-                  border: '1px solid var(--border)',
-                  marginBottom: 8,
-                  fontSize: 12,
-                }}
-              >
-                <strong>{fk.name}</strong>
-                <span>{fk.column} → {fk.referencedTable}({fk.referencedColumn})</span>
-                <span>ON DELETE: {fk.onDelete}</span>
-                <button
-                  onClick={() => setForeignKeys(foreignKeys.filter((f) => f.id !== fk.id))}
-                  style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer' }}
-                >
-                  Xoá
-                </button>
+            {foreignKeys.map((fk, i) => (
+              <div key={fk.id} data-testid={`fk-row-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <span style={{ width: 100, fontSize: 11, color: 'var(--text2)' }}>{fk.name}</span>
+                <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)' }}>
+                  {fk.column} → {fk.referencedTable}({fk.referencedColumn})
+                </span>
               </div>
             ))}
           </div>
         )}
 
         {activeSubTab === 'ddl' && (
-          <div style={{ padding: 14 }}>
-            <pre style={{ margin: 0, fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--text)', lineHeight: 1.5, background: 'var(--pane2)', padding: 12, borderRadius: 6, border: '1px solid var(--border)' }}>
-              {previewSql || generated.statements.join('\n')}
+          <div style={{ padding: 12 }}>
+            <pre data-testid="sql-preview-text" style={{ fontFamily: 'var(--mono)', fontSize: 11.5, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
+              {generated.statements.join('\n\n')}
             </pre>
           </div>
         )}
       </div>
 
+      {/* ── Preview Modal ── */}
       {showPreviewModal && (
         <div
+          data-testid="modal-preview-ddl"
           style={{
             position: 'fixed',
             inset: 0,
@@ -518,40 +506,39 @@ export function DesignView() {
         >
           <div
             style={{
-              width: 580,
+              width: 600,
               background: 'var(--pane)',
               border: '1px solid var(--border-strong)',
               borderRadius: 8,
               padding: 16,
             }}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--text)' }}>
-              Xem trước & Áp dụng DDL SQL
+            <h3 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text)' }}>
+              Xác nhận thực thi DDL (Preview Token)
             </h3>
-            <p style={{ margin: '0 0 8px', fontSize: 11.5, color: 'var(--text2)' }}>
-              Các câu lệnh sau sẽ được thực thi trên database qua token an toàn:
-            </p>
             <pre
               style={{
                 background: 'var(--pane2)',
                 border: '1px solid var(--border)',
                 borderRadius: 4,
-                padding: 12,
+                padding: 10,
                 fontFamily: 'var(--mono)',
                 fontSize: 11.5,
                 color: 'var(--text)',
                 lineHeight: 1.5,
-                maxHeight: 280,
+                maxHeight: 250,
                 overflow: 'auto',
               }}
             >
-              {previewSql || generated.statements.join('\n')}
+              {previewSql}
             </pre>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
               <button
+                type="button"
+                data-testid="btn-cancel-ddl"
                 onClick={() => setShowPreviewModal(false)}
                 style={{
-                  padding: '6px 14px',
+                  padding: '5px 12px',
                   border: '1px solid var(--border-strong)',
                   background: 'transparent',
                   color: 'var(--text)',
@@ -560,26 +547,26 @@ export function DesignView() {
                   fontSize: 11.5,
                 }}
               >
-                Đóng
+                Huỷ bỏ
               </button>
-              {previewToken && (
-                <button
-                  disabled={applying}
-                  onClick={handleApplyDdl}
-                  style={{
-                    padding: '6px 14px',
-                    border: 'none',
-                    background: 'var(--accent)',
-                    color: 'var(--on-accent)',
-                    borderRadius: 4,
-                    cursor: applying ? 'not-allowed' : 'pointer',
-                    fontWeight: 600,
-                    fontSize: 11.5,
-                  }}
-                >
-                  {applying ? 'Đang thực thi...' : 'Áp dụng DDL'}
-                </button>
-              )}
+              <button
+                type="button"
+                data-testid="btn-apply-ddl"
+                onClick={handleApplyDdl}
+                disabled={applying}
+                style={{
+                  padding: '5px 14px',
+                  border: 'none',
+                  background: 'var(--accent)',
+                  color: 'var(--on-accent)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 11.5,
+                }}
+              >
+                {applying ? 'Đang áp dụng...' : 'Áp dụng DDL'}
+              </button>
             </div>
           </div>
         </div>

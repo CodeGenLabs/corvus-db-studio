@@ -4,16 +4,19 @@ import { useActiveContext } from '../context/useActiveContext'
 import { useContextMenu } from '../components/useContextMenu'
 import { ContextMenu } from '../components/ContextMenu'
 import { DataGrid } from '../components/grid'
-import { QueryHistoryPanel } from '../components/common/QueryHistoryPanel'
+import { QueryHistoryPanel, type QueryHistoryEntry } from '../components/common/QueryHistoryPanel'
 import { splitStatements } from '@corvus/sql'
 import type { CellValue, ColumnDef, DialogId } from '@corvus/contract'
 
 interface QueryTabResult {
+  id: string
+  name: string
   statement: string
   columns: ColumnDef[]
   rows: CellValue[][]
   rowCount: number
   durationMs: number
+  isPinned?: boolean
   error?: string
 }
 
@@ -33,9 +36,10 @@ export function SqlView() {
 
   const [activeSubTab, setActiveSubTab] = useState<'results' | 'messages' | 'history'>('results')
   const [activeResultIdx, setActiveResultIdx] = useState(0)
+  const [layoutMode, setLayoutMode] = useState<'bottom' | 'right'>('bottom')
   const [running, setRunning] = useState(false)
   const [results, setResults] = useState<QueryTabResult[]>([])
-  const [history, setHistory] = useState<Array<{ id: string; sql: string; executedAt: string; durationMs: number; status: string }>>([])
+  const [history, setHistory] = useState<QueryHistoryEntry[]>([])
 
   // Modal AI Assistant
   const [showAiModal, setShowAiModal] = useState(false)
@@ -53,12 +57,13 @@ export function SqlView() {
     setRunning(true)
     handleParseSql()
     const statements = splitStatements(sqlText, 'postgres').filter((s) => s.trim().length > 0)
-    const nextResults: QueryTabResult[] = []
+    const newTabResults: QueryTabResult[] = []
 
     abortControllerRef.current = new AbortController()
 
     try {
-      for (const stmt of statements) {
+      for (let i = 0; i < statements.length; i++) {
+        const stmt = statements[i]!
         const start = Date.now()
         try {
           const stream = client.stream('query.execute', {
@@ -100,32 +105,48 @@ export function SqlView() {
             }
           }
 
-          nextResults.push({
+          newTabResults.push({
+            id: `res-${Date.now()}-${i}`,
+            name: `Result ${results.filter((r) => r.isPinned).length + i + 1}`,
             statement: stmt,
             columns: cols.length > 0 ? cols : [{ name: 'result', type: 'TEXT', align: 't' }],
             rows: fetchedRows,
             rowCount: count || fetchedRows.length,
             durationMs: Date.now() - start,
+            isPinned: false,
           })
         } catch (err) {
-          nextResults.push({
+          newTabResults.push({
+            id: `res-${Date.now()}-${i}`,
+            name: `Result ${results.filter((r) => r.isPinned).length + i + 1}`,
             statement: stmt,
             columns: [],
             rows: [],
             rowCount: 0,
             durationMs: Date.now() - start,
+            isPinned: false,
             error: (err as Error).message,
           })
         }
       }
 
-      setResults(nextResults)
-      setActiveResultIdx(0)
+      // Giữ lại các tab đã ghim
+      const pinnedTabs = results.filter((r) => r.isPinned)
+      const finalResults = [...pinnedTabs, ...newTabResults]
+
+      setResults(finalResults)
+      setActiveResultIdx(finalResults.length - newTabResults.length)
       setActiveSubTab('results')
     } finally {
       setRunning(false)
       abortControllerRef.current = null
     }
+  }
+
+  const handleTogglePin = (idx: number) => {
+    setResults(
+      results.map((r, i) => (i === idx ? { ...r, isPinned: !r.isPinned } : r)),
+    )
   }
 
   const handleCancelQuery = async () => {
@@ -201,8 +222,8 @@ export function SqlView() {
     }
   }
 
-  // 4. AI Generate SQL
-  const handleAiGenerate = async () => {
+  // 4. Sinh SQL bằng AI (Text-to-SQL) qua ai.generateSql
+  const handleGenerateAiSql = async () => {
     if (!aiPrompt.trim()) return
     setAiGenerating(true)
     try {
@@ -210,42 +231,45 @@ export function SqlView() {
         prompt: aiPrompt,
         dialect: 'postgres',
       })
-      setSqlText(res.sql)
-      setShowAiModal(false)
+      if (res.sql) {
+        setSqlText((prev) => `${prev}\n\n-- AI Generated:\n${res.sql}`)
+        setShowAiModal(false)
+        setAiPrompt('')
+      }
     } catch (err) {
-      alert(`Lỗi AI: ${err instanceof Error ? err.message : String(err)}`)
+      alert(`Lỗi sinh SQL từ AI: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setAiGenerating(false)
     }
   }
 
-  // 5. AI Fix SQL khi có lỗi
-  const handleAiFix = async (errStmt: string, errorMsg: string) => {
+  // 5. Tự sửa lỗi SQL bằng AI qua ai.fixSql
+  const handleAiFix = async (badSql: string, errMsg: string) => {
     try {
-      const res = await client.request<{ fixedSql: string; explanation: string }>('ai.fixSql', {
-        sql: errStmt,
-        error: errorMsg,
+      const res = await client.request<{ fixedSql: string; explanation?: string }>('ai.fixSql', {
+        sql: badSql,
+        error: errMsg,
         dialect: 'postgres',
       })
-      setSqlText(res.fixedSql)
-      alert(`AI đã sửa SQL: ${res.explanation}`)
+      if (res.fixedSql) {
+        setSqlText(res.fixedSql)
+      }
     } catch (err) {
       alert(`Lỗi AI Fix: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
-  // 6. Tải lịch sử truy vấn
+  // 6. Tải lịch sử query qua query.history.list
   useEffect(() => {
-    if (activeSubTab !== 'history') return
     async function loadHistory() {
+      if (!client) return
       try {
-        const hist = await client.request<Array<{ id: string; sql: string; executedAt: string; durationMs: number; status: string }>>(
-          'query.history.list',
-          { connectionId, limit: 50 },
-        )
-        if (Array.isArray(hist)) setHistory(hist)
+        const list = await client.request<QueryHistoryEntry[]>('query.history.list', {})
+        if (list && Array.isArray(list)) {
+          setHistory(list)
+        }
       } catch {
-        // Fallback
+        // ignore
       }
     }
     loadHistory()
@@ -254,7 +278,15 @@ export function SqlView() {
   const activeResult = results[activeResultIdx]
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div
+      data-testid="sql-view"
+      style={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* ── Main Toolbar ── */}
       <div
         style={{
           height: 32,
@@ -269,6 +301,8 @@ export function SqlView() {
       >
         {running ? (
           <button
+            type="button"
+            data-testid="btn-cancel-query"
             onClick={handleCancelQuery}
             style={{
               height: 22,
@@ -289,6 +323,8 @@ export function SqlView() {
           </button>
         ) : (
           <button
+            type="button"
+            data-testid="btn-run-query"
             onClick={handleRunQuery}
             style={{
               height: 22,
@@ -310,6 +346,8 @@ export function SqlView() {
         )}
 
         <button
+          type="button"
+          data-testid="btn-explain-query"
           onClick={handleExplain}
           className="hv-accent-border"
           style={{
@@ -329,6 +367,8 @@ export function SqlView() {
         </button>
 
         <button
+          type="button"
+          data-testid="btn-format-query"
           onClick={handleFormatSql}
           className="hv-accent-border"
           style={{
@@ -348,6 +388,7 @@ export function SqlView() {
         </button>
 
         <button
+          type="button"
           onClick={() => setShowAiModal(true)}
           style={{
             height: 22,
@@ -368,6 +409,7 @@ export function SqlView() {
         </button>
 
         <button
+          type="button"
           className="hv-accent-soft-bg"
           onClick={goCompare}
           style={{
@@ -387,194 +429,300 @@ export function SqlView() {
           ⇄ {t.captureSnap}
         </button>
 
-        {activeResult && (
-          <span style={{ marginLeft: 'auto', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>
-            {activeResult.durationMs} ms · {activeResult.rowCount} rows
-          </span>
-        )}
+        {/* ── Layout Switcher: Bottom Split / Right Split ── */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            type="button"
+            data-testid="btn-layout-bottom"
+            title={t.layoutBottom}
+            onClick={() => setLayoutMode('bottom')}
+            style={{
+              height: 22,
+              padding: '0 6px',
+              background: layoutMode === 'bottom' ? 'var(--pane)' : 'transparent',
+              border: '1px solid var(--border)',
+              borderRadius: 3,
+              color: layoutMode === 'bottom' ? 'var(--accent)' : 'var(--text3)',
+              cursor: 'pointer',
+              fontSize: 11,
+            }}
+          >
+            ⬒
+          </button>
+          <button
+            type="button"
+            data-testid="btn-layout-right"
+            title={t.layoutRight}
+            onClick={() => setLayoutMode('right')}
+            style={{
+              height: 22,
+              padding: '0 6px',
+              background: layoutMode === 'right' ? 'var(--pane)' : 'transparent',
+              border: '1px solid var(--border)',
+              borderRadius: 3,
+              color: layoutMode === 'right' ? 'var(--accent)' : 'var(--text3)',
+              cursor: 'pointer',
+              fontSize: 11,
+            }}
+          >
+            ◧
+          </button>
+
+          {activeResult && (
+            <span style={{ marginLeft: 8, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--text3)' }}>
+              {activeResult.durationMs} ms · {activeResult.rowCount} rows
+            </span>
+          )}
+        </div>
       </div>
 
-      <div style={{ height: 240, flex: 'none', borderBottom: '1px solid var(--border-strong)' }}>
-        <textarea
-          value={sqlText}
-          onChange={(e) => setSqlText(e.target.value)}
-          onContextMenu={(e) => {
-            const hasSel = (e.currentTarget.selectionEnd - e.currentTarget.selectionStart) > 0
-            openContextMenu(e, hasSel ? 'editor-selection' : 'empty')
-          }}
-          onKeyDown={(e) => {
-            const hasSel = (e.currentTarget.selectionEnd - e.currentTarget.selectionStart) > 0
-            handleKeyDown(e, hasSel ? 'editor-selection' : 'empty')
-          }}
-          spellCheck={false}
-          style={{
-            width: '100%',
-            height: '100%',
-            resize: 'none',
-            border: 'none',
-            outline: 'none',
-            padding: '8px 12px',
-            fontFamily: 'var(--mono)',
-            fontSize: 12.5,
-            lineHeight: 1.5,
-            background: 'var(--pane)',
-            color: 'var(--text)',
-          }}
-        />
-      </div>
-
+      {/* ── Editor & Results Split Container ── */}
       <div
+        data-testid="sql-split-container"
         style={{
-          height: 28,
-          flex: 'none',
+          flex: 1,
+          minHeight: 0,
           display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          padding: '0 8px',
-          borderBottom: '1px solid var(--border)',
-          background: 'var(--pane2)',
+          flexDirection: layoutMode === 'bottom' ? 'column' : 'row',
         }}
       >
-        <button
-          onClick={() => setActiveSubTab('results')}
+        {/* Editor Pane */}
+        <div
+          data-testid="sql-editor-pane"
           style={{
-            height: 22,
-            padding: '0 8px',
-            border: 'none',
-            borderRadius: 3,
-            background: activeSubTab === 'results' ? 'var(--pane)' : 'transparent',
-            color: activeSubTab === 'results' ? 'var(--accent)' : 'var(--text2)',
-            fontSize: 11,
-            fontWeight: activeSubTab === 'results' ? 600 : 400,
-            cursor: 'pointer',
+            flex: 1,
+            minHeight: layoutMode === 'bottom' ? 140 : '100%',
+            minWidth: layoutMode === 'right' ? 240 : '100%',
+            borderBottom: layoutMode === 'bottom' ? '1px solid var(--border-strong)' : 'none',
+            borderRight: layoutMode === 'right' ? '1px solid var(--border-strong)' : 'none',
           }}
         >
-          {t.result} ({results.length})
-        </button>
-
-        <button
-          onClick={() => setActiveSubTab('messages')}
-          style={{
-            height: 22,
-            padding: '0 8px',
-            border: 'none',
-            borderRadius: 3,
-            background: activeSubTab === 'messages' ? 'var(--pane)' : 'transparent',
-            color: activeSubTab === 'messages' ? 'var(--accent)' : 'var(--text2)',
-            fontSize: 11,
-            fontWeight: activeSubTab === 'messages' ? 600 : 400,
-            cursor: 'pointer',
-          }}
-        >
-          {t.messages}
-        </button>
-
-        <button
-          onClick={() => setActiveSubTab('history')}
-          style={{
-            height: 22,
-            padding: '0 8px',
-            border: 'none',
-            borderRadius: 3,
-            background: activeSubTab === 'history' ? 'var(--pane)' : 'transparent',
-            color: activeSubTab === 'history' ? 'var(--accent)' : 'var(--text2)',
-            fontSize: 11,
-            fontWeight: activeSubTab === 'history' ? 600 : 400,
-            cursor: 'pointer',
-          }}
-        >
-          Lịch sử ({history.length})
-        </button>
-
-        {activeSubTab === 'results' && results.length > 1 && (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-            {results.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveResultIdx(idx)}
-                style={{
-                  height: 20,
-                  padding: '0 6px',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: 3,
-                  background: activeResultIdx === idx ? 'var(--accent)' : 'transparent',
-                  color: activeResultIdx === idx ? 'var(--on-accent)' : 'var(--text2)',
-                  fontSize: 10.5,
-                  fontWeight: activeResultIdx === idx ? 600 : 400,
-                  cursor: 'pointer',
-                }}
-              >
-                Result #{idx + 1}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-        {activeSubTab === 'results' && activeResult && (
-          activeResult.error ? (
-            <div style={{ padding: 14, color: '#ef4444', fontFamily: 'var(--mono)', fontSize: 12 }}>
-              <div>✕ Lỗi thực thi: {activeResult.error}</div>
-              <button
-                onClick={() => handleAiFix(activeResult.statement, activeResult.error || '')}
-                style={{
-                  marginTop: 10,
-                  padding: '4px 10px',
-                  background: 'var(--accent)',
-                  color: 'var(--on-accent)',
-                  border: 'none',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 11,
-                }}
-              >
-                ✨ Nhờ AI tự động sửa câu lệnh này
-              </button>
-            </div>
-          ) : (
-            <DataGrid
-              columns={activeResult.columns}
-              rows={activeResult.rows}
-              totalRows={activeResult.rowCount}
-            />
-          )
-        )}
-
-        {activeSubTab === 'messages' && (
-          <div style={{ padding: 12, fontFamily: 'var(--mono)', fontSize: 11.5, color: 'var(--text2)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {results.map((res, i) => (
-              <div key={i} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
-                <div style={{ color: 'var(--text3)' }}>[Statement {i + 1}] {res.statement}</div>
-                {res.error ? (
-                  <div style={{ color: '#ef4444', marginTop: 2 }}>✕ Error: {res.error}</div>
-                ) : (
-                  <div style={{ color: '#4ade80', marginTop: 2 }}>
-                    ✓ OK: {res.rowCount} row(s) affected / returned in {res.durationMs} ms
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeSubTab === 'history' && (
-          <QueryHistoryPanel
-            entries={history.map((h) => ({
-              id: h.id,
-              sql: h.sql,
-              executedAt: h.executedAt,
-              durationMs: h.durationMs,
-              status: h.status === 'error' ? 'error' : 'success',
-            }))}
-            onInsertSql={(sql) => setSqlText(sql)}
-            onClear={handleClearHistory}
+          <textarea
+            data-testid="sql-editor-textarea"
+            value={sqlText}
+            onChange={(e) => setSqlText(e.target.value)}
+            onContextMenu={(e) => {
+              const hasSel = e.currentTarget.selectionEnd - e.currentTarget.selectionStart > 0
+              openContextMenu(e, hasSel ? 'editor-selection' : 'empty')
+            }}
+            onKeyDown={(e) => {
+              const hasSel = e.currentTarget.selectionEnd - e.currentTarget.selectionStart > 0
+              handleKeyDown(e, hasSel ? 'editor-selection' : 'empty')
+              if (e.key === 'F5' || (e.ctrlKey && e.key === 'Enter')) {
+                e.preventDefault()
+                handleRunQuery()
+              }
+            }}
+            spellCheck={false}
+            style={{
+              width: '100%',
+              height: '100%',
+              resize: 'none',
+              border: 'none',
+              outline: 'none',
+              padding: '8px 12px',
+              fontFamily: 'var(--mono)',
+              fontSize: 12.5,
+              lineHeight: 1.5,
+              background: 'var(--pane)',
+              color: 'var(--text)',
+            }}
           />
-        )}
+        </div>
+
+        {/* Results / Messages / History Pane */}
+        <div
+          data-testid="sql-results-pane"
+          style={{
+            flex: 1,
+            minHeight: layoutMode === 'bottom' ? 160 : '100%',
+            minWidth: layoutMode === 'right' ? 240 : '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div
+            style={{
+              height: 28,
+              flex: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              padding: '0 8px',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--pane2)',
+            }}
+          >
+            <button
+              type="button"
+              data-testid="subtab-results"
+              onClick={() => setActiveSubTab('results')}
+              style={{
+                height: 22,
+                padding: '0 8px',
+                border: 'none',
+                borderRadius: 3,
+                background: activeSubTab === 'results' ? 'var(--pane)' : 'transparent',
+                color: activeSubTab === 'results' ? 'var(--accent)' : 'var(--text2)',
+                fontSize: 11,
+                fontWeight: activeSubTab === 'results' ? 600 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              {t.result} ({results.length})
+            </button>
+
+            <button
+              type="button"
+              data-testid="subtab-messages"
+              onClick={() => setActiveSubTab('messages')}
+              style={{
+                height: 22,
+                padding: '0 8px',
+                border: 'none',
+                borderRadius: 3,
+                background: activeSubTab === 'messages' ? 'var(--pane)' : 'transparent',
+                color: activeSubTab === 'messages' ? 'var(--accent)' : 'var(--text2)',
+                fontSize: 11,
+                fontWeight: activeSubTab === 'messages' ? 600 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              {t.messages}
+            </button>
+
+            <button
+              type="button"
+              data-testid="subtab-history"
+              onClick={() => setActiveSubTab('history')}
+              style={{
+                height: 22,
+                padding: '0 8px',
+                border: 'none',
+                borderRadius: 3,
+                background: activeSubTab === 'history' ? 'var(--pane)' : 'transparent',
+                color: activeSubTab === 'history' ? 'var(--accent)' : 'var(--text2)',
+                fontSize: 11,
+                fontWeight: activeSubTab === 'history' ? 600 : 400,
+                cursor: 'pointer',
+              }}
+            >
+              Lịch sử ({history.length})
+            </button>
+
+            {/* ── Multi-Result Tabs with Pin Action ── */}
+            {activeSubTab === 'results' && results.length > 0 && (
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+                {results.map((r, idx) => (
+                  <div
+                    key={r.id || idx}
+                    data-testid={`tab-result-${idx}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      height: 22,
+                      border: '1px solid var(--border-strong)',
+                      borderRadius: 3,
+                      background: activeResultIdx === idx ? 'var(--accent)' : 'transparent',
+                      color: activeResultIdx === idx ? 'var(--on-accent)' : 'var(--text2)',
+                      padding: '0 4px',
+                      gap: 4,
+                    }}
+                  >
+                    <span
+                      onClick={() => setActiveResultIdx(idx)}
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: activeResultIdx === idx ? 600 : 400,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {r.name || `Result #${idx + 1}`}
+                    </span>
+                    <button
+                      type="button"
+                      data-testid={`btn-pin-result-${idx}`}
+                      title={r.isPinned ? t.unpinTab : t.pinTab}
+                      onClick={() => handleTogglePin(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: r.isPinned ? 'var(--amber)' : 'inherit',
+                        cursor: 'pointer',
+                        fontSize: 10,
+                        padding: '0 2px',
+                        opacity: r.isPinned ? 1 : 0.6,
+                      }}
+                    >
+                      📌
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            {activeSubTab === 'results' && activeResult && (
+              activeResult.error ? (
+                <div style={{ padding: 14, color: '#ef4444', fontFamily: 'var(--mono)', fontSize: 12 }}>
+                  <div>✕ Lỗi thực thi: {activeResult.error}</div>
+                  <button
+                    type="button"
+                    onClick={() => handleAiFix(activeResult.statement, activeResult.error || '')}
+                    style={{
+                      marginTop: 8,
+                      padding: '4px 10px',
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid #ef4444',
+                      borderRadius: 4,
+                      color: '#ef4444',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
+                    ✨ Sửa tự động bằng AI
+                  </button>
+                </div>
+              ) : (
+                <DataGrid
+                  columns={activeResult.columns}
+                  rows={activeResult.rows}
+                  totalRows={activeResult.rowCount}
+                  pageSize={100}
+                  currentPage={1}
+                />
+              )
+            )}
+
+            {activeSubTab === 'messages' && (
+              <div style={{ padding: 12, fontFamily: 'var(--mono)', fontSize: 11.5, color: 'var(--text2)' }}>
+                {results.map((r, i) => (
+                  <div key={i} style={{ marginBottom: 8 }}>
+                    <div>
+                      [{i + 1}] {r.statement.slice(0, 80)}...
+                    </div>
+                    <div style={{ color: r.error ? '#ef4444' : 'var(--accent)' }}>
+                      {r.error ? `Error: ${r.error}` : `OK — ${r.rowCount} rows in ${r.durationMs}ms`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeSubTab === 'history' && (
+              <QueryHistoryPanel
+                entries={history}
+                onInsertSql={(querySql: string) => setSqlText(querySql)}
+                onClear={() => { void handleClearHistory() }}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Modal AI Generate */}
+      {/* Modal AI Generator */}
       {showAiModal && (
         <div
           style={{
@@ -596,46 +744,65 @@ export function SqlView() {
               padding: 16,
             }}
           >
-            <h3 style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--text)' }}>✨ Trợ lý AI Text-to-SQL</h3>
-            <p style={{ margin: '0 0 10px', fontSize: 11.5, color: 'var(--text2)' }}>
-              Nhập yêu cầu bằng ngôn ngữ tự nhiên để AI tự động sinh câu truy vấn SQL:
-            </p>
+            <h3 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text)' }}>
+              ✨ Trợ lý AI — Viết SQL từ ngôn ngữ tự nhiên
+            </h3>
             <textarea
+              autoFocus
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
-              placeholder="Ví dụ: Lấy danh sách 10 khách hàng có tổng chi tiêu cao nhất trong tháng này..."
+              placeholder="VD: Lấy danh sách 10 khách hàng chi tiêu nhiều nhất trong tháng qua..."
               style={{
                 width: '100%',
-                height: 80,
+                height: 90,
                 padding: 8,
-                background: 'var(--pane2)',
-                border: '1px solid var(--border)',
-                borderRadius: 4,
-                color: 'var(--text)',
                 fontSize: 12,
-                resize: 'none',
+                borderRadius: 4,
+                border: '1px solid var(--border-strong)',
+                background: 'var(--pane2)',
+                color: 'var(--text)',
+                resize: 'vertical',
               }}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
               <button
+                type="button"
                 onClick={() => setShowAiModal(false)}
-                style={{ padding: '6px 12px', border: '1px solid var(--border-strong)', background: 'transparent', borderRadius: 4, color: 'var(--text)', cursor: 'pointer', fontSize: 11.5 }}
+                style={{
+                  padding: '5px 12px',
+                  border: '1px solid var(--border-strong)',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 11.5,
+                }}
               >
-                Huỷ
+                Đóng
               </button>
               <button
-                disabled={aiGenerating}
-                onClick={handleAiGenerate}
-                style={{ padding: '6px 14px', border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', borderRadius: 4, cursor: 'pointer', fontSize: 11.5, fontWeight: 600 }}
+                type="button"
+                onClick={handleGenerateAiSql}
+                disabled={aiGenerating || !aiPrompt.trim()}
+                style={{
+                  padding: '5px 14px',
+                  border: 'none',
+                  background: 'var(--accent)',
+                  color: 'var(--on-accent)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 11.5,
+                }}
               >
-                {aiGenerating ? 'Đang tạo...' : 'Sinh câu lệnh SQL'}
+                {aiGenerating ? 'Đang tạo SQL...' : 'Sinh câu lệnh SQL'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Explain Plan */}
+      {/* Modal Explain */}
       {showExplainModal && (
         <div
           style={{
@@ -650,34 +817,45 @@ export function SqlView() {
         >
           <div
             style={{
-              width: 580,
+              width: 600,
               background: 'var(--pane)',
               border: '1px solid var(--border-strong)',
               borderRadius: 8,
               padding: 16,
             }}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: 14, color: 'var(--text)' }}>Kế hoạch thực thi (EXPLAIN Plan)</h3>
+            <h3 style={{ margin: '0 0 10px', fontSize: 13, color: 'var(--text)' }}>
+              Kế hoạch thực thi truy vấn (Query Explain Plan)
+            </h3>
             <pre
               style={{
                 background: 'var(--pane2)',
                 border: '1px solid var(--border)',
                 borderRadius: 4,
-                padding: 12,
+                padding: 10,
                 fontFamily: 'var(--mono)',
                 fontSize: 11.5,
                 color: 'var(--text)',
                 lineHeight: 1.5,
-                maxHeight: 280,
+                maxHeight: 250,
                 overflow: 'auto',
               }}
             >
               {explainResult}
             </pre>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
               <button
+                type="button"
                 onClick={() => setShowExplainModal(false)}
-                style={{ padding: '6px 14px', border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text)', borderRadius: 4, cursor: 'pointer', fontSize: 11.5 }}
+                style={{
+                  padding: '5px 12px',
+                  border: '1px solid var(--border-strong)',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  borderRadius: 4,
+                  cursor: 'pointer',
+                  fontSize: 11.5,
+                }}
               >
                 Đóng
               </button>
@@ -686,6 +864,7 @@ export function SqlView() {
         </div>
       )}
 
+      {/* Context Menu */}
       {menuState?.isOpen && (
         <ContextMenu
           x={menuState.x}

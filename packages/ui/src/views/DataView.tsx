@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { CellValue, ColumnDef } from '@corvus/contract'
 import { useStudio, useClient } from '../store/studio'
 import { useActiveContext } from '../context/useActiveContext'
 import { DataGrid } from '../components/grid'
+import { FilterPanel } from '../components/FilterPanel'
 
 export function DataView() {
   const { activeTab } = useStudio()
@@ -22,11 +23,14 @@ export function DataView() {
   const [sortColumn, setSortColumn] = useState<string | undefined>()
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null)
   const [loading, setLoading] = useState(false)
+  const [filterClause, setFilterClause] = useState<string>('')
+  const [showFilterPanel, setShowFilterPanel] = useState(false)
 
   // Dữ liệu hiển thị
   const [columns, setColumns] = useState<ColumnDef[]>([])
   const [rows, setRows] = useState<CellValue[][]>([])
   const [totalRows, setTotalRows] = useState<number>(0)
+  const [hasPendingChanges, setHasPendingChanges] = useState(false)
 
   // Modal Preview Diff khi sửa dữ liệu
   const [pendingChange, setPendingChange] = useState<{
@@ -38,63 +42,56 @@ export function DataView() {
   } | null>(null)
 
   // 1. Tải danh sách dòng qua stream data.browse
-  useEffect(() => {
-    let cancelled = false
+  const fetchData = useCallback(async () => {
+    if (!client || !connectionId || !table) return
+    setLoading(true)
+    try {
+      const stream = client.stream('data.browse', {
+        connectionId,
+        database,
+        schema,
+        table,
+        offset: pageSize > 0 ? (page - 1) * pageSize : 0,
+        limit: pageSize > 0 ? pageSize : 10000,
+        sort: sortColumn && sortDirection ? [{ column: sortColumn, direction: sortDirection }] : undefined,
+      })
 
-    async function fetchData() {
-      setLoading(true)
-      try {
-        const stream = client.stream('data.browse', {
-          connectionId,
-          database,
-          schema,
-          table,
-          offset: (page - 1) * pageSize,
-          limit: pageSize,
-          sort: sortColumn && sortDirection ? [{ column: sortColumn, direction: sortDirection }] : undefined,
-        })
+      let fetchedCols: ColumnDef[] = []
+      const fetchedRows: CellValue[][] = []
 
-        let fetchedCols: ColumnDef[] = []
-        const fetchedRows: CellValue[][] = []
-
-        for await (const rawChunk of stream) {
-          if (cancelled) break
-          const chunk = rawChunk as {
-            columns?: ColumnDef[]
-            rows?: CellValue[][]
-          }
-          if (chunk.columns && chunk.columns.length > 0) {
-            fetchedCols = chunk.columns
-          }
-          if (chunk.rows) {
-            fetchedRows.push(...chunk.rows)
-          }
+      for await (const rawChunk of stream) {
+        const chunk = rawChunk as {
+          columns?: ColumnDef[]
+          rows?: CellValue[][]
         }
-
-        if (!cancelled) {
-          setColumns(fetchedCols)
-          setRows(fetchedRows)
+        if (chunk.columns && chunk.columns.length > 0) {
+          fetchedCols = chunk.columns
         }
-      } catch {
-        if (!cancelled) {
-          setColumns([])
-          setRows([])
+        if (chunk.rows) {
+          fetchedRows.push(...chunk.rows)
         }
-      } finally {
-        if (!cancelled) setLoading(false)
       }
-    }
 
-    fetchData()
-    return () => {
-      cancelled = true
+      setColumns(fetchedCols)
+      setRows(fetchedRows)
+      setHasPendingChanges(false)
+    } catch {
+      setColumns([])
+      setRows([])
+    } finally {
+      setLoading(false)
     }
   }, [client, connectionId, database, schema, table, page, pageSize, sortColumn, sortDirection])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   // 2. Tải tổng số dòng qua data.count
   useEffect(() => {
     let cancelled = false
     async function fetchCount() {
+      if (!client || !connectionId || !table) return
       try {
         const res = await client.request<{ count: number; isEstimate: boolean }>('data.count', {
           connectionId,
@@ -154,6 +151,7 @@ export function DataView() {
         newRows[rowIdx] = [...newRows[rowIdx]]
         newRows[rowIdx][colIdx] = val
         setRows(newRows)
+        setHasPendingChanges(true)
       }
     }
   }
@@ -172,11 +170,28 @@ export function DataView() {
         newRows[pendingChange.rowIdx][pendingChange.colIdx] = pendingChange.val
         setRows(newRows)
       }
+      setHasPendingChanges(false)
     } catch (err) {
       alert(`Lỗi áp dụng thay đổi: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setPendingChange(null)
     }
+  }
+
+  const handleAddRow = () => {
+    const emptyRow: CellValue[] = columns.map(() => ({ k: 'null', v: null }))
+    setRows([...rows, emptyRow])
+    setHasPendingChanges(true)
+  }
+
+  const handleDeleteRow = (rowIdx: number) => {
+    const newRows = rows.filter((_, i) => i !== rowIdx)
+    setRows(newRows)
+    setHasPendingChanges(true)
+  }
+
+  const handleDiscardChanges = () => {
+    fetchData()
   }
 
   const handleSortChange = (colName: string, dir: 'asc' | 'desc' | null) => {
@@ -185,8 +200,26 @@ export function DataView() {
     setPage(1)
   }
 
+  const handleFilterByValue = (colName: string, val: string) => {
+    setFilterClause(`${colName} = '${val}'`)
+    setShowFilterPanel(true)
+  }
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {showFilterPanel && (
+        <FilterPanel
+          columns={columns}
+          initialClause={filterClause}
+          onApplyFilter={(clause) => {
+            setFilterClause(clause)
+            setPage(1)
+            fetchData()
+          }}
+          onClose={() => setShowFilterPanel(false)}
+        />
+      )}
+
       {loading && (
         <div
           style={{
@@ -204,6 +237,7 @@ export function DataView() {
           Đang tải dữ liệu...
         </div>
       )}
+
       <DataGrid
         columns={columns}
         rows={rows}
@@ -213,10 +247,18 @@ export function DataView() {
         tableName={table}
         sortColumn={sortColumn}
         sortDirection={sortDirection}
+        hasPendingChanges={hasPendingChanges}
+        isLoading={loading}
         onSortChange={handleSortChange}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
         onCellEdit={handleCellEdit}
+        onAddRow={handleAddRow}
+        onDeleteRow={handleDeleteRow}
+        onApplyChanges={handleConfirmApply}
+        onDiscardChanges={handleDiscardChanges}
+        onRefresh={fetchData}
+        onFilterByValue={handleFilterByValue}
       />
 
       {/* Modal Preview Changes */}
