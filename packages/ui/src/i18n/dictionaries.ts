@@ -92,6 +92,14 @@ export const VI = {
   diffRevert: 'Hoàn tác dòng này',
   diffInspect: 'Xem chi tiết khác biệt',
   diffRefresh: 'Làm mới so sánh',
+  txBegin: 'Bắt đầu giao dịch',
+  txCommit: 'Xác nhận giao dịch',
+  txRollback: 'Huỷ bỏ giao dịch',
+  txStatus: 'Trạng thái giao dịch',
+  dataTransfer: 'Chuyển dữ liệu',
+  dataSync: 'Đồng bộ dữ liệu',
+  structureSync: 'Đồng bộ cấu trúc',
+  dumpExecuteSql: 'Kết xuất / Chạy tệp SQL',
 } as const
 
 export type Dict = Record<keyof typeof VI, string>
@@ -190,6 +198,14 @@ export const EN: Dict = {
   diffRevert: 'Revert this row',
   diffInspect: 'Inspect difference',
   diffRefresh: 'Refresh diff',
+  txBegin: 'Begin Transaction',
+  txCommit: 'Commit Transaction',
+  txRollback: 'Rollback Transaction',
+  txStatus: 'Transaction Status',
+  dataTransfer: 'Data Transfer',
+  dataSync: 'Data Synchronization',
+  structureSync: 'Structure Synchronization',
+  dumpExecuteSql: 'Dump / Execute SQL File',
 }
 
 export const JA: Dict = {
@@ -286,6 +302,14 @@ export const JA: Dict = {
   diffRevert: 'この行を元に戻す',
   diffInspect: '差分詳細を確認',
   diffRefresh: '差分を更新',
+  txBegin: 'トランザクション開始',
+  txCommit: 'コミット',
+  txRollback: 'ロールバック',
+  txStatus: 'トランザクション状態',
+  dataTransfer: 'データ転送',
+  dataSync: 'データ同期',
+  structureSync: '構造同期',
+  dumpExecuteSql: 'SQL ファイルのダンプ / 実行',
 }
 
 /**

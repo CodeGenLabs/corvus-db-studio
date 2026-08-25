@@ -38,7 +38,8 @@ Ba target, **một** `@corvus/engine`, **một** `@corvus/ui`.
 ┌──────────────────────────────────────────────────────────────────────┐
 │ TẦNG 1 · PRESENTATION                          (chạy được ở browser) │
 │                                                                      │
-│  @corvus/ui          React components, design system, i18n, theme    │
+│  @corvus/ui          React components, design system, i18n, theme,   │
+│                      context/ (active state), commands/ (registry)   │
 │  @corvus/client      RPC client, cache, optimistic update, job feed  │
 │                      ── phụ thuộc DUY NHẤT: @corvus/contract + Transport
 └──────────────────────────────────────────────────────────────────────┘

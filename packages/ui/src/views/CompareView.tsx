@@ -63,6 +63,41 @@ export function CompareView() {
   const client = useClient()
   const { menuState, openContextMenu, handleKeyDown, closeContextMenu } = useContextMenu('ctx-diff')
 
+  const handleExportDiff = async () => {
+    if (!client) return
+    try {
+      await client.request('job.start', {
+        kind: 'sync',
+        name: 'Export Compare Diff',
+        config: { mode: 'data', format: 'sql' },
+      })
+    } catch {
+      // fallback
+    }
+  }
+
+  const handleGenRollback = async () => {
+    if (!client) return
+    try {
+      await client.request('job.start', {
+        kind: 'sync',
+        name: 'Generate Rollback Script',
+        config: { mode: 'data', rollback: true },
+      })
+    } catch {
+      // fallback
+    }
+  }
+
+  const handleRefreshDiff = async () => {
+    if (!client) return
+    try {
+      await client.request('job.list', {})
+    } catch {
+      // fallback
+    }
+  }
+
   return (
     <div
       data-testid="compare-view"
@@ -192,11 +227,14 @@ export function CompareView() {
         >
           {t.diffOnly}
         </div>
-        <div className="hv-accent-border" style={{ ...GHOST_BTN, marginLeft: 'auto' }}>
+        <div onClick={handleExportDiff} className="hv-accent-border" style={{ ...GHOST_BTN, marginLeft: 'auto' }}>
           {t.exportDiff}
         </div>
-        <div className="hv-accent-border" style={GHOST_BTN}>
+        <div onClick={handleGenRollback} className="hv-accent-border" style={GHOST_BTN}>
           {t.genRollback}
+        </div>
+        <div onClick={handleRefreshDiff} className="hv-accent-border" style={GHOST_BTN}>
+          {t.diffRefresh}
         </div>
       </div>
 

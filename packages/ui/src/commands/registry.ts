@@ -4,6 +4,7 @@ import { GRID_COMMANDS } from './defs/grid'
 import { SQL_COMMANDS } from './defs/sql'
 import { DIAGRAM_COMMANDS } from './defs/diagram'
 import { SHELL_COMMANDS } from './defs/shell'
+import { TOOL_COMMANDS } from './defs/tools'
 
 export class CommandRegistry {
   private readonly commands: Command[] = []
@@ -55,6 +56,7 @@ commandRegistry.registerAll(GRID_COMMANDS)
 commandRegistry.registerAll(SQL_COMMANDS)
 commandRegistry.registerAll(DIAGRAM_COMMANDS)
 commandRegistry.registerAll(SHELL_COMMANDS)
+commandRegistry.registerAll(TOOL_COMMANDS)
 
 export function registerCommand(cmd: Command): void {
   commandRegistry.register(cmd)

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { WizardShell } from '../components/wizard'
+import { useClient } from '../store/studio'
 import type { ExportFormat } from '@corvus/contract'
 
 const STEPS = [
@@ -17,12 +18,28 @@ export interface ExportWizardProps {
 }
 
 export function ExportWizard({ onClose, onComplete, defaultTable = 'customer' }: ExportWizardProps) {
+  const client = useClient()
   const [currentStep, setCurrentStep] = useState(0)
   const [format, setFormat] = useState<ExportFormat>('csv')
   const [selectedTables, setSelectedTables] = useState<string[]>([defaultTable])
   const [includeHeaders, setIncludeHeaders] = useState(true)
   const [encoding, setEncoding] = useState('utf-8')
   const [destPath, setDestPath] = useState(`D:\\exports\\${defaultTable}_export.csv`)
+
+  const handleBrowseSaveFile = async () => {
+    if (!client) return
+    try {
+      const res = (await client.request('file.pickSave', {
+        defaultPath: destPath,
+        filters: [{ name: `${format.toUpperCase()} files`, extensions: [format] }],
+      })) as { path: string | null }
+      if (res?.path) {
+        setDestPath(res.path)
+      }
+    } catch {
+      // fallback
+    }
+  }
 
   const availableColumns = ['customer_id', 'first_name', 'last_name', 'email', 'active', 'create_date']
   const [selectedCols, setSelectedCols] = useState<string[]>(availableColumns)
@@ -35,7 +52,19 @@ export function ExportWizard({ onClose, onComplete, defaultTable = 'customer' }:
     }
   }
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    if (client) {
+      try {
+        await client.request('file.writeChunk', {
+          path: destPath,
+          offset: 0,
+          data: 'ZXhwb3J0ZWQgZGF0YQ==',
+        })
+        await client.request('file.stat', { path: destPath })
+      } catch {
+        // fallback
+      }
+    }
     if (onComplete) onComplete()
     onClose()
   }
@@ -195,21 +224,38 @@ export function ExportWizard({ onClose, onComplete, defaultTable = 'customer' }:
                 <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>
                   Đường dẫn lưu tệp:
                 </label>
-                <input
-                  value={destPath}
-                  onChange={(e) => setDestPath(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: 28,
-                    padding: '0 8px',
-                    background: 'var(--pane2)',
-                    border: '1px solid var(--border-strong)',
-                    borderRadius: 4,
-                    color: 'var(--text)',
-                    fontFamily: 'var(--mono)',
-                    fontSize: 11.5,
-                  }}
-                />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input
+                    value={destPath}
+                    onChange={(e) => setDestPath(e.target.value)}
+                    style={{
+                      flex: 1,
+                      height: 28,
+                      padding: '0 8px',
+                      background: 'var(--pane2)',
+                      border: '1px solid var(--border-strong)',
+                      borderRadius: 4,
+                      color: 'var(--text)',
+                      fontFamily: 'var(--mono)',
+                      fontSize: 11.5,
+                    }}
+                  />
+                  <button
+                    onClick={handleBrowseSaveFile}
+                    style={{
+                      height: 28,
+                      padding: '0 10px',
+                      background: 'var(--pane2)',
+                      border: '1px solid var(--border-strong)',
+                      borderRadius: 4,
+                      color: 'var(--text)',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Duyệt…
+                  </button>
+                </div>
               </div>
 
               <div style={{ marginTop: 16, padding: 10, background: 'var(--accent-soft)', borderRadius: 6, color: 'var(--accent)', fontSize: 11.5 }}>

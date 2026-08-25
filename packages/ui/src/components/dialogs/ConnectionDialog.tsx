@@ -75,6 +75,72 @@ export function ConnectionDialog() {
     db: p.db,
   })
 
+  const handleParseUri = async (uri: string) => {
+    if (!client || !uri.trim()) return
+    try {
+      const parsed = (await client.request('connection.parseUri', { uri: uri.trim() })) as Partial<{
+        name: string
+        host: string
+        port: number
+        user: string
+        database: string
+        driverId: string
+      }>
+      setFormData((prev) => ({
+        ...prev,
+        name: parsed.name ?? prev.name,
+        host: parsed.host ?? prev.host,
+        port: parsed.port !== undefined ? String(parsed.port) : prev.port,
+        user: parsed.user ?? prev.user,
+        db: parsed.database ?? prev.db,
+      }))
+    } catch (err) {
+      setTestResult({ ok: false, error: (err as Error).message })
+    }
+  }
+
+  const handleCopyUri = async () => {
+    if (!client) return
+    try {
+      const res = (await client.request('connection.toUri', {
+        id: 'temp',
+        name: formData.name,
+        driverId: isSqlite ? 'sqlite' : activeKind.toLowerCase().includes('mysql') ? 'mysql' : 'postgres',
+        host: formData.host,
+        port: parseInt(formData.port, 10) || undefined,
+        database: formData.db,
+        user: formData.user,
+      })) as { uri: string }
+      if (res?.uri && typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(res.uri)
+      }
+    } catch {
+      // safe fallback
+    }
+  }
+
+  const handleSaveConnection = async () => {
+    if (client) {
+      try {
+        await client.request('connection.create', {
+          name: formData.name,
+          driverId: isSqlite ? 'sqlite' : activeKind.toLowerCase().includes('mysql') ? 'mysql' : 'postgres',
+          host: formData.host,
+          port: parseInt(formData.port, 10) || undefined,
+          database: formData.db,
+          user: formData.user,
+          password: formData.password,
+          readOnly: advancedState.readOnly,
+          color: advancedState.color,
+          group: advancedState.group || undefined,
+        })
+      } catch {
+        // proceed
+      }
+    }
+    close()
+  }
+
   const handleTestConnection = async () => {
     setTesting(true)
     setTestResult(null)
@@ -384,6 +450,49 @@ export function ConnectionDialog() {
 
         <TestConnectionResult loading={testing} result={testResult} />
 
+        <button
+          onClick={handleCopyUri}
+          className="hv-accent-border"
+          title={tr('Sao chép URI kết nối đã che mật khẩu', 'Copy sanitized connection URI')}
+          style={{
+            height: 26,
+            padding: '0 9px',
+            display: 'flex',
+            alignItems: 'center',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 5,
+            background: 'transparent',
+            color: 'var(--text2)',
+            cursor: 'pointer',
+            fontSize: 11.5,
+          }}
+        >
+          {tr('Sao chép URI', 'Copy URI')}
+        </button>
+
+        <button
+          onClick={() => {
+            const pasted = prompt(tr('Dán chuỗi kết nối URI:', 'Paste connection URI:'))
+            if (pasted) handleParseUri(pasted)
+          }}
+          className="hv-accent-border"
+          title={tr('Phân tích kết nối từ URI', 'Parse connection from URI')}
+          style={{
+            height: 26,
+            padding: '0 9px',
+            display: 'flex',
+            alignItems: 'center',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 5,
+            background: 'transparent',
+            color: 'var(--text2)',
+            cursor: 'pointer',
+            fontSize: 11.5,
+          }}
+        >
+          {tr('Nhập URI', 'Parse URI')}
+        </button>
+
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <button
             onClick={close}
@@ -403,7 +512,7 @@ export function ConnectionDialog() {
             {t.cancel}
           </button>
           <button
-            onClick={close}
+            onClick={handleSaveConnection}
             style={{
               height: 26,
               padding: '0 14px',

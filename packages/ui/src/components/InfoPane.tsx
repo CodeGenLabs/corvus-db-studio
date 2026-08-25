@@ -52,6 +52,54 @@ export function InfoPane() {
     enabled: !!connectionId && !!currentTable,
   })
 
+  const { data: _deps } = useQuery({
+    queryKey: ['dependencies', connectionId, currentTable],
+    queryFn: () =>
+      client.request('introspect.dependencies', {
+        connectionId: connectionId!,
+        database,
+        schema,
+        object: currentTable,
+      }),
+    enabled: !!connectionId && !!currentTable,
+  })
+
+  const { data: _identifiers } = useQuery({
+    queryKey: ['identifiers', connectionId],
+    queryFn: () =>
+      client.request('introspect.identifiers', {
+        connectionId: connectionId!,
+      }),
+    enabled: !!connectionId,
+  })
+
+  const { data: _routineMeta } = useQuery({
+    queryKey: ['routineMeta', connectionId, currentTable],
+    queryFn: () =>
+      client.request('introspect.routineMeta', {
+        connectionId: connectionId!,
+        database,
+        schema,
+        routine: currentTable,
+      }),
+    enabled: !!connectionId && !!currentTable && ctx.selection.kind === 'function',
+  })
+
+  const handleSendAiMessage = async (prompt: string) => {
+    if (!client || !prompt.trim()) return
+    try {
+      const stream = client.stream('ai.chat', {
+        messages: [{ role: 'user', content: prompt }],
+        context: { schema: schema ?? undefined, dialect: 'postgres' },
+      })
+      for await (const _chunk of stream) {
+        // stream AI response
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   const facts: [string, string][] = [
     [tr('Số cột', 'Columns'), String(meta?.columns.length ?? '—')],
     [tr('Số chỉ mục', 'Indexes'), String(meta?.indexes.length ?? '—')],
@@ -262,6 +310,7 @@ export function InfoPane() {
                   {[t.aiChip1, t.aiChip2].map((chip) => (
                     <span
                       key={chip}
+                      onClick={() => handleSendAiMessage(chip)}
                       className="hv-accent-border"
                       style={{
                         height: 20,

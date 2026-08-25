@@ -1,3 +1,7 @@
 export * from './ImportWizard'
 export * from './ExportWizard'
 export * from './RestoreWizard'
+export * from './DataTransferWizard'
+export * from './DataSyncWizard'
+export * from './StructureSyncWizard'
+export * from './DumpExecuteSqlWizard'

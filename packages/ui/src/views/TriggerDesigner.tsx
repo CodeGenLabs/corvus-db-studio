@@ -26,12 +26,16 @@ export function TriggerDesigner() {
   const handleApply = async () => {
     setApplying(true)
     try {
-      const stream = client.stream('query.execute', {
-        connectionId,
-        sql: ddlSql,
-      })
-      for await (const _chunk of stream) {
-        // stream execute
+      if (client) {
+        const preview = (await client.request('ddl.previewRoutine', {
+          connectionId,
+          routineDesign: { name: triggerName, timing, event, targetTable, body, sql: ddlSql },
+        })) as { previewToken: string; sql: string }
+        if (preview?.previewToken) {
+          await client.request('ddl.applyRoutine', {
+            previewToken: preview.previewToken,
+          })
+        }
       }
       alert(`Đã tạo/cập nhật Trigger "${triggerName}" thành công!`)
     } catch (err) {

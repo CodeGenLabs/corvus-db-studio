@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Modal } from './Modal'
-import { useStudio } from '../../store/studio'
+import { useStudio, useClient } from '../../store/studio'
 import { useActiveContext } from '../../context/useActiveContext'
+import { useQuery } from '@tanstack/react-query'
 
 const DEFAULT_USERS: [string, string, string, string, string][] = [
   ['root', 'localhost', 'SUPERADMIN', '2026-08-20', 'active'],
@@ -26,7 +27,9 @@ const PRIVILEGES = [
 export function UsersDialog() {
   const { s, set, t, rowH } = useStudio()
   const ctx = useActiveContext()
+  const client = useClient()
   const close = () => set({ dialog: null })
+  const connectionId = ctx.connectionId || 'conn-1'
 
   const [activeTab, setActiveTab] = useState<'users' | 'privileges' | 'designer'>('users')
   const [selectedUser, setSelectedUser] = useState(s.userSel || 'app_user')
@@ -42,6 +45,54 @@ export function UsersDialog() {
     EXECUTE: 'granted',
     'GRANT OPTION': 'none',
   })
+
+  const { data: _usersList = [] } = useQuery({
+    queryKey: ['securityUsers', connectionId],
+    queryFn: async () => {
+      if (!client || !connectionId) return []
+      return (await client.request('security.users', { connectionId })) as Array<{ user: string; host?: string; roles: string[]; status?: string }>
+    },
+    enabled: !!client && !!connectionId,
+  })
+
+  const { data: _rolesList = [] } = useQuery({
+    queryKey: ['securityRoles', connectionId],
+    queryFn: async () => {
+      if (!client || !connectionId) return []
+      return (await client.request('security.roles', { connectionId })) as Array<{ role: string; members: string[] }>
+    },
+    enabled: !!client && !!connectionId,
+  })
+
+  const { data: _remotePrivileges = [] } = useQuery({
+    queryKey: ['securityPrivileges', connectionId, selectedUser],
+    queryFn: async () => {
+      if (!client || !connectionId || !selectedUser) return []
+      return (await client.request('security.privileges', { connectionId, userOrRole: selectedUser })) as Array<{ object: string; privilege: string; granted: boolean }>
+    },
+    enabled: !!client && !!connectionId && !!selectedUser,
+  })
+
+  const handleApplyGrants = async () => {
+    if (!client || !connectionId) return
+    try {
+      const preview = (await client.request('security.previewGrant', {
+        connectionId,
+        userOrRole: selectedUser,
+        grants: Object.entries(userPrivs).map(([priv, state]) => ({
+          object: '*',
+          privilege: priv,
+          grant: state === 'granted',
+        })),
+      })) as { previewToken: string; sql: string }
+
+      if (preview?.previewToken) {
+        await client.request('security.applyGrant', { previewToken: preview.previewToken })
+      }
+    } catch {
+      // fallback
+    }
+  }
 
   const togglePriv = (priv: string) => {
     const current = userPrivs[priv] || 'none'
@@ -269,22 +320,42 @@ export function UsersDialog() {
         }}
       >
         <span style={{ color: 'var(--text3)', fontSize: 11 }}>{t.usersHint}</span>
-        <div
-          onClick={close}
-          style={{
-            marginLeft: 'auto',
-            height: 26,
-            padding: '0 14px',
-            display: 'flex',
-            alignItems: 'center',
-            background: 'var(--accent)',
-            color: 'var(--on-accent)',
-            borderRadius: 5,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          {t.close}
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          {activeTab === 'privileges' && (
+            <div
+              onClick={handleApplyGrants}
+              style={{
+                height: 26,
+                padding: '0 12px',
+                display: 'flex',
+                alignItems: 'center',
+                background: 'transparent',
+                color: 'var(--accent)',
+                border: '1px solid var(--accent)',
+                borderRadius: 5,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Lưu quyền
+            </div>
+          )}
+          <div
+            onClick={close}
+            style={{
+              height: 26,
+              padding: '0 14px',
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--accent)',
+              color: 'var(--on-accent)',
+              borderRadius: 5,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {t.close}
+          </div>
         </div>
       </div>
     </Modal>

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from './Modal'
+import { useClient } from '../../store/studio'
 
 export interface ForeignKeyLookupItem {
   id: string | number
@@ -8,28 +9,54 @@ export interface ForeignKeyLookupItem {
 }
 
 export interface ForeignKeyLookupDialogProps {
+  connectionId?: string
   columnName: string
   referencedTable: string
   referencedColumn: string
   currentValue?: string | number
-  items: ForeignKeyLookupItem[]
+  items?: ForeignKeyLookupItem[]
   onClose: () => void
   onSelect: (selectedId: string | number) => void
 }
 
 export function ForeignKeyLookupDialog({
+  connectionId,
   columnName,
   referencedTable,
   referencedColumn,
   currentValue,
-  items,
+  items = [],
   onClose,
   onSelect,
 }: ForeignKeyLookupDialogProps) {
+  const client = useClient()
   const [filter, setFilter] = useState('')
   const [selectedId, setSelectedId] = useState<string | number | undefined>(currentValue)
+  const [fetchedItems, setFetchedItems] = useState<ForeignKeyLookupItem[]>(items)
 
-  const filtered = items.filter(
+  useEffect(() => {
+    if (!client || !connectionId || items.length > 0) return
+    async function loadFk() {
+      try {
+        const res = await client.request<Array<{ key: string; label: string }>>('data.fkLookup', {
+          connectionId: connectionId!,
+          referencedTable,
+          referencedColumn,
+          search: filter || undefined,
+          limit: 50,
+        })
+        if (Array.isArray(res)) {
+          setFetchedItems(res.map((r) => ({ id: r.key, label: r.label })))
+        }
+      } catch {
+        // fallback
+      }
+    }
+    loadFk()
+  }, [client, connectionId, referencedTable, referencedColumn, filter, items.length])
+
+  const displayItems = fetchedItems.length > 0 ? fetchedItems : items
+  const filtered = displayItems.filter(
     (item) =>
       String(item.id).toLowerCase().includes(filter.toLowerCase()) ||
       item.label.toLowerCase().includes(filter.toLowerCase()) ||

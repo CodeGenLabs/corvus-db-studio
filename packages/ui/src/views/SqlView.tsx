@@ -4,6 +4,7 @@ import { useActiveContext } from '../context/useActiveContext'
 import { useContextMenu } from '../components/useContextMenu'
 import { ContextMenu } from '../components/ContextMenu'
 import { DataGrid } from '../components/grid'
+import { QueryHistoryPanel } from '../components/common/QueryHistoryPanel'
 import { splitStatements } from '@corvus/sql'
 import type { CellValue, ColumnDef, DialogId } from '@corvus/contract'
 
@@ -50,6 +51,7 @@ export function SqlView() {
   // 1. Chạy câu lệnh SQL
   const handleRunQuery = async () => {
     setRunning(true)
+    handleParseSql()
     const statements = splitStatements(sqlText, 'postgres').filter((s) => s.trim().length > 0)
     const nextResults: QueryTabResult[] = []
 
@@ -126,11 +128,38 @@ export function SqlView() {
     }
   }
 
-  const handleCancelQuery = () => {
+  const handleCancelQuery = async () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
+    if (client && connectionId) {
+      try {
+        await client.request('query.cancel', { queryId: connectionId })
+      } catch {
+        // ignore
+      }
+    }
     setRunning(false)
+  }
+
+  const handleParseSql = async () => {
+    if (!client) return
+    try {
+      await client.request('query.parse', { sql: sqlText, dialect: 'postgres' })
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleClearHistory = async () => {
+    if (client) {
+      try {
+        await client.request('query.history.clear', {})
+        setHistory([])
+      } catch {
+        // ignore
+      }
+    }
   }
 
   // 2. Format SQL qua query.format
@@ -146,16 +175,25 @@ export function SqlView() {
     }
   }
 
-  // 3. Explain Plan qua query.explain
+  // 3. Explain Plan qua query.explain và ai.explainPlan
   const handleExplain = async () => {
     setRunning(true)
     try {
-      const res = await client.request<{ plan: unknown }>('query.explain', {
+      const res = await client.request<{ plan: unknown; raw?: string }>('query.explain', {
         connectionId,
         sql: sqlText.trim(),
       })
-      setExplainResult(JSON.stringify(res.plan, null, 2))
+      const planStr = JSON.stringify(res.plan, null, 2)
+      setExplainResult(planStr)
       setShowExplainModal(true)
+      try {
+        await client.request('ai.explainPlan', {
+          plan: planStr,
+          dialect: 'postgres',
+        })
+      } catch {
+        // optional AI enhancement
+      }
     } catch (err) {
       alert(`Lỗi Explain: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
@@ -522,26 +560,17 @@ export function SqlView() {
         )}
 
         {activeSubTab === 'history' && (
-          <div style={{ padding: 10, fontFamily: 'var(--mono)', fontSize: 11.5 }}>
-            {history.map((h) => (
-              <div
-                key={h.id}
-                onClick={() => setSqlText(h.sql)}
-                style={{
-                  padding: '8px 10px',
-                  borderBottom: '1px solid var(--grid-line)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                <div style={{ color: 'var(--text3)', fontSize: 10.5 }}>{h.executedAt}</div>
-                <div style={{ flex: 1, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{h.sql}</div>
-                <div style={{ color: h.status === 'error' ? '#ef4444' : '#4ade80', fontSize: 10.5 }}>{h.durationMs}ms</div>
-              </div>
-            ))}
-          </div>
+          <QueryHistoryPanel
+            entries={history.map((h) => ({
+              id: h.id,
+              sql: h.sql,
+              executedAt: h.executedAt,
+              durationMs: h.durationMs,
+              status: h.status === 'error' ? 'error' : 'success',
+            }))}
+            onInsertSql={(sql) => setSqlText(sql)}
+            onClear={handleClearHistory}
+          />
         )}
       </div>
 

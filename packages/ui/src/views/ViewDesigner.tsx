@@ -27,12 +27,16 @@ export function ViewDesigner() {
   const handleApply = async () => {
     setApplying(true)
     try {
-      const stream = client.stream('query.execute', {
-        connectionId,
-        sql: ddlSql,
-      })
-      for await (const _chunk of stream) {
-        // stream execution
+      if (client) {
+        const preview = (await client.request('ddl.previewView', {
+          connectionId,
+          viewDesign: { name: viewName, sql: ddlSql, security, checkOption },
+        })) as { previewToken: string; sql: string }
+        if (preview?.previewToken) {
+          await client.request('ddl.applyView', {
+            previewToken: preview.previewToken,
+          })
+        }
       }
       alert(`Đã tạo/cập nhật View "${viewName}" thành công!`)
     } catch (err) {

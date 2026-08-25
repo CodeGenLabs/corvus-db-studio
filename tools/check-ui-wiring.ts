@@ -12,8 +12,8 @@ import { METHODS } from '../packages/contract/src/index'
 import { commandRegistry } from '../packages/ui/src/commands/registry'
 import type { Surface } from '../packages/ui/src/commands/types'
 
-// Khởi điểm nợ tối đa cho phép (ratchet: chỉ được giảm khi hoàn thành US4 và US2)
-const MAX_UI_WIRING_DEBT = 46
+// Khởi điểm nợ tối đa cho phép (ratchet: US4 hoàn tất đạt 0 nợ đấu nối)
+const MAX_UI_WIRING_DEBT = 0
 const MAX_SURFACE_DEBT = 0
 
 const CTX_SURFACES: Surface[] = [
@@ -97,8 +97,10 @@ const currentSurfaceDebt = CTX_SURFACES.length - coveredSurfaces
 console.log('🔍 Kiểm tra độ phủ đấu nối giao diện (UI Wiring Ratchet):')
 console.log(`  - Tổng số RPC methods: ${totalMethods}`)
 console.log(`  - Số methods đã nối UI: ${allWiredMethods.size} (${wiredInRegistry.size} qua Registry, ${wiredInUiCode.size} trong code UI)`)
-console.log(`  - UI_WIRING_DEBT: ${currentWiringDebt} (Giới hạn tối đa: ${MAX_UI_WIRING_DEBT})`)
-console.log(`  - SURFACE_DEBT: ${currentSurfaceDebt}/${CTX_SURFACES.length} (Giới hạn tối đa: ${MAX_SURFACE_DEBT})`)
+const missingMethods = methodKeys.filter((m) => !allWiredMethods.has(m))
+if (missingMethods.length > 0) {
+  console.log(`  - Methods còn thiếu (${missingMethods.length}): ${missingMethods.join(', ')}`)
+}
 
 let failed = false
 

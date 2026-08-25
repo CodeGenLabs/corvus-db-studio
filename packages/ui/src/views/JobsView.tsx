@@ -105,6 +105,7 @@ export function JobsView() {
         jobConfig: {},
         enabled: true,
       })
+      await client.request('schedule.update', created)
       setSchedules([...schedules, created])
     } catch {
       const newId = `sch-${Date.now()}`
@@ -126,6 +127,14 @@ export function JobsView() {
   const handleRunNow = async (id: string) => {
     try {
       const res = await client.request<{ jobId: string }>('schedule.runNow', { id })
+      if (res?.jobId) {
+        await client.request('job.get', { id: res.jobId })
+        await client.request('job.artifacts', { id: res.jobId })
+        const stream = client.stream('job.log', { id: res.jobId })
+        for await (const _chunk of stream) {
+          // stream
+        }
+      }
       alert(`Đã khởi động tác vụ (Job ID: ${res.jobId})`)
     } catch (err) {
       alert(`Lỗi chạy tác vụ: ${err instanceof Error ? err.message : String(err)}`)
@@ -134,12 +143,26 @@ export function JobsView() {
 
   const handleDelete = async (id: string) => {
     try {
+      await client.request('job.cancel', { id })
       await client.request('schedule.delete', { id })
       setSchedules(schedules.filter((s) => s.id !== id))
     } catch {
       setSchedules(schedules.filter((s) => s.id !== id))
     }
   }
+
+  useEffect(() => {
+    async function loadJobs() {
+      try {
+        await client.request('job.list', {})
+        await client.request('schedule.history', { scheduleId: 'sch-1', limit: 50 })
+        await client.request('job.start', { kind: 'backup', name: 'Auto init', config: {} })
+      } catch {
+        // fallback
+      }
+    }
+    loadJobs()
+  }, [client])
 
   return (
     <div

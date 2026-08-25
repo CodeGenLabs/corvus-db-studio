@@ -23,10 +23,10 @@ khôi phục được. Kiểm thử **không phải** là việc làm nếu còn
 
 | Tầng | Chạy khi | Thời lượng mục tiêu | Cần Docker |
 |---|---|---|---|
-| 1 Unit | mọi lần lưu file (watch) + mọi PR | ≤ 60 s (đo thật: ~18s) | ❌ |
-| 2 Contract/Conformance | mọi PR | ≤ 5 phút | ✅ (conformance) |
+| 1 Unit & UI Broad (DOM jsdom) | mọi lần lưu file (watch) + mọi PR (`pnpm test` / `pnpm verify`) | ≤ 60 s (đo thật: ~35s-48s cho 91 test files, 474+ tests) | ❌ |
+| 2 Contract & Conformance | mọi PR (`pnpm check:contract`) | ≤ 5 phút | ✅ (conformance) |
 | 3 Integration | mọi PR / local (`pnpm test:it`) | ≤ 2 phút (local stack: ~35s) / ≤ 40 phút (CI testcontainers) | ✅ |
-| 4 E2E | mọi PR (web smoke) + nightly (đầy đủ) | ≤ 15 phút | ✅ |
+| 4 E2E (Playwright L1-L6) | mọi PR (web smoke) + nightly (đầy đủ) | ≤ 15 phút | ✅ |
 | 5 Manual | trước mỗi mốc phát hành | 1–2 ngày | — |
 
 ---
@@ -247,6 +247,8 @@ Chạy trong CI (nightly), **fail khi tụt quá 15%** so với baseline đã gh
 |---|---|---|
 | Grid cuộn 1M dòng | `e2e/perf-grid.spec.ts` | ≥ 55 fps |
 | First paint sau chunk đầu | `e2e/perf-grid.spec.ts` | ≤ 150 ms |
+| Điều phối lệnh Command Registry (11 bề mặt) | `packages/ui/src/__tests__/context-menu-surfaces.dom.test.tsx` | ≤ 100 ms |
+| Phân trang DataGrid 100k dòng (lô 100 dòng) | `packages/ui/src/__tests__/data-browse-paging.dom.test.tsx` | ≤ 200 ms |
 | Stream 10M dòng: RAM engine | `services/__bench__/stream.bench.ts` | ≤ 400 MB |
 | Import 1 GB CSV: RAM + thời gian | `services/__bench__/import.bench.ts` | ≤ 300 MB, ≤ 4 phút (PG COPY) |
 | `introspect.objects` 5 000 bảng | `driver-*/__bench__/introspect.bench.ts` | ≤ 800 ms |

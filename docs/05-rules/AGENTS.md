@@ -219,12 +219,12 @@ Vì vậy repo này thà **chậm và đúng** hơn nhanh và gần đúng. Khi 
 | Thêm method RPC | `packages/contract/src/methods/` + handler ở `packages/engine/src/handlers/` | rpc-contract.md |
 | Thêm engine mới | `packages/driver-<name>/` | driver-spi.md §9 checklist |
 | Sửa giao diện | `packages/ui/src/` | ui-rules.md |
-| Thêm nghiệp vụ | `packages/services/src/<area>/` | SPEC liên quan |
+| Thêm nghiệp vụ | `packages/engine/src/handlers/` | SPEC liên quan |
 | Sửa SQL sinh tự động | `packages/sql/` hoặc `driver-*/src/ddl.ts` | security.md §7 |
 | Thêm bảng lưu trữ | `packages/storage/migrations/` | workspace-storage.md |
-| Thêm chuỗi hiển thị | `packages/ui/src/i18n/<lang>/<namespace>.json` | 3 ngôn ngữ, không thiếu |
+| Thêm chuỗi hiển thị | `packages/ui/src/i18n/dictionaries.ts` | 3 ngôn ngữ, không thiếu |
 | Thêm setting | `DEFAULT_CONFIG` + `SettingsDialog` section | SPEC-15 §3.2 |
-| Thêm loại job | `packages/services/src/<area>/` + `JobKind` | streaming-and-jobs.md §B |
+| Thêm loại job | `packages/engine/src/handlers/` + `JobKind` | streaming-and-jobs.md §B |
 
 ---
 

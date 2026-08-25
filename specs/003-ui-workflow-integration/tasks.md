@@ -210,55 +210,55 @@ Không có (xem [plan.md §Kitchen Recipe Reference](./plan.md)). Không có `de
 
 ### L-1 · Vòng đời kết nối (7 method)
 
-- [ ] T088 [US4] Nối `connection.parseUri` + `connection.toUri` vào `packages/ui/src/components/dialogs/ConnectionDialog.tsx` — tạo kết nối từ URI và sao chép URI. **Che phần credential** khi hiển thị và khi sao chép; không ghi URI nguyên vẹn vào nhật ký (SR-002, plan.md Threat Model) (FR-027)
-- [ ] T089 [US4] Nối `connection.get` + `connection.duplicate` + `connection.delete` — sửa, nhân bản, xoá kết nối (FR-027)
-- [ ] T090 [US4] Tạo `packages/ui/src/components/dialogs/ManageConnectionsDialog.tsx` — danh sách quản lý kết nối, dùng lại `Modal` đã có (FR-027)
+- [x] T088 [US4] Nối `connection.parseUri` + `connection.toUri` vào `packages/ui/src/components/dialogs/ConnectionDialog.tsx` — tạo kết nối từ URI và sao chép URI. **Che phần credential** khi hiển thị và khi sao chép; không ghi URI nguyên vẹn vào nhật ký (SR-002, plan.md Threat Model) (FR-027)
+- [x] T089 [US4] Nối `connection.get` + `connection.duplicate` + `connection.delete` — sửa, nhân bản, xoá kết nối (FR-027)
+- [x] T090 [US4] Tạo `packages/ui/src/components/dialogs/ManageConnectionsDialog.tsx` — danh sách quản lý kết nối, dùng lại `Modal` đã có (FR-027)
 
 ### L-2, L-3 · Soạn và chạy SQL (3 method)
 
-- [ ] T091 [US4] Nối `query.cancel` vào `packages/ui/src/views/SqlView.tsx` — nút huỷ phải dừng truy vấn **thật ở phía server**, giao diện về trạng thái sẵn sàng (FR-029)
-- [ ] T092 [P] [US4] Nối `query.parse` — phân tích câu lệnh cho gợi ý và cảnh báo
-- [ ] T093 [P] [US4] Nối `query.history.clear` vào `packages/ui/src/components/common/QueryHistoryPanel.tsx` — người dùng xoá được lịch sử (SR: lịch sử là dữ liệu Internal, cho phép xoá)
-- [ ] T094 [P] [US4] Nối `ai.explainPlan` vào SqlView và `ai.chat` vào InfoPane. **Ngoại lệ không thương lượng** (AGENTS.md §9): chỉ gửi lược đồ, **tuyệt đối không** gửi dữ liệu dòng cho AI
+- [x] T091 [US4] Nối `query.cancel` vào `packages/ui/src/views/SqlView.tsx` — nút huỷ phải dừng truy vấn **thật ở phía server**, giao diện về trạng thái sẵn sàng (FR-029)
+- [x] T092 [P] [US4] Nối `query.parse` — phân tích câu lệnh cho gợi ý và cảnh báo
+- [x] T093 [P] [US4] Nối `query.history.clear` vào `packages/ui/src/components/common/QueryHistoryPanel.tsx` — người dùng xoá được lịch sử (SR: lịch sử là dữ liệu Internal, cho phép xoá)
+- [x] T094 [P] [US4] Nối `ai.explainPlan` vào SqlView và `ai.chat` vào InfoPane. **Ngoại lệ không thương lượng** (AGENTS.md §9): chỉ gửi lược đồ, **tuyệt đối không** gửi dữ liệu dòng cho AI
 
 ### L-4 · Sửa dữ liệu và giao dịch (5 method)
 
-- [ ] T095 [US4] Nối `tx.begin` / `tx.commit` / `tx.rollback` / `tx.status` — bật/tắt tự động ghi, xác nhận, huỷ bỏ, và hiện trạng thái giao dịch hiện tại (FR-028). Huỷ bỏ ⇒ không thay đổi nào lọt vào DB; xác nhận ⇒ toàn bộ vào cùng một lần
-- [ ] T096 [P] [US4] Nối `data.fkLookup` vào `packages/ui/src/components/dialogs/ForeignKeyLookupDialog.tsx` — tra cứu khoá ngoại trong lưới
+- [x] T095 [US4] Nối `tx.begin` / `tx.commit` / `tx.rollback` / `tx.status` — bật/tắt tự động ghi, xác nhận, huỷ bỏ, và hiện trạng thái giao dịch hiện tại (FR-028). Huỷ bỏ ⇒ không thay đổi nào lọt vào DB; xác nhận ⇒ toàn bộ vào cùng một lần
+- [x] T096 [P] [US4] Nối `data.fkLookup` vào `packages/ui/src/components/dialogs/ForeignKeyLookupDialog.tsx` — tra cứu khoá ngoại trong lưới
 
 ### L-5 · Nhập / xuất dữ liệu (5 method + 6 method DDL)
 
-- [ ] T097 [US4] Nối `file.pickOpen` / `file.pickSave` / `file.readChunk` / `file.writeChunk` / `file.stat` vào `packages/ui/src/wizards/ImportWizard.tsx` và `ExportWizard.tsx` — hai wizard này hiện có **0** lần gọi client. Đi qua RPC, **không** sờ `window.electron` (Cấm 3, ADR-0009)
-- [ ] T098 [US4] Cài luồng nhập nhiều bước với ánh xạ cột vào `ImportWizard` dùng `FieldMappingGrid.tsx` đã có; dòng bị từ chối phải **báo cáo kèm lý do**, không bỏ qua im lặng (FR-033, kịch bản 8 của US4)
-- [ ] T099 [US4] Cài luồng xuất vào `ExportWizard` — định dạng nào không hỗ trợ cho loại đối tượng hiện tại thì vô hiệu hoá kèm lý do (FR-034)
-- [ ] T100 [US4] Hiện lại hai mục menu đã ẩn ở T049 và các lệnh đã ẩn ở T050, giờ đã có chức năng thật
-- [ ] T101 [US4] Nối `ddl.previewView` + `ddl.applyView` vào `packages/ui/src/views/ViewDesigner.tsx` — qua bước xem trước câu lệnh (FR-031, Cấm 5)
-- [ ] T102 [P] [US4] Nối `ddl.previewRoutine` + `ddl.applyRoutine` vào `RoutineDesigner.tsx` và `TriggerDesigner.tsx` (FR-031)
-- [ ] T103 [US4] Nối `ddl.dropObject` vào `packages/ui/src/components/dialogs/DropObjectDialog.tsx` — với `cardinality: 'multi'`, bước xem trước phải liệt kê câu lệnh cho **toàn bộ** đối tượng trong lô, không chỉ cái đầu (FR-052)
-- [ ] T104 [US4] Nối `ddl.maintain` vào `packages/ui/src/components/dialogs/TableMaintenanceDialog.tsx` — thao tác bảo trì đối tượng, nhận nhiều đối tượng (FR-031, FR-050)
-- [ ] T105 [US4] Đưa `packages/ui/src/components/dialogs/DdlPartialFailureDialog.tsx` vào dùng cho lệnh theo lô — component này đang là code chết cùng nhóm C-19. Thất bại giữa lô phải báo cáo **từng đối tượng**: cái nào xong, cái nào lỗi và vì sao (edge case của spec)
-- [ ] T106 [P] [US4] Nối `introspect.dependencies` + `introspect.identifiers` + `introspect.routineMeta` vào `packages/ui/src/components/InfoPane.tsx` — tab Using / Used By / Identifiers
+- [x] T097 [US4] Nối `file.pickOpen` / `file.pickSave` / `file.readChunk` / `file.writeChunk` / `file.stat` vào `packages/ui/src/wizards/ImportWizard.tsx` và `ExportWizard.tsx` — hai wizard này hiện có **0** lần gọi client. Đi qua RPC, **không** sờ `window.electron` (Cấm 3, ADR-0009)
+- [x] T098 [US4] Cài luồng nhập nhiều bước với ánh xạ cột vào `ImportWizard` dùng `FieldMappingGrid.tsx` đã có; dòng bị từ chối phải **báo cáo kèm lý do**, không bỏ qua im lặng (FR-033, kịch bản 8 của US4)
+- [x] T099 [US4] Cài luồng xuất vào `ExportWizard` — định dạng nào không hỗ trợ cho loại đối tượng hiện tại thì vô hiệu hoá kèm lý do (FR-034)
+- [x] T100 [US4] Hiện lại hai mục menu đã ẩn ở T049 và các lệnh đã ẩn ở T050, giờ đã có chức năng thật
+- [x] T101 [US4] Nối `ddl.previewView` + `ddl.applyView` vào `packages/ui/src/views/ViewDesigner.tsx` — qua bước xem trước câu lệnh (FR-031, Cấm 5)
+- [x] T102 [P] [US4] Nối `ddl.previewRoutine` + `ddl.applyRoutine` vào `RoutineDesigner.tsx` và `TriggerDesigner.tsx` (FR-031)
+- [x] T103 [US4] Nối `ddl.dropObject` vào `packages/ui/src/components/dialogs/DropObjectDialog.tsx` — với `cardinality: 'multi'`, bước xem trước phải liệt kê câu lệnh cho **toàn bộ** đối tượng trong lô, không chỉ cái đầu (FR-052)
+- [x] T104 [US4] Nối `ddl.maintain` vào `packages/ui/src/components/dialogs/TableMaintenanceDialog.tsx` — thao tác bảo trì đối tượng, nhận nhiều đối tượng (FR-031, FR-050)
+- [x] T105 [US4] Đưa `packages/ui/src/components/dialogs/DdlPartialFailureDialog.tsx` vào dùng cho lệnh theo lô — component này đang là code chết cùng nhóm C-19. Thất bại giữa lô phải báo cáo **từng đối tượng**: cái nào xong, cái nào lỗi và vì sao (edge case của spec)
+- [x] T106 [P] [US4] Nối `introspect.dependencies` + `introspect.identifiers` + `introspect.routineMeta` vào `packages/ui/src/components/InfoPane.tsx` — tab Using / Used By / Identifiers
 
 ### Phần còn lại của US4 (13 method)
 
-- [ ] T107 [US4] Nối `security.users` / `security.roles` / `security.privileges` / `security.previewGrant` / `security.applyGrant` vào `UsersDialog.tsx`, `UserDesignerModal.tsx`, `RoleDesignerModal.tsx` — cả ba hiện có **0** lần gọi client. Dữ liệu thật từ server; mọi thay đổi qua bước xem trước (FR-030, Cấm 5)
-- [ ] T108 [US4] Nối `job.start` / `job.get` / `job.list` / `job.log` / `job.artifacts` / `job.cancel` vào `packages/ui/src/views/JobsView.tsx` và `BackupView.tsx` — `BackupView` hiện là màn hình tĩnh (C-03). Tác vụ chạy lâu phải hiện tiến độ, cho huỷ, và ghi lịch sử xem lại được (FR-036)
-- [ ] T109 [US4] Cài sao lưu và phục hồi qua `job.start` với `kind: 'backup'` / `'restore'` vào `BackupView.tsx` + `RestoreWizard.tsx` (hiện 0 lần gọi client) — kết quả kiểm chứng bằng cách truy vấn lại dữ liệu sau phục hồi (FR-032)
-- [ ] T110 [P] [US4] Nối `schedule.update` + `schedule.history` vào `JobsView.tsx` — sửa lịch trình và xem lịch sử chạy (FR-036)
-- [ ] T111 [US4] Nối `workspace.settings.get` + `workspace.settings.set` vào `packages/ui/src/components/dialogs/SettingsDialog.tsx` — thiết lập phải **còn nguyên sau khi khởi động lại ứng dụng** (FR-035). Hiện thiết lập không được lưu bền
-- [ ] T112 [US4] Nối `packages/ui/src/views/VirtualObjectsView.tsx` (hiện 0 lần gọi client) tới dữ liệu thật — nhóm ảo
+- [x] T107 [US4] Nối `security.users` / `security.roles` / `security.privileges` / `security.previewGrant` / `security.applyGrant` vào `UsersDialog.tsx`, `UserDesignerModal.tsx`, `RoleDesignerModal.tsx` — cả ba hiện có **0** lần gọi client. Dữ liệu thật từ server; mọi thay đổi qua bước xem trước (FR-030, Cấm 5)
+- [x] T108 [US4] Nối `job.start` / `job.get` / `job.list` / `job.log` / `job.artifacts` / `job.cancel` vào `packages/ui/src/views/JobsView.tsx` và `BackupView.tsx` — `BackupView` hiện là màn hình tĩnh (C-03). Tác vụ chạy lâu phải hiện tiến độ, cho huỷ, và ghi lịch sử xem lại được (FR-036)
+- [x] T109 [US4] Cài sao lưu và phục hồi qua `job.start` với `kind: 'backup'` / `'restore'` vào `BackupView.tsx` + `RestoreWizard.tsx` (hiện 0 lần gọi client) — kết quả kiểm chứng bằng cách truy vấn lại dữ liệu sau phục hồi (FR-032)
+- [x] T110 [P] [US4] Nối `schedule.update` + `schedule.history` vào `JobsView.tsx` — sửa lịch trình và xem lịch sử chạy (FR-036)
+- [x] T111 [US4] Nối `workspace.settings.get` + `workspace.settings.set` vào `packages/ui/src/components/dialogs/SettingsDialog.tsx` — thiết lập phải **còn nguyên sau khi khởi động lại ứng dụng** (FR-035). Hiện thiết lập không được lưu bền
+- [x] T112 [US4] Nối `packages/ui/src/views/VirtualObjectsView.tsx` (hiện 0 lần gọi client) tới dữ liệu thật — nhóm ảo
 
 ### Test US4
 
-- [ ] T113 [US4] Viết `packages/ui/src/__tests__/tx-lifecycle.dom.test.tsx` — huỷ bỏ ⇒ DB không đổi; xác nhận ⇒ toàn bộ vào cùng lần. Xác nhận bằng truy vấn lại DB (kịch bản 3 của US4)
-- [ ] T114 [P] [US4] Viết `packages/ui/src/__tests__/query-cancel.dom.test.tsx` — truy vấn chạy lâu, bấm huỷ, khẳng định dừng ở phía server (kịch bản 4)
-- [ ] T115 [P] [US4] Viết `packages/ui/src/__tests__/import-export-roundtrip.dom.test.tsx` — xuất bảng ra tệp rồi nhập lại vào bảng trống cùng cấu trúc: cùng số dòng, cùng giá trị (kịch bản 9)
-- [ ] T116 [P] [US4] Viết `packages/ui/src/__tests__/security.dom.test.tsx` — danh sách người dùng/quyền là dữ liệu thật; mọi thay đổi có bước xem trước (kịch bản 5)
-- [ ] T117 [P] [US4] Viết `packages/ui/src/__tests__/settings-persistence.dom.test.tsx` — đổi thiết lập, dựng lại app, thiết lập còn nguyên (kịch bản 6)
-- [ ] T118 [P] [US4] Viết `packages/ui/src/__tests__/backup-restore.dom.test.tsx` — sao lưu → xoá bảng → phục hồi → truy vấn lại xác nhận dữ liệu về (kịch bản 7)
-- [ ] T119 [P] [US4] Viết `packages/ui/src/__tests__/batch-partial-failure.dom.test.tsx` — xoá 5 bảng, bảng thứ 3 bị khoá ngoại chặn: báo cáo theo từng đối tượng, không để trạng thái nửa vời không giải thích được (edge case)
-- [ ] T120 [US4] Viết `e2e/specs/L5-import-export.spec.ts` — luồng nhập/xuất đầu-cuối trên ứng dụng thật, PostgreSQL + MySQL (FR-023B)
-- [ ] T121 [US4] Hạ `UI_WIRING_DEBT` xuống **0** trong `tools/check-ui-wiring.ts` và xác nhận `pnpm verify` xanh (SC-010: 76/76)
+- [x] T113 [US4] Viết `packages/ui/src/__tests__/tx-lifecycle.dom.test.tsx` — huỷ bỏ ⇒ DB không đổi; xác nhận ⇒ toàn bộ vào cùng lần. Xác nhận bằng truy vấn lại DB (kịch bản 3 của US4)
+- [x] T114 [P] [US4] Viết `packages/ui/src/__tests__/query-cancel.dom.test.tsx` — truy vấn chạy lâu, bấm huỷ, khẳng định dừng ở phía server (kịch bản 4)
+- [x] T115 [P] [US4] Viết `packages/ui/src/__tests__/import-export-roundtrip.dom.test.tsx` — xuất bảng ra tệp rồi nhập lại vào bảng trống cùng cấu trúc: cùng số dòng, cùng giá trị (kịch bản 9)
+- [x] T116 [P] [US4] Viết `packages/ui/src/__tests__/security.dom.test.tsx` — danh sách người dùng/quyền là dữ liệu thật; mọi thay đổi có bước xem trước (kịch bản 5)
+- [x] T117 [P] [US4] Viết `packages/ui/src/__tests__/settings-persistence.dom.test.tsx` — đổi thiết lập, dựng lại app, thiết lập còn nguyên (kịch bản 6)
+- [x] T118 [P] [US4] Viết `packages/ui/src/__tests__/backup-restore.dom.test.tsx` — sao lưu → xoá bảng → phục hồi → truy vấn lại xác nhận dữ liệu về (kịch bản 7)
+- [x] T119 [P] [US4] Viết `packages/ui/src/__tests__/batch-partial-failure.dom.test.tsx` — xoá 5 bảng, bảng thứ 3 bị khoá ngoại chặn: báo cáo theo từng đối tượng, không để trạng thái nửa vời không giải thích được (edge case)
+- [x] T120 [US4] Viết `e2e/specs/L5-import-export.spec.ts` — luồng nhập/xuất đầu-cuối trên ứng dụng thật, PostgreSQL + MySQL (FR-023B)
+- [x] T121 [US4] Hạ `UI_WIRING_DEBT` xuống **0** trong `tools/check-ui-wiring.ts` và xác nhận `pnpm verify` xanh (SC-010: 76/76)
 
 **Checkpoint**: `UI_WIRING_DEBT = 0`; `pnpm verify` + `pnpm test:e2e` xanh; L-1…L-5 đã nghiệm thu
 
@@ -272,18 +272,18 @@ Không có (xem [plan.md §Kitchen Recipe Reference](./plan.md)). Không có `de
 
 > Không cần phương thức RPC mới: `JobKind` đã có `'transfer'` và `'sync'`, và `job.start` nhận `config` dạng record mở nên Structure Sync đi bằng `kind: 'sync'` với `config.mode = 'structure'`.
 
-- [ ] T122 [US5] Tạo `packages/ui/src/wizards/DataTransferWizard.tsx` dùng lại `WizardShell.tsx` đã có (AGENTS.md §2: `WizardShell` dùng ở 6 wizard — **không** tạo bản thứ hai). Chọn hai kết nối, tập đối tượng, chế độ chuyển; `job.start` với `kind: 'transfer'` (FR-037)
-- [ ] T123 [P] [US5] Tạo `packages/ui/src/wizards/DataSyncWizard.tsx` — so sánh dữ liệu theo từng dòng, chọn tập câu lệnh đồng bộ, xem trước rồi chạy; `kind: 'sync'`, `config.mode = 'data'` (FR-038, Cấm 5)
-- [ ] T124 [P] [US5] Tạo `packages/ui/src/wizards/StructureSyncWizard.tsx` — so sánh cấu trúc theo từng đối tượng (thiếu cột, thiếu index, khác kiểu), sinh câu lệnh đồng bộ để xem trước; `kind: 'sync'`, `config.mode = 'structure'` (FR-039)
-- [ ] T125 [US5] Nối `packages/ui/src/views/CompareView.tsx` (hiện 0 lần gọi client — C-03) tới `job.*` để hiện kết quả so sánh thật cho T123/T124
-- [ ] T126 [US5] Tạo `packages/ui/src/wizards/DumpExecuteSqlWizard.tsx` — kết xuất database hoặc tập đối tượng ra tệp SQL, và chạy một tệp SQL vào một kết nối, với tiến độ và **báo cáo lỗi theo từng câu lệnh** (FR-040)
-- [ ] T127 [US5] Khai báo bốn công cụ vào `packages/ui/src/commands/defs/tools.ts` với bề mặt `menubar` + `ctx-nav` — theo Navicat, Dump/Execute SQL File nằm ở context menu của database đang mở. Engine không hỗ trợ công cụ nào thì vô hiệu hoá kèm lý do (FR-041, kịch bản 5 của US5)
-- [ ] T128 [US5] Cài huỷ giữa tiến trình cho cả bốn công cụ qua `job.cancel` — trạng thái đích **không được** để lại dở dang không giải thích được (FR-041, kịch bản 6)
-- [ ] T129 [P] [US5] Viết `packages/ui/src/__tests__/data-transfer.dom.test.tsx` — chuyển tập bảng giữa hai engine khác nhau; xác nhận bằng đếm dòng và so khớp giá trị ở **cả hai** phía (kịch bản 1)
-- [ ] T130 [P] [US5] Viết `packages/ui/src/__tests__/data-sync.dom.test.tsx` — hai DB cùng cấu trúc lệch dữ liệu: liệt kê đúng dòng thêm/sửa/xoá; sau khi chạy hai bên khớp (kịch bản 2)
-- [ ] T131 [P] [US5] Viết `packages/ui/src/__tests__/structure-sync.dom.test.tsx` — hai DB lệch cấu trúc: liệt kê đúng khác biệt, sinh câu lệnh xem trước (kịch bản 3)
-- [ ] T132 [P] [US5] Viết `packages/ui/src/__tests__/dump-execute-sql.dom.test.tsx` — kết xuất rồi chạy vào DB trống: cùng tập đối tượng, cùng dữ liệu (kịch bản 4)
-- [ ] T133 [US5] Viết `e2e/specs/L6-tools.spec.ts` — bốn công cụ đầu-cuối trên ứng dụng thật, PostgreSQL + MySQL (FR-023B, SC-013)
+- [x] T122 [US5] Tạo `packages/ui/src/wizards/DataTransferWizard.tsx` dùng lại `WizardShell.tsx` đã có (AGENTS.md §2: `WizardShell` dùng ở 6 wizard — **không** tạo bản thứ hai). Chọn hai kết nối, tập đối tượng, chế độ chuyển; `job.start` với `kind: 'transfer'` (FR-037)
+- [x] T123 [P] [US5] Tạo `packages/ui/src/wizards/DataSyncWizard.tsx` — so sánh dữ liệu theo từng dòng, chọn tập câu lệnh đồng bộ, xem trước rồi chạy; `kind: 'sync'`, `config.mode = 'data'` (FR-038, Cấm 5)
+- [x] T124 [P] [US5] Tạo `packages/ui/src/wizards/StructureSyncWizard.tsx` — so sánh cấu trúc theo từng đối tượng (thiếu cột, thiếu index, khác kiểu), sinh câu lệnh đồng bộ để xem trước; `kind: 'sync'`, `config.mode = 'structure'` (FR-039)
+- [x] T125 [US5] Nối `packages/ui/src/views/CompareView.tsx` (hiện 0 lần gọi client — C-03) tới `job.*` để hiện kết quả so sánh thật cho T123/T124
+- [x] T126 [US5] Tạo `packages/ui/src/wizards/DumpExecuteSqlWizard.tsx` — kết xuất database hoặc tập đối tượng ra tệp SQL, và chạy một tệp SQL vào một kết nối, với tiến độ và **báo cáo lỗi theo từng câu lệnh** (FR-040)
+- [x] T127 [US5] Khai báo bốn công cụ vào `packages/ui/src/commands/defs/tools.ts` với bề mặt `menubar` + `ctx-nav` — theo Navicat, Dump/Execute SQL File nằm ở context menu của database đang mở. Engine không hỗ trợ công cụ nào thì vô hiệu hoá kèm lý do (FR-041, kịch bản 5 của US5)
+- [x] T128 [US5] Cài huỷ giữa tiến trình cho cả bốn công cụ qua `job.cancel` — trạng thái đích **không được** để lại dở dang không giải thích được (FR-041, kịch bản 6)
+- [x] T129 [P] [US5] Viết `packages/ui/src/__tests__/data-transfer.dom.test.tsx` — chuyển tập bảng giữa hai engine khác nhau; xác nhận bằng đếm dòng và so khớp giá trị ở **cả hai** phía (kịch bản 1)
+- [x] T130 [P] [US5] Viết `packages/ui/src/__tests__/data-sync.dom.test.tsx` — hai DB cùng cấu trúc lệch dữ liệu: liệt kê đúng dòng thêm/sửa/xoá; sau khi chạy hai bên khớp (kịch bản 2)
+- [x] T131 [P] [US5] Viết `packages/ui/src/__tests__/structure-sync.dom.test.tsx` — hai DB lệch cấu trúc: liệt kê đúng khác biệt, sinh câu lệnh xem trước (kịch bản 3)
+- [x] T132 [P] [US5] Viết `packages/ui/src/__tests__/dump-execute-sql.dom.test.tsx` — kết xuất rồi chạy vào DB trống: cùng tập đối tượng, cùng dữ liệu (kịch bản 4)
+- [x] T133 [US5] Viết `e2e/specs/L6-tools.spec.ts` — bốn công cụ đầu-cuối trên ứng dụng thật, PostgreSQL + MySQL (FR-023B, SC-013)
 
 **Checkpoint**: cả 6 luồng cốt lõi L-1…L-6 xanh trên **cả hai** tầng kiểm thử (SC-014)
 
@@ -293,8 +293,8 @@ Không có (xem [plan.md §Kitchen Recipe Reference](./plan.md)). Không có `de
 
 **Goal**: mỗi hạng mục ❌/⚠️ còn lại có một trạng thái dứt khoát. **Không hiện thực chức năng nào.**
 
-- [ ] T134 [US6] Tạo `docs/04-plan/navicat-feature-parity.md` — chuyển bảng đối chiếu B.5 của [spec.md](./spec.md) thành tài liệu sống trong `docs/`, mỗi hạng mục có trạng thái: đã có / trong hàng đợi (kèm mức ưu tiên) / tuyên bố ngoài phạm vi (kèm lý do) (FR-042, SC-011)
-- [ ] T135 [US6] Rà lại 24 chương sau khi US1–US5 xong, cập nhật trạng thái, và thêm mục ghi rõ mỗi chức năng tương lai phải tuân thủ FR-010…FR-016 (gating) và FR-017…FR-025C (kiểm thử) (FR-043)
+- [x] T134 [US6] Tạo `docs/04-plan/navicat-feature-parity.md` — chuyển bảng đối chiếu B.5 của [spec.md](./spec.md) thành tài liệu sống trong `docs/`, mỗi hạng mục có trạng thái: đã có / trong hàng đợi (kèm mức ưu tiên) / tuyên bố ngoài phạm vi (kèm lý do) (FR-042, SC-011)
+- [x] T135 [US6] Rà lại 24 chương sau khi US1–US5 xong, cập nhật trạng thái, và thêm mục ghi rõ mỗi chức năng tương lai phải tuân thủ FR-010…FR-016 (gating) và FR-017…FR-025C (kiểm thử) (FR-043)
 
 **Checkpoint**: số hạng mục không có trạng thái = 0
 
@@ -302,13 +302,13 @@ Không có (xem [plan.md §Kitchen Recipe Reference](./plan.md)). Không có `de
 
 ## Phase 9: Polish & Cross-Cutting Concerns
 
-- [ ] T136 [P] Siết luật `no-orphans` trong `.dependency-cruiser.cjs` — `pathNot` hiện loại trừ `index.ts`, nên ba component orphan của C-19 (`ObjectContextMenu`, `CellContextMenu`, `DdlPartialFailureDialog`) lọt qua cổng vì được re-export từ `index.ts`. Siết để cổng bắt được orphan re-export lần sau
-- [ ] T137 [P] Cập nhật `docs/05-rules/ui-rules.md` — thêm mục về sổ đăng ký lệnh, 11 bề mặt context menu, và luật ẩn-vs-vô-hiệu-hoá theo lý do (FR-046B)
-- [ ] T138 [P] Cập nhật `docs/02-architecture/overview.md` — thêm `packages/ui/src/context/` và `packages/ui/src/commands/` vào bản đồ kiến trúc
-- [ ] T139 [P] Sửa lệch tài liệu phát hiện trong lúc lập kế hoạch: `docs/05-rules/AGENTS.md` §8 trỏ tới `packages/services/src/` (không tồn tại — thực tế là `packages/engine/src/handlers/`) và `packages/ui/src/i18n/<lang>/<namespace>.json` (thực tế là `dictionaries.ts`)
-- [ ] T140 Cập nhật `docs/04-plan/testing-strategy.md` §1 — thêm tầng kiểm thử rộng vào bảng 5 tầng, ghi ngân sách thời gian thật đo được cho cả hai tầng
-- [ ] T141 [P] Đo và ghi các mục tiêu độ trễ của [research.md R9](./research.md) vào `docs/04-plan/testing-strategy.md` §8 — thay số dự kiến bằng số đo thật
-- [ ] T142 Chạy `pnpm verify` + `pnpm test:e2e` lần cuối, ghi output vào PR; xác minh bằng mắt trọn 8 bước của [quickstart.md §5](./quickstart.md); đối chiếu toàn bộ 16 SC của spec và ghi rõ SC nào đạt, SC nào chưa và vì sao
+- [x] T136 [P] Siết luật `no-orphans` trong `.dependency-cruiser.cjs` — `pathNot` hiện loại trừ `index.ts`, nên ba component orphan của C-19 (`ObjectContextMenu`, `CellContextMenu`, `DdlPartialFailureDialog`) lọt qua cổng vì được re-export từ `index.ts`. Siết để cổng bắt được orphan re-export lần sau
+- [x] T137 [P] Cập nhật `docs/05-rules/ui-rules.md` — thêm mục về sổ đăng ký lệnh, 11 bề mặt context menu, và luật ẩn-vs-vô-hiệu-hoá theo lý do (FR-046B)
+- [x] T138 [P] Cập nhật `docs/02-architecture/overview.md` — thêm `packages/ui/src/context/` và `packages/ui/src/commands/` vào bản đồ kiến trúc
+- [x] T139 [P] Sửa lệch tài liệu phát hiện trong lúc lập kế hoạch: `docs/05-rules/AGENTS.md` §8 trỏ tới `packages/services/src/` (không tồn tại — thực tế là `packages/engine/src/handlers/`) và `packages/ui/src/i18n/<lang>/<namespace>.json` (thực tế là `dictionaries.ts`)
+- [x] T140 Cập nhật `docs/04-plan/testing-strategy.md` §1 — thêm tầng kiểm thử rộng vào bảng 5 tầng, ghi ngân sách thời gian thật đo được cho cả hai tầng
+- [x] T141 [P] Đo và ghi các mục tiêu độ trễ của [research.md R9](./research.md) vào `docs/04-plan/testing-strategy.md` §8 — thay số dự kiến bằng số đo thật
+- [x] T142 Chạy `pnpm verify` + `pnpm test:e2e` lần cuối, ghi output vào PR; xác minh bằng mắt trọn 8 bước của [quickstart.md §5](./quickstart.md); đối chiếu toàn bộ 16 SC của spec và ghi rõ SC nào đạt, SC nào chưa và vì sao
 
 ---
 

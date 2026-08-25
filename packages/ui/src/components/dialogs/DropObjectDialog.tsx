@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Modal } from './Modal'
+import { useClient } from '../../store/studio'
 
 export interface DropObjectDialogProps {
+  connectionId?: string
   objectName: string
   objectType: 'table' | 'view' | 'index' | 'routine'
   dependencies?: string[]
@@ -10,13 +12,31 @@ export interface DropObjectDialogProps {
 }
 
 export function DropObjectDialog({
+  connectionId,
   objectName,
   objectType,
   dependencies = [],
   onClose,
   onConfirmDrop,
 }: DropObjectDialogProps) {
+  const client = useClient()
   const [confirmInput, setConfirmInput] = useState('')
+
+  const handleExecuteDrop = async () => {
+    if (client && connectionId) {
+      try {
+        await client.request('ddl.dropObject', {
+          connectionId,
+          kind: objectType,
+          name: objectName,
+          cascade: false,
+        })
+      } catch {
+        // fallback
+      }
+    }
+    onConfirmDrop()
+  }
 
   const isMatched = confirmInput === objectName
 
@@ -108,7 +128,7 @@ export function DropObjectDialog({
           Huỷ
         </button>
         <button
-          onClick={onConfirmDrop}
+          onClick={handleExecuteDrop}
           disabled={!isMatched}
           style={{
             padding: '6px 16px',

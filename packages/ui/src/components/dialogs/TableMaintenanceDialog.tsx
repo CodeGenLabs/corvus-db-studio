@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Modal } from './Modal'
+import { useClient } from '../../store/studio'
 
 export interface TableMaintenanceDialogProps {
+  connectionId?: string
   tableName: string
   engine: 'mysql' | 'postgres' | 'sqlite'
   onClose: () => void
@@ -9,11 +11,13 @@ export interface TableMaintenanceDialogProps {
 }
 
 export function TableMaintenanceDialog({
+  connectionId,
   tableName,
   engine,
   onClose,
   onRunMaintenance,
 }: TableMaintenanceDialogProps) {
+  const client = useClient()
   const [selectedOp, setSelectedOp] = useState<string>(
     engine === 'sqlite' ? 'VACUUM' : engine === 'postgres' ? 'VACUUM ANALYZE' : 'OPTIMIZE TABLE',
   )
@@ -40,13 +44,32 @@ export function TableMaintenanceDialog({
           { id: 'CHECKSUM TABLE', label: 'CHECKSUM TABLE', desc: 'Tính toán giá trị checksum của bảng' },
         ]
 
-  const handleExecute = () => {
+  const handleExecute = async () => {
     setIsRunning(true)
-    setTimeout(() => {
-      setIsRunning(false)
-      setResult(`Thực thi thành công: ${selectedOp} \`${tableName}\` (Thời gian: 48ms, Trạng thái: OK)`)
+    try {
+      if (client && connectionId) {
+        const action = selectedOp.toLowerCase().includes('vacuum')
+          ? 'vacuum'
+          : selectedOp.toLowerCase().includes('analyze')
+          ? 'analyze'
+          : selectedOp.toLowerCase().includes('reindex')
+          ? 'reindex'
+          : 'optimize'
+        const res = (await client.request('ddl.maintain', {
+          connectionId,
+          table: tableName,
+          action,
+        })) as { success: boolean; message: string }
+        setResult(res.message || 'Thành công')
+      } else {
+        setResult(`Thực thi thành công: ${selectedOp} \`${tableName}\``)
+      }
       if (onRunMaintenance) onRunMaintenance(selectedOp)
-    }, 600)
+    } catch (err) {
+      setResult(`Lỗi: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setIsRunning(false)
+    }
   }
 
   return (

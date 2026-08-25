@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { WizardShell } from '../components/wizard'
 import { FieldMappingGrid } from './import/FieldMappingGrid'
 import { parseDelimited, generateImportSql, inferColumnType } from '@corvus/sql'
+import { useClient } from '../store/studio'
 import type { FieldMapping, ImportFormat, ImportMode, ImportOptions } from '@corvus/contract'
 
 const STEPS = [
@@ -19,9 +20,34 @@ export interface ImportWizardProps {
 }
 
 export function ImportWizard({ onClose, onComplete }: ImportWizardProps) {
+  const client = useClient()
   const [currentStep, setCurrentStep] = useState(0)
   const [format, setFormat] = useState<ImportFormat>('csv')
   const [fileName, setFileName] = useState('customers_sample.csv')
+
+  const handleBrowseFile = async () => {
+    if (!client) return
+    try {
+      const res = (await client.request('file.pickOpen', {
+        filters: [{ name: 'Data files', extensions: [format, 'csv', 'tsv', 'json', 'txt'] }],
+        multiple: false,
+      })) as { paths: string[] }
+      if (res?.paths?.[0]) {
+        const p = res.paths[0]
+        setFileName(p)
+        const stat = (await client.request('file.stat', { path: p })) as { sizeBytes: number }
+        if (stat?.sizeBytes) {
+          await client.request('file.readChunk', {
+            path: p,
+            offset: 0,
+            length: Math.min(stat.sizeBytes, 64 * 1024),
+          })
+        }
+      }
+    } catch {
+      // fallback
+    }
+  }
   const [rawText] = useState(
     `customer_id,first_name,last_name,email,active\n1,MARY,SMITH,MARY.SMITH@sakilacustomer.org,1\n2,PATRICIA,JOHNSON,PATRICIA.JOHNSON@sakilacustomer.org,1\n3,LINDA,WILLIAMS,LINDA.WILLIAMS@sakilacustomer.org,1\n4,BARBARA,JONES,BARBARA.JONES@sakilacustomer.org,1`,
   )
@@ -168,20 +194,37 @@ export function ImportWizard({ onClose, onComplete }: ImportWizardProps) {
                   <label style={{ display: 'block', fontSize: 11, color: 'var(--text2)', marginBottom: 4 }}>
                     Đường dẫn tệp:
                   </label>
-                  <input
-                    value={fileName}
-                    onChange={(e) => setFileName(e.target.value)}
-                    style={{
-                      width: '100%',
-                      height: 28,
-                      padding: '0 8px',
-                      background: 'var(--pane2)',
-                      border: '1px solid var(--border-strong)',
-                      borderRadius: 4,
-                      color: 'var(--text)',
-                      fontSize: 11.5,
-                    }}
-                  />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      value={fileName}
+                      onChange={(e) => setFileName(e.target.value)}
+                      style={{
+                        flex: 1,
+                        height: 28,
+                        padding: '0 8px',
+                        background: 'var(--pane2)',
+                        border: '1px solid var(--border-strong)',
+                        borderRadius: 4,
+                        color: 'var(--text)',
+                        fontSize: 11.5,
+                      }}
+                    />
+                    <button
+                      onClick={handleBrowseFile}
+                      style={{
+                        height: 28,
+                        padding: '0 10px',
+                        background: 'var(--pane2)',
+                        border: '1px solid var(--border-strong)',
+                        borderRadius: 4,
+                        color: 'var(--text)',
+                        fontSize: 11,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Duyệt…
+                    </button>
+                  </div>
                 </div>
 
                 <div>

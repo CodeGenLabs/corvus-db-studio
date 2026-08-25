@@ -262,3 +262,41 @@ Tôn trọng `prefers-reduced-motion: reduce` — tắt mọi transition.
 [ ] Đã chạy trên CẢ web build và desktop build
 [ ] Nếu là danh sách > 200 phần tử: đã ảo hoá
 ```
+
+---
+
+## 12. Sổ đăng ký lệnh & 11 Bề mặt Context Menu (Command Registry & Context Menus)
+
+### 12.1 Sổ đăng ký lệnh tập trung (`CommandRegistry`)
+- Toàn bộ hành động trên giao diện (Toolbar, Menubar, Context Menu, Phím tắt, Palette) phải được khai báo tập trung trong `packages/ui/src/commands/defs/`.
+- Mỗi lệnh định nghĩa:
+  - `id`: Định danh duy nhất (ví dụ: `object.designTable`, `sql.runSelection`).
+  - `surfaces`: Danh sách các bề mặt hỗ trợ lệnh.
+  - `targets`: Loại đối tượng áp dụng (`database`, `table`, `cell`, `empty`, v.v.).
+  - `cardinality`: `'single'` hoặc `'multi'`.
+  - `availability`: Điều kiện khả dụng (`needsConnection`, `requiredCapabilities`, `permission`, `supportedKinds`).
+  - `write`: `'none'` | `'preview-required'`.
+  - `rpc`: Danh sách các RPC method tương ứng trong `@corvus/contract`.
+
+### 12.2 Luật Ẩn vs Vô hiệu hoá (FR-046B)
+- **Ẩn hoàn toàn (Hidden)**:
+  - Khi engine hiện tại không hỗ trợ tính năng (dựa trên `CapabilitySet` của server lúc kết nối).
+  - Trên cây điều hướng: Ẩn các nhóm đối tượng không tồn tại trên engine đó.
+- **Vô hiệu hoá kèm lý do (Disabled with Tooltip/Reason)**:
+  - Khi ngữ cảnh hiện tại chưa thoả mãn (chưa chọn đối tượng, thiếu quyền ghi, sai loại đối tượng, chưa kết nối).
+  - Lý do vô hiệu hoá phải hiển thị rõ ràng khi hover hoặc trong context menu để người dùng hiểu cách khắc phục.
+
+### 12.3 11 Bề mặt Context Menu (S-01 → S-11)
+Mọi bề mặt tương tác đều phải hỗ trợ mở menu chuột phải và phím tắt (`Menu` / `Shift+F10`):
+1. `ctx-nav`: Cây điều hướng (connection, database, schema, group, object, field).
+2. `ctx-object-list`: Danh sách đối tượng (single, multi, empty).
+3. `ctx-data-grid`: Lưới dữ liệu (cell, row-header, column-header, empty).
+4. `ctx-sql-editor`: Trình soạn thảo SQL (selection, empty).
+5. `ctx-query-builder`: Trình dựng truy vấn trực quan (table, join, empty).
+6. `ctx-er-diagram`: Sơ đồ quan hệ ER (table, relation, empty).
+7. `ctx-tab-bar`: Thanh tab (tab).
+8. `ctx-toolbar`: Thanh công cụ chính (customize, reset).
+9. `ctx-snippet`: Thư viện đoạn mã (snippet, empty).
+10. `ctx-job-list`: Danh sách tác vụ chạy nền (job, empty).
+11. `ctx-diff`: Khung so sánh dữ liệu / cấu trúc (diff-item, empty).
+

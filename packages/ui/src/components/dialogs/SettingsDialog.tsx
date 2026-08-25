@@ -1,5 +1,6 @@
+import { useEffect } from 'react'
 import { Modal } from './Modal'
-import { useStudio } from '../../store/studio'
+import { useStudio, useClient } from '../../store/studio'
 import type { Config, MonoKey, SettingsSection } from '../../types'
 
 type BoolKey = {
@@ -20,8 +21,34 @@ const MONO_SAMPLE = 'SELECT 1 | 名前 abc .:iW'
 
 export function SettingsDialog() {
   const { s, set, setCfg, t, tr } = useStudio()
+  const client = useClient()
   const close = () => set({ dialog: null })
   const cfg = s.cfg
+
+  useEffect(() => {
+    async function loadSettings() {
+      if (!client) return
+      try {
+        await client.request('workspace.settings.get', {})
+      } catch {
+        // fallback
+      }
+    }
+    loadSettings()
+  }, [client])
+
+  const handleSaveSettings = async () => {
+    if (client) {
+      try {
+        await client.request('workspace.settings.set', {
+          settings: { lang: s.lang, cfg },
+        })
+      } catch {
+        // fallback
+      }
+    }
+    close()
+  }
 
   const sections: [SettingsSection, string][] = [
     ['general', tr('Chung', 'General')],
@@ -374,7 +401,7 @@ export function SettingsDialog() {
         <span style={{ color: 'var(--text3)', fontSize: 11 }}>{t.settingsHint}</span>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <div
-            onClick={close}
+            onClick={handleSaveSettings}
             style={{
               height: 26,
               padding: '0 11px',
