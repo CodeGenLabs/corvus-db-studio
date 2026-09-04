@@ -20,7 +20,7 @@ describe('T-B03 · Production Dist Smoke Test (apps/web/server/dist/index.js)', 
   })
   it('khởi động node dist/index.js, phục vụ /rpc và /ws, rồi shutdown sạch bằng SIGTERM', async () => {
     const port = 8200 + Math.floor(Math.random() * 500)
-    const serverProc = spawn('node', [distEntry], {
+    const serverProc = spawn(process.execPath, [distEntry], {
       env: {
         ...process.env,
         CORVUS_PORT: String(port),
@@ -37,6 +37,9 @@ describe('T-B03 · Production Dist Smoke Test (apps/web/server/dist/index.js)', 
     })
     serverProc.stderr?.on('data', (d) => {
       stdout += d.toString()
+    })
+    serverProc.on('error', (err) => {
+      stdout += ' [spawn error: ' + err.message + ']'
     })
 
     // Chờ server in log sẵn sàng

@@ -111,12 +111,12 @@
 
 **Goal**: Kiểm thử E2E đầu-cuối, cập nhật tài liệu, và đảm bảo toàn bộ cổng chất lượng xanh 100%.
 
-- [ ] T050 [US1..US5] Viết Playwright E2E spec `e2e/specs/L7-ui-ergonomics.spec.ts` — kiểm thử đầu-cuối 5 gói tính năng trên ứng dụng thật với PostgreSQL và MySQL (SC-009)
-- [ ] T051 [P] Cập nhật `docs/05-rules/ui-rules.md` — bổ sung quy chuẩn thiết kế cho Bottom Navigation Bar, Tabbed Table Designer, Pin Results, và Connection Colorings
-- [ ] T052 [P] Cập nhật `docs/04-plan/navicat-feature-parity.md` — đánh dấu 5 gói tính năng UI/UX đạt trạng thái ĐÃ CÓ (100%)
-- [ ] T053 Chạy kiểm tra tĩnh `tools/check-contract.ts` và `tools/check-ui-wiring.ts` đảm bảo `UI_WIRING_DEBT = 0` và `SURFACE_DEBT = 0`
-- [ ] T054 Chạy `pnpm verify` (lint + typecheck + test + build) xác nhận 100% xanh (SC-009)
-- [ ] T055 Đối chiếu toàn bộ 10 Tiêu chí Thành công (SC-001 $\rightarrow$ SC-010) trong `spec.md` và lập báo cáo nghiệm thu hoàn tất
+- [x] T050 [P] Viết E2E test `e2e/specs/L7-ui-ergonomics.spec.ts` kiểm thử toàn bộ luồng 5 trải nghiệm Navicat (Bottom Bar, Filter/Sort, Tabbed Designer, Pin Results, Connection Colors/Find in DB)
+- [x] T051 [P] Cập nhật `docs/05-rules/ui-rules.md` — bổ sung quy chuẩn thiết kế cho Bottom Navigation Bar, Tabbed Table Designer, Pin Results, và Connection Colorings
+- [x] T052 [P] Cập nhật `docs/04-plan/navicat-feature-parity.md` — đánh dấu 5 gói tính năng UI/UX đạt trạng thái ĐÃ CÓ (100%)
+- [x] T053 Chạy kiểm tra tĩnh `tools/check-contract.ts` và `tools/check-ui-wiring.ts` đảm bảo `UI_WIRING_DEBT = 0` và `SURFACE_DEBT = 0`
+- [x] T054 Chạy `pnpm verify` (lint + typecheck + test + build) xác nhận 100% xanh (SC-009)
+- [x] T055 Đối chiếu toàn bộ 10 Tiêu chí Thành công (SC-001 $\rightarrow$ SC-010) trong `spec.md` và lập báo cáo nghiệm thu hoàn tất
 
 ---
 
